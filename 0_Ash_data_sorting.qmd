@@ -1,0 +1,45 @@
+---
+title: "Organise data"
+format: html
+editor: visual
+---
+
+## Data
+
+Data from Ash on his blob. https://sho108storage.blob.core.windows.net/werp-deliverables/
+
+Galen can access via CSIRO Azure account with Azure Storage Explorer. In process of sorting out programmatic access, for now it's just copied down.
+
+This file is just going to extract the zips. The toolkit actually *can* read them straight out of the zip now, but unzipping seems better for clarity.
+
+They're on the QAEL werp drive so we don't all have to have them locally. Very annoyingly, the WERP dir has different names for all of us. So it would be really nice to actually access a blob.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+ashpath <- file.path(qaelpath, 'Toolkit', 'AshData')
+```
+
+Get the paths to the data we want, so we don't unzip the whole thing
+
+```{r}
+path_to_macq_zip <- file.path(ashpath, 'river_system_simulation_data.zip')
+
+hydro_paths <- unzip(path_to_macq_zip, list = TRUE)$Name
+    hydro_paths <- hydro_paths[grepl('Straight Node \\(Gauge\\)\\.nc', 
+                                     hydro_paths)]
+```
+
+Create the output folder and unzip into it. I'm keeping Ash's name, though something more informative would be better.
+
+```{r}
+# unzip_to <- file.path(ashpath, 'dec23_results')
+# if (!dir.exists(unzip_to)) {
+#   dir.create(unzip_to, recursive = TRUE)}
+
+unzip(path_to_macq_zip, files = hydro_paths, exdir = file.path(qaelpath, 'Toolkit', 'macq-data'))
+```

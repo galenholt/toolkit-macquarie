@@ -1,0 +1,96 @@
+---
+title: "Aggregate"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(sf)
+```
+
+## Paths
+
+I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunately, that calls itself something different for each of us.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+```
+
+```{r}
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+hydro_dir = file.path(project_dir, 'river_system_simulation_data')
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+```
+
+## Aggregation sequencing
+
+-   Sequence of steps
+
+-   Sequence of functions
+
+We'll likely want something different here (or multiple)
+
+```{r}
+aggseq <- list(ewr_code = c('ewr_code_timing', 'ewr_code'),
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_units,
+               Specific_goal = c('env_obj', "Specific_goal"),
+               Objective = c('Specific_goal', 'Objective'),
+               mdb = basin,
+               target_5_year_2024 = c('Objective', 'target_5_year_2024'))
+
+
+funseq <- list(c('CompensatingFactor'),
+               c('ArithmeticMean'),
+               c('ArithmeticMean'),
+               c('ArithmeticMean'),
+               c('ArithmeticMean'),
+               c('SpatialWeightedMean'),
+               c('ArithmeticMean'))
+```
+
+## Aggregate
+
+-   Sequence (levels of each theme, space, time axis)
+
+-   Aggregation functions at each step
+
+-   Produces a list, with each sheet a step in the aggregation
+
+```{r}
+system.time(agged_data <- read_and_agg(datpath = ewr_results, 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           aggsequence = aggseq,
+           funsequence = funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = agg_results))
+```
+
+130 seconds.
+
+On to comparing
