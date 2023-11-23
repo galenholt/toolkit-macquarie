@@ -1,0 +1,19 @@
+# ignore environments
+.venv/*
+.python_version
+
+.Rproj.user
+
+.Rhistory
+
+# ignore outputs
+template_data/aggregator_output/
+template_data/module_output/
+toolkit_project/module_output/EWR/
+
+*_files
+*.html
+
+poetry.lock
+
+renv.lock
