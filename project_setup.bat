@@ -1,5 +1,5 @@
 REM THIS SHOULD BE DONE ONCE PER PROJECT
-REM Expects python, pyenv, and poetry exist. Use py_install.sh on linux
+REM Expects python, pyenv, and poetry exist. Use project_setup.sh on linux
 
 REM set up the python
 REM assume the user has python, pyenv, and poetry

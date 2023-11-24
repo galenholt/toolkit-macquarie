@@ -1,12 +1,12 @@
 # I don't think the renv install is necessary-it should auto-install since there's a project skeleton
 # install.packages('renv')
+install.packages('pak', repos = sprintf('https://r-lib.github.io/p/pak/stable/%s/%s/%s', .Platform['pkgType'], R.Version()['os'], R.Version()['arch']))
 
 # use pak to handle system dependencies on linux
 if (grepl("unix", .Platform$OS.type)) {
-    install.packages('pak', repos = sprintf('https://r-lib.github.io/p/pak/stable/%s/%s/%s', .Platform['pkgType'], R.Version()['os'], R.Version()['arch']))
     renv::install('yaml')
     deps <- renv::dependencies()
-    depchars <- c(deps$Package, 'scico', 'ggthemes', 'furrr')
+    depchars <- c(deps$Package, 'scico', 'ggthemes', 'furrr', 'git2r')
     depchars <- depchars[depchars != 'R']
     depchars <- depchars[depchars != 'werptoolkitr']
     depchars <- unique(depchars)
@@ -24,16 +24,15 @@ if (grepl("unix", .Platform$OS.type)) {
 }
 
 # install R packages
-# renv without {remotes} will only install from main. So if we want to use a branch, we need to go with remotes directly
-renv::install('remotes')
-# First, the newest version of the toolkit - it doesn't always find updates or deal with caching correctly from git hashes
-remotes::install_git('git@github.com:MDBAuth/WERP_toolkit.git', ref = 'galen_working', force = TRUE, upgrade = 'ask', git = 'external', rebuild = TRUE)
-# Everything else
+# renv would be much faster, but it is causing all sorts of problems getting the right commit
+renv::install('git@github.com:MDBAuth/WERP_toolkit.git', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
 renv::install()
-renv::install(c('scico', 'ggthemes', 'furrr'))
+# Some extras
+# renv without {remotes} will only install from main. So if we want to use a branch, we need to go with remotes directly
+renv::install(c('scico', 'ggthemes', 'furrr', 'git2r', 'rmarkdown', 'remotes'))
 
-#
-# # To give the user a set of hydrographs to look at
-# dir.create(file.path('template_data', 'hydrographs'), recursive = TRUE)
-# toolhydro <- list.files(system.file('extdata/testsmall/hydrographs', package = 'werptoolkitr'), full.names = TRUE)
-# file.copy(toolhydro, to = file.path('template_data', 'hydrographs'), recursive = TRUE)
+# The newest version of the toolkit
+
+# renv sometimes struggles with rebuilding and non-main branhes.
+# so if you need to install something other than main, or main with the same version number, use remotes, but that installs all dependencies and is slow.
+# remotes::install_git('git@github.com:MDBAuth/WERP_toolkit.git', ref = 'galen_working', force = TRUE, upgrade = 'always', git = 'external')

@@ -3,7 +3,7 @@ title: "Toolkit from parameters"
 editor: visual
 params:
   # Outer directory for scenario
-  output_parent_dir: 'template_data'
+  output_parent_dir: 'template_data/csvs'
 ---
 
 This document provides a template for running the toolkit from a parameters file, as we might do when batch processing. We have the ability to have a default params file, a second params file that tweaks those defaults, as well as include params in Quarto header yaml. These different options are all used here.
@@ -33,12 +33,11 @@ At present we do not provide yaml param options for the comparer. This is possib
 
 # Run the toolkit
 
-Here, we use use a params.yml (with EWR controls and aggregation functions), quarto params (with directories), and passed arguments (for climate) to illustrate. In typical use only one or two would be used at a time.
+Here, we use use a params.yml (with EWR controls and aggregation functions), quarto params (with directories), and passed arguments (for climate) to illustrate. In typical use only one or two would be used at a time. Note: there is also a possible `passed_args` argument that allows passing in the form `passed_args = "parametername: 'value'"` , but it is not used here.
 
 ```{r}
 run_toolkit_params(yamlpath = 'params.yml',
-                   list_args = params, # These are from the Quarto header
-                   passed_args = "climate: 'NSW 10,000 year climate sequence'")
+                   list_args = params) # These are from the Quarto header)
 
 ```
 
@@ -47,5 +46,6 @@ run_toolkit_params(yamlpath = 'params.yml',
 The `prep_run_save_ewrs` and `read_and_agg` functions save metadata yaml files that are fully-specified parameters files. Using the final file (after aggregation), we can replicate the whole sequence. Thus, to replicate the run above, we can call
 
 ```{r}
-run_toolkit_params(yamlpath = 'template_data/aggregator_output/agg_metadata.yml')
+run_toolkit_params(yamlpath = file.path(params$output_parent_dir,
+                                        'aggregator_output/agg_metadata.yml'))
 ```

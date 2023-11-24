@@ -39,7 +39,7 @@ As a user, we need to set
 
 ```{r}
 # Outer directory for project data
-project_dir = file.path('template_data')
+project_dir = file.path('template_data/csvs')
 
 # Hydrographs (expected to exist already)
 hydro_dir = file.path(project_dir, 'hydrographs')
@@ -112,6 +112,7 @@ ewr_out <- prep_run_save_ewrs(hydro_dir = hydro_dir,
                                   output_parent_dir = project_dir, 
                                   outputType = outputType,
                                   returnType = returnType)
+
 ```
 
 ## Aggregate
@@ -138,6 +139,16 @@ agged_data <- read_and_agg(datpath = ewr_results,
            keepAllPolys = FALSE,
            returnList = TRUE,
            savepath = NULL)
+```
+
+The new scenario names ensure uniqueness, but can be ugly. This could be avoided with a named list to the `scenarios` argument in `prep_run_save_ewrs`, but a robust, general approach is a work in progress.
+
+```{r}
+# The new scenario names ensure uniqueness, but can be ugly
+agged_data <- purrr::map(agged_data, 
+                         \(x) x |> 
+                           mutate(scenario = stringr::str_remove_all(scenario,
+                                                                     "_[A-z]*[0-9]*")))
 ```
 
 # Outputs
@@ -218,7 +229,6 @@ map_example <- agged_data$sdl_units |>
                 facet_row = 'env_obj',
                 scene_pal = scene_pal,
                 sceneorder = sceneorder,
-                scenariofilter = c('down2', 'down1_25', 'base', 'up1_25', 'up2'),
                 underlay_list = 'basin',
                 overlay_list = list(overlay = dplyr::filter(
                   agged_data$env_obj,
@@ -424,7 +434,7 @@ nodes_with_vals <- nodes |>
 
 ::: panel-tabset
 
-### Down 2
+### Down 4
 
 ```{r}
 #| echo: false
@@ -454,7 +464,7 @@ aggNetworkbase <- make_causal_plot(nodes = dplyr::filter(nodes_with_vals,
 DiagrammeR::render_graph(aggNetworkbase)
 ```
 
-### Up 2
+### Up 4
 
 ```{r}
 #| echo: false
