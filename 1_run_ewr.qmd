@@ -21,6 +21,13 @@ I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunat
 ```{r}
 if (Sys.info()['user'] == 'galen') {
   qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  #qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
 } else {
   rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
 }
@@ -31,14 +38,16 @@ if (Sys.info()['user'] == 'galen') {
 qaelpath <- path.expand(qaelpath)
 
 # Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
 
 # Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
-hydro_dir = file.path(project_dir, 'river_system_simulation_data')
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
 
 # Generated data
 # EWR outputs (will be created here in controller, read from here in aggregator)
+#ewr_results <- file.path(project_dir, 'module_output', 'EWR_nonrounding')
 ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
 
 # outputs of aggregator. There may be multiple modules
 agg_results <- file.path(project_dir, 'aggregator_output')
@@ -57,8 +66,19 @@ returnType <- list('none') # list('summary', 'yearly')
 
 Run it in parallel, and use the 'IQQM - netcdf\` format. (and note timing)
 
-```{r}
+Check EWR tool version:
 
+poetry show
+
+py-ewr: 2.1.0 cb050fe (rounding)
+
+poetry add git+https://github.com/MDBAuth/EWR_tool.git#GalenH
+
+py-ewr: 2.1.0 ece7864 (non-rounding)
+
+poetry add git+https://github.com/MDBAuth/EWR_tool.git\@ece7864b4fdd05aaa19ad61e2d94c5f1aba07e95
+
+```{r}
 
 ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = hydro_dir, 
                                   output_parent_dir = project_dir,
@@ -76,4 +96,4 @@ glue::glue("The run of all files through the EWR took {ewr_time['elapsed']} seco
            {ewr_time['elapsed']/60/60} hours")
 ```
 
-1.8 hours for the first run
+About 3.91 hours on Rich's comp

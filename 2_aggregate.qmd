@@ -17,6 +17,13 @@ I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunat
 ```{r}
 if (Sys.info()['user'] == 'galen') {
   qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  #qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
 } else {
   rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
 }
@@ -27,17 +34,23 @@ if (Sys.info()['user'] == 'galen') {
 qaelpath <- path.expand(qaelpath)
 
 # Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
 
 # Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
-hydro_dir = file.path(project_dir, 'river_system_simulation_data')
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
 
 # Generated data
 # EWR outputs (will be created here in controller, read from here in aggregator)
+#ewr_results <- file.path(project_dir, 'module_output', 'EWR_nonrounding')
 ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
 
 # outputs of aggregator. There may be multiple modules
 agg_results <- file.path(project_dir, 'aggregator_output')
+```
+
+```{r}
+temp_df <- get_ewr_output(dir = ewr_results)
 ```
 
 ## Aggregation sequencing
