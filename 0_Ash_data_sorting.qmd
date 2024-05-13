@@ -15,31 +15,108 @@ This file is just going to extract the zips. The toolkit actually *can* read the
 They're on the QAEL werp drive so we don't all have to have them locally. Very annoyingly, the WERP dir has different names for all of us. So it would be really nice to actually access a blob.
 
 ```{r}
+#| include: false
+
 if (Sys.info()['user'] == 'galen') {
   qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
 } else {
   rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
 }
 
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+
+comp_results <- file.path(project_dir, 'comparer_output') 
+
 ashpath <- file.path(qaelpath, 'Toolkit', 'AshData')
+
+
+
+
 ```
 
-Get the paths to the data we want, so we don't unzip the whole thing
-
 ```{r}
-path_to_macq_zip <- file.path(ashpath, 'river_system_simulation_data.zip')
+netcdf <- ncdf4::nc_open(file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkv/licvolfactor_1_0/r1_0_e1_0/0/Straight Node (Gauge).nc'))
+ncdf4::ncatt_get(nc = netcdf, varid = "Simulated flow")
+ncdf4::ncatt_get(nc = netcdf, varid = "Simulated flow")
+ncdf4::ncatt_get(nc = netcdf, varid = "Simulated flow")
 
-hydro_paths <- unzip(path_to_macq_zip, list = TRUE)$Name
-    hydro_paths <- hydro_paths[grepl('Straight Node \\(Gauge\\)\\.nc', 
-                                     hydro_paths)]
+lon <- ncvar_get(nc_data, "lon")
+df <- as.data.frame(netcdf) 
+
+plot(netcdf)
+
+Simulated flow
+netcdf$var
+
+
+netcdf <- ncdf4::nc_open(file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkv/licvolfactor_1_0/r1_0_e1_0/0/h2o_table.nc'))
+ncdf4::ncatt_get(nc = netcdf, varid = "End sys")
+ncdf4::ncatt_get(nc = netcdf, varid = "Orders")
 ```
 
-Create the output folder and unzip into it. I'm keeping Ash's name, though something more informative would be better.
+```{r}
+Files_balance <- list.files(path = list.dirs(path = hydro_dir), pattern = "balance.csv", full.names=TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  
+Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+#Files_balance[33]
+#NEED TO REPLACE FILE 33 (4680)
+
+# Merged_balance_init <- do.call(rbind,
+#           lapply(Files_balance[1], read_plus))
+
+# get the right scenario name and summarise to mean
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "r1.0_e1.0/", remove = FALSE, into = c(NA,"scenario"))|>
+  tidyr::separate(scenario, sep = "/balance.csv", remove = FALSE, into = c("scenario"))|>
+  #dplyr::mutate(scenario = stringr::str_replace_all(scenario, "/", "_"))|>
+  #dplyr::mutate(scenario = paste(scenario,"Straight Node (Gauge)", sep = ""))|>
+  dplyr::group_by(scenario)|>
+  dplyr::summarise_at(dplyr::vars(Tributary:`End sys`), mean, na.rm = TRUE)
+```
 
 ```{r}
-# unzip_to <- file.path(ashpath, 'dec23_results')
-# if (!dir.exists(unzip_to)) {
-#   dir.create(unzip_to, recursive = TRUE)}
+scenario_meta_list <- as.list(Merged_balance)
 
-unzip(path_to_macq_zip, files = hydro_paths, exdir = file.path(qaelpath, 'Toolkit', 'macq-data'))
+# I don't know the format we'll be using, but this works to create yaml metadata
+yaml::write_yaml(scenario_meta_list, 
+                 file = file.path(hydro_dir, 'scenario_metadata.yml'))
+# and this does the same with JSON
+jsonlite::write_json(scenario_meta_list, 
+                     path = file.path(hydro_dir, 'scenario_metadata.json'))
 ```

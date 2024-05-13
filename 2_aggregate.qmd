@@ -59,51 +59,135 @@ temp_df <- get_ewr_output(dir = ewr_results)
 
 -   Sequence of functions
 
-We'll likely want something different here (or multiple)
-
 ```{r}
-aggseq <- list(ewr_code = c('ewr_code_timing', 'ewr_code'),
-               env_obj =  c('ewr_code', "env_obj"),
-               sdl_units = sdl_units,
-               Specific_goal = c('env_obj', "Specific_goal"),
-               Objective = c('Specific_goal', 'Objective'),
-               mdb = basin,
-               target_5_year_2024 = c('Objective', 'target_5_year_2024'))
+#Georgias version:
+EWRs_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units,
+               sdl_units = sdl_units)
 
+EWRs_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #planning_unit gauges to sdl_units
 
-funseq <- list(c('CompensatingFactor'),
-               c('ArithmeticMean'),
-               c('ArithmeticMean'),
-               c('ArithmeticMean'),
-               c('ArithmeticMean'),
-               c('SpatialWeightedMean'),
-               c('ArithmeticMean'))
-```
-
-## Aggregate
-
--   Sequence (levels of each theme, space, time axis)
-
--   Aggregation functions at each step
-
--   Produces a list, with each sheet a step in the aggregation
-
-```{r}
-system.time(agged_data <- read_and_agg(datpath = ewr_results, 
+system.time(agged_data_EWRs <- read_and_agg(datpath = ewr_results, 
            type = 'achievement',
            geopath = bom_basin_gauges,
            causalpath = causal_ewr,
            groupers = 'scenario',
            aggCols = 'ewr_achieved',
-           aggsequence = aggseq,
-           funsequence = funseq,
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = EWRs_aggseq,
+           funsequence = EWRs_funseq,
            saveintermediate = TRUE,
            namehistory = FALSE,
            keepAllPolys = FALSE,
            returnList = TRUE,
-           savepath = agg_results))
+           savepath = file.path(agg_results, 'sdl_EWRS_agg')))
 ```
 
-130 seconds.
+```{r}
+#Georgias version:
+Theme_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_units = planning_units,
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_units,
+               Target = c('env_obj', 'Target'))
 
-On to comparing
+Theme_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #ewr_code to env_obj              
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #planning_unit to sdl_units              
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #env_obj  to Target
+
+system.time(agged_data_Theme <- read_and_agg(datpath = ewr_results, 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           # group_until = list(planning_unit_name = 'sdl_units', 
+           #                      gauge = is_notpoint),
+           #              pseudo_spatial = 'planning_units',
+           auto_ewr_PU = TRUE,
+           aggsequence = Theme_aggseq,
+           funsequence = Theme_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(agg_results, 'sdl_target_agg')))
+```
+
+```{r}
+unique(agged_data$ewr_code$scenario)
+```
+
+## MANUAL AGGREGATION - needed for timeseries
+
+```{r}
+  # GET Target frequencies from NSWEWR (could also use NSWEWR from EWR tool?)
+ summarydf <- get_any_ewr_output(dir = ewr_results, type = "summary")
+ annualdf <- get_any_ewr_output(dir = ewr_results, type = "yearly")
+ 
+ 
+Target_frequencies <- summarydf |>
+    dplyr::select(planning_unit_name, gauge, ewr_code, ewr_code_timing, target_frequency) |>
+    dplyr::group_by(planning_unit_name, gauge, ewr_code, ewr_code_timing, target_frequency) |>
+    dplyr::distinct() |>
+    dplyr::ungroup()
+
+  # Join target frequencies to annualdf
+annualdf <- dplyr::left_join(annualdf, Target_frequencies,
+    by = dplyr::join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name),
+    relationship = "many-to-many"
+  )
+
+year_roll <- 10
+  # Frequency checks (ACHIEVEMENT test)
+  if (year_roll > 1) {
+    # Specific rolling time frame
+    # calculate number of event years, frequency, and EWR pass/fail at defined (year_roll) year rolling time frames.
+    # cease to flows are the inverse of success.
+    annualdf <- annualdf |>
+      dplyr::group_by(scenario, planning_unit_name, gauge, ewr_code, ewr_code_timing) |>
+      dplyr::arrange(scenario, planning_unit_name, gauge, ewr_code, ewr_code_timing, year) |>
+      # defined n years
+      dplyr::mutate(eventyears_per_n_years = purrr::reduce(purrr::map(1:(year_roll - 1), ~ lag(event_years, ., order_by = year)), `+`) + event_years) |>
+      dplyr::mutate(frequency_per_n_years = (eventyears_per_n_years / year_roll) * 100) |>
+      dplyr::mutate(frequency_check_n_years = ifelse(grepl("CF", ewr_code), frequency_per_n_years <= target_frequency,
+        frequency_per_n_years >= target_frequency
+      )) |>
+      dplyr::ungroup()
+
+    # ACHIEVEMENT test
+    EWR_results <- annualdf |>
+      dplyr::group_by(ewr_code, ewr_code_timing, gauge, scenario, planning_unit_name) |>
+      dplyr::filter(!is.na(frequency_check_n_years)) |>
+      # dplyr::summarise(ewr_achieved = sum(frequency_check_n_years) == dplyr::n()) |> # do all pass?
+      dplyr::summarise(ewr_achieved = mean(frequency_check_n_years)) |> # what proportion passes?
+      dplyr::mutate(ewr_achieved_timeframe = year_roll) |>
+      dplyr::ungroup()
+    }
+  
+
+  # # change the logical to numeric to maintain generality with later functions
+  # EWR_results$ewr_achieved <- as.numeric(EWR_results$ewr_achieved)
+  # EWR_results$scenario <- "Historical"
+  # 
+  # write.csv(EWR_results, file.path(project_dir, 'MANUAL', 'EWR_summary.csv'))
+  
+  #####
+  #### FOR TIME SERIES
+  
+  annualdf$ewr_achieved <- as.numeric(annualdf$frequency_per_n_years/100)
+  write.csv(annualdf, file.path(agg_results, 'EWR_timeseries.csv'))
+  
+  
+```

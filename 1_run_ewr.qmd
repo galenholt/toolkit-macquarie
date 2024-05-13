@@ -38,16 +38,15 @@ if (Sys.info()['user'] == 'galen') {
 qaelpath <- path.expand(qaelpath)
 
 # Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-ewateradaptation')
 
 # Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
-hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkv/licvolfactor_1_0/r1_0_e1_0')
 
 # Generated data
 # EWR outputs (will be created here in controller, read from here in aggregator)
 #ewr_results <- file.path(project_dir, 'module_output', 'EWR_nonrounding')
 ewr_results <- file.path(project_dir, 'module_output', 'EWR')
-
 
 # outputs of aggregator. There may be multiple modules
 agg_results <- file.path(project_dir, 'aggregator_output')
