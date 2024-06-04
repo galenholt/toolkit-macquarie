@@ -1,0 +1,126 @@
+---
+title: "Run EWRs"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(sf) # Needed? I think not here, but just in case
+library(future)
+
+# set the future plan for parallelising.
+plan(multisession)
+```
+
+## Paths
+
+I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunately, that calls itself something different for each of us.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  #qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+```
+
+```{r}
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+
+# Hydrographs 
+# 4 specific sets 
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+#ewr_results <- file.path(project_dir, 'module_output', 'EWR_nonrounding')
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+```
+
+## Module controls
+
+We need 'summary' and 'yearly' to assess EWR achievement. No reason to return them to the session.
+
+```{r}
+outputType <- list('summary', 'yearly')
+returnType <- list('none') # list('summary', 'yearly')
+```
+
+# Run EWR tool
+
+Run it in parallel, and use the 'IQQM - netcdf\` format. (and note timing)
+
+Check EWR tool version:
+
+poetry show
+
+py-ewr: 2.1.0 cb050fe (rounding)
+
+poetry add git+https://github.com/MDBAuth/EWR_tool.git#GalenH
+
+py-ewr: 2.1.0 ece7864 (non-rounding)
+
+poetry add git+https://github.com/MDBAuth/EWR_tool.git\@ece7864b4fdd05aaa19ad61e2d94c5f1aba07e95
+
+```{r}
+# ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(file_search = 'Straight Node',
+#                                                       hydro_dir = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkva'), 
+#                                                       output_parent_dir = file.path(project_dir, 'historic', 'Mk5a'),
+#                                                       model_format = 'IQQM - netcdf',
+#                                                       outputType = outputType,
+#                                                       returnType = returnType,
+#                                                       rparallel = TRUE))
+
+ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(file_search = 'Straight Node',
+                                                      hydro_dir = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkv'), 
+                                                      output_parent_dir = file.path(project_dir, 'historic', 'Mk5'),
+                                                      model_format = 'IQQM - netcdf',
+                                                      outputType = outputType,
+                                                      returnType = returnType,
+                                                      rparallel = TRUE))
+
+ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(file_search = 'Straight Node',
+                                                      hydro_dir = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkiv'), 
+                                                      output_parent_dir = file.path(project_dir, 'historic', 'Mk4a'),
+                                                      model_format = 'IQQM - netcdf',
+                                                      outputType = outputType,
+                                                      returnType = returnType,
+                                                      rparallel = TRUE))
+
+ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(file_search = 'Straight Node',
+                                                      hydro_dir = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR'), 
+                                                      output_parent_dir = file.path(project_dir, 'historic', 'Mk4'),
+                                                      model_format = 'IQQM - netcdf',
+                                                      outputType = outputType,
+                                                      returnType = returnType,
+                                                      rparallel = TRUE))
+```
+
+The timing
+
+```{r}
+glue::glue("The run of all files through the EWR took {ewr_time['elapsed']} seconds, which is
+           {ewr_time['elapsed']/60} minutes, which is
+           {ewr_time['elapsed']/60/60} hours")
+```
+
+About 3.41 hour on georgia's comp - nonrounding
+
+```         
+2.25901944444444 hours richs comp
+```

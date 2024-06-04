@@ -1,0 +1,531 @@
+---
+title: "Aggregate"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(sf)
+```
+
+## Paths
+
+I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunately, that calls itself something different for each of us.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  #qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+```
+
+ewr_results \<- file.path(project_dir, 'module_output', 'EWR')
+
+```{r}
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+hydro_dir = file.path(project_dir, 'hydrographs')
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+# 4 specific sets 
+
+# outputs of aggregator. There may be multiple modules
+# agg_results <- file.path(project_dir, 'aggregator_output')
+# 
+# 
+# sdl_objective_simple_agg_dir <- file.path(agg_results, 'sdl_objective_simple')
+# sdl_objective_agg_dir <- file.path(agg_results, 'sdl_objective')
+# sdl_target_agg_dir <- file.path(agg_results, 'sdl_target')
+# sdl_EWRs_agg_dir <- file.path(agg_results, 'sdl_EWRs')
+# sdl_theme_agg_dir <- file.path(agg_results, 'sdl_theme')
+```
+
+We now need to clip to the Macquarie, or it will return a bunch of other units due to overlaps
+
+```{r}
+sdl_clip <- sdl_units |> 
+  dplyr::filter(SWSDLName == 'Macquarie–Castlereagh')
+```
+
+## Aggregation sequencing
+
+-   Sequence of steps
+
+-   Sequence of functions
+
+We'll likely want something different here (or multiple)
+
+I took the basin off of here, since this is just the Mac-Castle
+
+```{r}
+aggseq_simple <- list(ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units)
+funseq_simple <- list("ArithmeticMean",
+                      'ArithmeticMean') 
+
+
+
+
+aggseq <- list(ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units,
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_clip,
+               Specific_goal = c('env_obj', "Specific_goal"),
+               Objective = c('Specific_goal', 'Objective'),
+               target_5_year_2024 = c('Objective', 'target_5_year_2024'))
+
+
+funseq <- list("ArithmeticMean", # changed from 'CompensatingFactor',
+               'ArithmeticMean',
+               'ArithmeticMean',
+               'SpatialWeightedMean',
+               'ArithmeticMean',
+               'ArithmeticMean',
+               'ArithmeticMean')
+
+# NOTE: I've been moving to Target as an outcome, since there seems to be appetite to aggregate to the broad ecological groupings. It means we lose some granularity and can't get to the 5,10,20 year targets. I'll do that too and put it in an internal directory.
+
+target_aggseq <- list(ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units,
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_clip,
+               Specific_goal = c('env_obj', "Specific_goal"),
+               Target = c('Specific_goal', 'Target'))
+
+target_funseq <- list("ArithmeticMean", # changed from 'CompensatingFactor',
+               'ArithmeticMean',
+               'ArithmeticMean',
+               'SpatialWeightedMean',
+               'ArithmeticMean',
+               'ArithmeticMean')
+
+#Georgias version:
+EWRs_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units,
+               sdl_units = sdl_clip)
+
+EWRs_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #planning_unit gauges to sdl_units
+              
+Theme_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_units = planning_units,
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_clip,
+               Target = c('env_obj', 'Target'))
+
+Theme_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #ewr_code to env_obj              
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #planning_unit to sdl_units              
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #env_obj  to Target
+
+```
+
+## Aggregate
+
+-   Sequence (levels of each theme, space, time axis)
+
+-   Aggregation functions at each step
+
+-   Produces a list, with each sheet a step in the aggregation
+
+```{r}
+#SIMPLE
+
+# system.time(agged_data_simple <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5a', 'module_output', 'EWR'), 
+#            type = 'achievement',
+#            geopath = bom_basin_gauges,
+#            causalpath = causal_ewr,
+#            groupers = 'scenario',
+#            aggCols = 'ewr_achieved',
+#            group_until = list(planning_unit_name = is_notpoint,
+#                                 gauge = is_notpoint),
+#            pseudo_spatial = 'planning_unit',
+#            aggsequence = aggseq_simple,
+#            funsequence = funseq_simple,
+#            saveintermediate = TRUE,
+#            namehistory = FALSE,
+#            keepAllPolys = FALSE,
+#            returnList = TRUE,
+#            savepath = file.path(project_dir, 'historic', 'Mk5a', 'aggregator_output', 'sdl_objective_simple')))
+
+system.time(agged_data_simple <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint,
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq_simple,
+           funsequence = funseq_simple,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk5', 'aggregator_output', 'sdl_objective_simple')))
+
+system.time(agged_data_simple <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4a', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint,
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq_simple,
+           funsequence = funseq_simple,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4a', 'aggregator_output', 'sdl_objective_simple')))
+
+system.time(agged_data_simple <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint,
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq_simple,
+           funsequence = funseq_simple,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4', 'aggregator_output', 'sdl_objective_simple')))
+# ewr_code_timing <- agged_data_simple$ewr_code_timing
+# ewr_code <- agged_data_simple$ewr_code
+```
+
+THIS ERROR MEANS the path is wrong:
+
+```         
+Error in UseMethod("mutate") :    no applicable method for 'mutate' applied to an object of class "NULL" Timing stopped at: 0.02 0 0.01
+```
+
+```{r}
+# system.time(agged_data <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5a', 'module_output', 'EWR'), 
+#            type = 'achievement',
+#            geopath = bom_basin_gauges,
+#            causalpath = causal_ewr,
+#            groupers = 'scenario',
+#            aggCols = 'ewr_achieved',
+#            group_until = list(planning_unit_name = is_notpoint, 
+#                                 gauge = is_notpoint),
+#            pseudo_spatial = 'planning_unit',
+#            aggsequence = aggseq,
+#            funsequence = funseq,
+#            saveintermediate = TRUE,
+#            namehistory = FALSE,
+#            keepAllPolys = FALSE,
+#            returnList = TRUE,
+#            savepath = file.path(project_dir, 'historic', 'Mk5a', 'aggregator_output', 'sdl_objective'))) 
+
+system.time(agged_data <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq,
+           funsequence = funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk5', 'aggregator_output', 'sdl_objective'))) 
+
+system.time(agged_data <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4a', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq,
+           funsequence = funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4a', 'aggregator_output', 'sdl_objective'))) 
+
+system.time(agged_data <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+           pseudo_spatial = 'planning_unit',
+           aggsequence = aggseq,
+           funsequence = funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4', 'aggregator_output', 'sdl_objective'))) 
+```
+
+```{r}
+# system.time(agged_data_tar <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5a', 'module_output', 'EWR'), 
+#            type = 'achievement',
+#            geopath = bom_basin_gauges,
+#            causalpath = causal_ewr,
+#            groupers = 'scenario',
+#            aggCols = 'ewr_achieved',
+#            group_until = list(planning_unit_name = is_notpoint, 
+#                                 gauge = is_notpoint),
+#                         pseudo_spatial = 'planning_unit',
+# 
+#            aggsequence = target_aggseq,
+#            funsequence = target_funseq,
+#            saveintermediate = TRUE,
+#            namehistory = FALSE,
+#            keepAllPolys = FALSE,
+#            returnList = TRUE,
+#            savepath = file.path(project_dir, 'historic', 'Mk5a', 'aggregator_output', 'sdl_target'))) 
+
+system.time(agged_data_tar <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = target_aggseq,
+           funsequence = target_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk5', 'aggregator_output', 'sdl_target'))) 
+
+system.time(agged_data_tar <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4a', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = target_aggseq,
+           funsequence = target_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4a', 'aggregator_output', 'sdl_target'))) 
+
+
+system.time(agged_data_tar <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = target_aggseq,
+           funsequence = target_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4', 'aggregator_output', 'sdl_target'))) 
+```
+
+```{r}
+# system.time(agged_data_EWRs <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5a', 'module_output', 'EWR'), 
+#            type = 'achievement',
+#            geopath = bom_basin_gauges,
+#            causalpath = causal_ewr,
+#            groupers = 'scenario',
+#            aggCols = 'ewr_achieved',
+#            group_until = list(planning_unit_name = is_notpoint, 
+#                                 gauge = is_notpoint),
+#                         pseudo_spatial = 'planning_unit',
+# 
+#            aggsequence = EWRs_aggseq,
+#            funsequence = EWRs_funseq,
+#            saveintermediate = TRUE,
+#            namehistory = FALSE,
+#            keepAllPolys = FALSE,
+#            returnList = TRUE,
+#            savepath = file.path(project_dir, 'historic', 'Mk5a', 'aggregator_output', 'sdl_EWRs')))
+
+system.time(agged_data_EWRs <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = EWRs_aggseq,
+           funsequence = EWRs_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk5', 'aggregator_output', 'sdl_EWRs')))
+
+system.time(agged_data_EWRs <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4a', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = EWRs_aggseq,
+           funsequence = EWRs_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4a', 'aggregator_output', 'sdl_EWRs')))
+
+system.time(agged_data_EWRs <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4', 'module_output', 'EWR'), 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = EWRs_aggseq,
+           funsequence = EWRs_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4', 'aggregator_output', 'sdl_EWRs')))
+```
+
+```{r}
+
+# system.time(agged_data_Theme <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5a', 'module_output', 'EWR'),  
+#            type = 'achievement',
+#            geopath = bom_basin_gauges,
+#            causalpath = causal_ewr,
+#            groupers = 'scenario',
+#            aggCols = 'ewr_achieved',
+#            # group_until = list(planning_unit_name = 'sdl_units', 
+#            #                      gauge = is_notpoint),
+#            #              pseudo_spatial = 'planning_units',
+#            auto_ewr_PU = TRUE,
+#            aggsequence = Theme_aggseq,
+#            funsequence = Theme_funseq,
+#            saveintermediate = TRUE,
+#            namehistory = FALSE,
+#            keepAllPolys = FALSE,
+#            returnList = TRUE,
+#            savepath = file.path(project_dir, 'historic', 'Mk5a', 'aggregator_output', 'sdl_theme')))
+
+system.time(agged_data_Theme <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk5', 'module_output', 'EWR'),  
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           # group_until = list(planning_unit_name = 'sdl_units', 
+           #                      gauge = is_notpoint),
+           #              pseudo_spatial = 'planning_units',
+           auto_ewr_PU = TRUE,
+           aggsequence = Theme_aggseq,
+           funsequence = Theme_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk5', 'aggregator_output', 'sdl_theme')))
+
+system.time(agged_data_Theme <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4a', 'module_output', 'EWR'),  
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           # group_until = list(planning_unit_name = 'sdl_units', 
+           #                      gauge = is_notpoint),
+           #              pseudo_spatial = 'planning_units',
+           auto_ewr_PU = TRUE,
+           aggsequence = Theme_aggseq,
+           funsequence = Theme_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4a', 'aggregator_output', 'sdl_theme')))
+
+system.time(agged_data_Theme <- read_and_agg(datpath = file.path(project_dir, 'historic', 'Mk4', 'module_output', 'EWR'),  
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           # group_until = list(planning_unit_name = 'sdl_units', 
+           #                      gauge = is_notpoint),
+           #              pseudo_spatial = 'planning_units',
+           auto_ewr_PU = TRUE,
+           aggsequence = Theme_aggseq,
+           funsequence = Theme_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(project_dir, 'historic', 'Mk4', 'aggregator_output', 'sdl_theme')))
+```
+
+40 seconds
+
+```         
+#GD: user  system elapsed   128.84   12.03  264.08 
+```
