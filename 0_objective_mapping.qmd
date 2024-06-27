@@ -1,0 +1,105 @@
+---
+title: "Organise data"
+format: html
+editor: visual
+---
+
+## Paths
+
+```{r}
+#| include: false
+
+library(werptoolkitr)
+library(dplyr)
+library(sf)
+library(ggplot2)
+library(patchwork)
+library(tidyr)
+library(ggridges)
+
+
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+
+comp_results <- file.path(project_dir, 'comparer_output') 
+
+ashpath <- file.path(qaelpath, 'Toolkit', 'AshData')
+
+
+
+
+```
+
+```{r}
+
+objectives_mapping <- read.csv(file.path(qaelpath, 'Toolkit','CausalNetworks', 'parameter_sheet_eco.csv'))
+ # EWR_timing_timeseries_0 <- read.csv(file.path(ewr_results, "0", 'yearly.csv'))
+
+```
+
+```{r}
+#UP TO HERE --- I THINK GIVE UP ON THE objectve mapping and go straight to target groups???
+# is probably the only way to be consistent between states. 
+# or have to use other spreadsheet provided by Lara - to make causal network properly.
+
+#HighLevel
+objectives_mapping_wide <- objectives_mapping |>
+  dplyr::mutate(NF = ifelse(grepl("NF", HighLevel), "NF", NA),
+                NV = ifelse(grepl("NV", HighLevel), "NV", NA),
+                WB = ifelse(grepl("WB", HighLevel), "WB", NA),
+                EF = ifelse(grepl("EF", HighLevel), "EF", NA),
+                OS = ifelse(grepl("OS", HighLevel), "OS", NA))
+
+# objectives_mapping_wide <- objectives_mapping_wide |>
+#   dplyr::mutate(EcoObjectiveCode_temp = stringr::str_replace_all(EcoObjectiveCode, " ", ""))
+#   dplyr::mutate(EcoObjectiveCode_temp = stringr::str_replace_all(EcoObjectiveCode, " ", ""))
+#          
+# all <- paste(unique(objectives_mapping$EcoObjectiveCode), collapse = "_")
+# 
+# all <- unique(objectives_mapping$EcoObjectiveCode)
+# 
+# 
+# 
+# strsplit(all, split = "_")
+
+objectives_mapping_long <- objectives_mapping_wide |>
+  dplyr::select(PlanningUnitID:Code, EcoObjectiveCode, State:OS) |>
+  tidyr::pivot_longer(cols = NF:OS, names_to = "Delete", values_to = "Target")|>
+  select(-Delete)|>
+  filter(!is.na(Target))
+
+#need to clean ewr code to match aggregation:
+objectives_mapping_long <- objectives_mapping_long |>
+  mutate(ewr_code = Code)|>
+  mutate(gauge = as.character(Gauge))|>
+  cleanewrs()|>
+  select(-`_gauge`, `_code`)|>
+  rename_with(~ stringr::str_remove(., "_*"), everything())
+
+write.csv(objectives_mapping_long, file.path(qaelpath, 'Toolkit','CausalNetworks', 'EWR_to_Target_mapping.csv'))
+```

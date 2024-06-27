@@ -1,0 +1,224 @@
+---
+title: "Aggregate"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(sf)
+```
+
+## Paths
+
+I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunately, that calls itself something different for each of us.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data')
+
+# hydrographs by data type
+hydro_dir_historical = file.path(qaelpath, 'Toolkit/AshData/historical')
+hydro_dir_stochastic = file.path(qaelpath, 'Toolkit/AshData/stochastic')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+#hydro_dir_Mk5a = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkva')
+hydro_dir_Mk5 = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkv')
+hydro_dir_Mk4a = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR_mkiv')
+hydro_dir_Mk4 = file.path(qaelpath, 'Toolkit/AshData/historical/MACQ_CC_EFR')
+
+# Generated data
+#Mk5a_dir = file.path(project_dir, 'historic', 'Mk5a')
+Mk5_dir = file.path(project_dir, 'historic', 'Mk5')
+Mk4a_dir = file.path(project_dir, 'historic', 'Mk4a')
+Mk4_dir = file.path(project_dir, 'historic', 'Mk4')
+
+#OR
+
+Models <- c('Mk5', 'Mk4', 'Mk4a') #'Mk5a', 
+
+# module_output
+ewr_results <- c('module_output', 'EWR') 
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- c('aggregator_output','sdl_EWRs')
+aggregations <-  c('sdl_EWRs', 'sdl_objective', 'sdl_objective_simple','sdl_target' , 'sdl_theme')
+
+comp_results <- file.path(project_dir, 'comparer_output') 
+
+
+#DATA PATHS - by data type
+  hydro_paths <- list.files(hydro_dir_historical,  pattern="*Straight Node*", full.names=TRUE, recursive = TRUE)
+  balance_paths <- list.files(hydro_dir_historical,  pattern="*h2o_table.nc", full.names=TRUE, recursive = TRUE)
+  total_licvol_paths <- list.files(hydro_dir_historical,  pattern="*total_licvol.csv", full.names=TRUE, recursive = TRUE)
+  
+# #DATA PATHS - by Mk
+#   hydro_paths <- list.files(hydro_dir_Mk5,  pattern="*Straight Node*", full.names=TRUE, recursive = TRUE)
+#   balance_paths <- list.files(hydro_dir_Mk5,  pattern="*h2o_table.nc", full.names=TRUE, recursive = TRUE)
+#   total_licvol_paths <- list.files(hydro_dir_Mk5,  pattern="*total_licvol.csv", full.names=TRUE, recursive = TRUE)
+```
+
+```{r}
+temp_df <- get_ewr_output(dir = ewr_results)
+```
+
+## Aggregation sequencing
+
+-   Sequence of steps
+
+-   Sequence of functions
+
+```{r}
+#Georgias version:
+EWRs_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_unit = planning_units,
+               sdl_units = sdl_units)
+
+EWRs_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #planning_unit gauges to sdl_units
+
+system.time(agged_data_EWRs <- read_and_agg(datpath = ewr_results, 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           group_until = list(planning_unit_name = is_notpoint, 
+                                gauge = is_notpoint),
+                        pseudo_spatial = 'planning_unit',
+
+           aggsequence = EWRs_aggseq,
+           funsequence = EWRs_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(agg_results, 'sdl_EWRS_agg')))
+```
+
+```{r}
+#Georgias version:
+Theme_aggseq <- list(
+               ewr_code = c('ewr_code_timing', 'ewr_code'),
+               planning_units = planning_units,
+               env_obj =  c('ewr_code', "env_obj"),
+               sdl_units = sdl_units,
+               Target = c('env_obj', 'Target'))
+
+Theme_funseq <- list(
+              c('ArithmeticMean', "NumberOfValues", "Variance"), #aggregates ewr_code_timing to ewr_code
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #aggregate gauges to planning_unit
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #ewr_code to env_obj              
+              c('ArithmeticMean', "NumberOfValues", "Sum"), #planning_unit to sdl_units              
+              c('ArithmeticMean', "NumberOfValues", "Sum")) #env_obj  to Target
+
+system.time(agged_data_Theme <- read_and_agg(datpath = ewr_results, 
+           type = 'achievement',
+           geopath = bom_basin_gauges,
+           causalpath = causal_ewr,
+           groupers = 'scenario',
+           aggCols = 'ewr_achieved',
+           # group_until = list(planning_unit_name = 'sdl_units', 
+           #                      gauge = is_notpoint),
+           #              pseudo_spatial = 'planning_units',
+           auto_ewr_PU = TRUE,
+           aggsequence = Theme_aggseq,
+           funsequence = Theme_funseq,
+           saveintermediate = TRUE,
+           namehistory = FALSE,
+           keepAllPolys = FALSE,
+           returnList = TRUE,
+           savepath = file.path(agg_results, 'sdl_target_agg')))
+```
+
+```{r}
+unique(agged_data$ewr_code$scenario)
+```
+
+## MANUAL AGGREGATION - needed for timeseries
+
+```{r}
+ewr_results_paths <- list.files(Mk4_dir,  pattern="*yearly.csv", full.names=TRUE, recursive = TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_EWR_init <- do.call(rbind,
+          lapply(ewr_results_paths[1], read_plus))
+
+#total_licvo data
+for (i in 2:length(ewr_results_paths)) {
+  Merged_EWR_init_temp <- do.call(rbind,
+          lapply(ewr_results_paths[i], read_plus))
+  
+Merged_EWR_init <- rbind(Merged_EWR_init, Merged_EWR_init_temp)
+  
+}
+
+# get the right scenario name and summarise to mean
+Merged_EWR <- Merged_EWR_init |>
+  tidyr::separate(filename, sep = "historic/", remove = FALSE, into = c(NA,"rem"))|>  
+  tidyr::separate(rem, sep = "/module_output/EWR/licvolfactor_", remove = TRUE, into = c("Mk","rem"))|>  
+  tidyr::separate(rem, sep = "_r", remove = TRUE, into = c("licvolfactor","rem"))|>  
+  tidyr::separate(rem, sep = "_e", remove = TRUE, into = c("Rainfall","rem"))|>  
+  tidyr::separate(rem, sep = "_0/yearly.csv", remove = TRUE, into = c("Evapotranspiration",NA))|>
+  dplyr::mutate(licvolfactor = gsub(x = licvolfactor, pattern = "_", replacement = "."))|>
+  dplyr::mutate(Rainfall = gsub(x = Rainfall, pattern = "_", replacement = "."))|>
+  dplyr::mutate(Evapotranspiration = gsub(x = Evapotranspiration, pattern = "_", replacement = "."))|>
+  dplyr::select(-filename)|>
+  dplyr::mutate(gauge = as.character(gauge))
+
+
+parameter_sheet <- get_ewr_table()
+
+Merged_EWR <- left_join(Merged_EWR, parameter_sheet, by = join_by(ewrCode == Code,  gauge == Gauge, pu == PlanningUnitName))
+
+#need to clean ewr code to match aggregation:
+Merged_EWR_clean <- Merged_EWR |>
+  rename(ewr_code = ewrCode)|>
+  mutate(gauge = as.character(gauge))|>
+  cleanewrs()|>
+  select(-`multigauge`)|>
+  rename_with(~ stringr::str_remove(., "_*"), everything())
+
+year_roll <- 10
+  # Frequency checks (ACHIEVEMENT test)
+    # Specific rolling time frame
+    # calculate number of event years, frequency, and EWR pass/fail at defined (year_roll) year rolling time frames.
+    # cease to flows are the inverse of success.
+    annualdf <- Merged_EWR_clean|>
+      dplyr::group_by(scenario, planning_unit_name, gauge, ewr_code, ewr_code_timing) |>
+      dplyr::arrange(scenario, planning_unit_name, gauge, ewr_code, ewr_code_timing, year) |>
+      # defined n years
+      dplyr::mutate(eventyears_per_n_years = purrr::reduce(purrr::map(1:(year_roll - 1), ~ lag(event_years, ., order_by = year)), `+`) + event_years) |>
+      dplyr::mutate(frequency_per_n_years = (eventyears_per_n_years / year_roll) * 100) |>
+      dplyr::mutate(frequency_check_n_years = ifelse(grepl("CF", ewr_code), frequency_per_n_years <= target_frequency,
+        frequency_per_n_years >= target_frequency
+      )) |>
+      dplyr::ungroup()
+
+  annualdf$ewr_achieved <- as.numeric(annualdf$frequency_per_n_years/100)
+  write.csv(annualdf, file.path(Mk4_dir, "aggregator_output", 'EWR_timeseries.csv'))
+  
+```
