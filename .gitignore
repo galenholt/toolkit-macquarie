@@ -10,6 +10,7 @@
 template_data/aggregator_output/
 template_data/module_output/
 toolkit_project/module_output/EWR/
+template_data/netcdfs/module_output/
 
 *_files
 *.html
