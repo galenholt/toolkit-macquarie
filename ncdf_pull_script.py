@@ -104,6 +104,8 @@ def cut_marks(fromparent, toparent, mark, hews, clims, hs = ['historical', 'stoc
 # The paths
 basefrom = r'\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\sho108\werp\results\result_jul2024'
 baseto= r'\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut'
+# If we're calling from petrichor, we can use 
+# 'datasets/work/ev-ca-macq/' as the prefix
 
 # Set some common regex patterns
 no_mgmt = ['licvolfactor_1_0']
