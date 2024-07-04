@@ -1,8 +1,8 @@
 # hpc test script
 
-renvpaths <- .libPaths()
-.libPaths(new = c(renvpaths,'/ceph-g/opt/R/4.3/lib/R/library' ))
-Sys.setenv('R_LIBS' = '/ceph-g/opt/R/4.3/lib/R/library')
+# renvpaths <- .libPaths()
+# .libPaths(new = c(renvpaths,'/ceph-g/opt/R/4.3/lib/R/library' ))
+# Sys.setenv('R_LIBS' = '/ceph-g/opt/R/4.3/lib/R/library')
 
 library(werptoolkitr)
 library(sf)
