@@ -43,7 +43,7 @@ returnType <- list('none') # list('summary', 'yearly')
 # run the ewr tool
 
 # I'll want to bump up the tasks per node here, but this should work for time-checking
-# For the test, 4x2 (838 - but only one of the 8 tasks took that long for some reason) should give each scenario a cpu.
+# For the test, 4x2 (459 - though once it took double for one for some rasons) should give each scenario a cpu.
 # Should also time-test 4x1 (765), 4x4 (437)? 2x4 (850)?
 plan(list(tweak(batchtools_slurm,
                 workers = 4, # default is 100, maybe just use that? Or length(stoch_parents)? though we can play around once we have the full set.
