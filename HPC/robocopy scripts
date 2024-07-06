@@ -10,4 +10,8 @@ cutflows.nc `
 /s /R:3
 
 # In one line because powershell is annoying
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\ash_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie_cut" cutflows.nc /s /R:3
+# /s includes subdirs
+# This HAS to be done from the main citrix login, NOT from a remote (e.g. petrichor, a VM)
+# The hydrographs
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module_output" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module_output" /s /R:3
