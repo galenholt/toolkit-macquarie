@@ -6,6 +6,8 @@ execute:
   cache: true
 ---
 
+## Librarys
+
 ```{r}
 #| include: false
 
@@ -85,60 +87,60 @@ comp_results <- file.path(project_dir, 'comparer_output_for_paper')
 #   total_licvol_paths <- list.files(hydro_dir_Mk5,  pattern="*total_licvol.csv", full.names=TRUE, recursive = TRUE)
 ```
 
-## Scenario info
+Scenario info
 
 ```{r}
 #| label: scenario-info
 #| include: false
 
-dig1 <- function(x) {
-  paste0(sprintf("%.1f", x))
-}
-dig2 <- function(x) {
-  paste0(sprintf("%.2f", x))
-  }
-
-print(file.path(hydro_dir,'scenario_metadata.yml'))
+# dig1 <- function(x) {
+#   paste0(sprintf("%.1f", x))
+# }
+# dig2 <- function(x) {
+#   paste0(sprintf("%.2f", x))
+#   }
 # 
-# scenarios <- yaml::read_yaml(file.path(hydro_dir,                 
-#                                        'scenario_metadata.yml'))
-
-scenarios <- scenarios |>  
-  tibble::as_tibble() 
-
-# Add max
-MAX_scenario_scenarios <- scenarios[1,]
-MAX_scenario_scenarios[1,]<- NA
-MAX_scenario_scenarios[1,1] <- factor("MAX")
-
-scenarios <- bind_rows(scenarios, MAX_scenario_scenarios)
-MAX_scenario_scenarios <- NULL
-
-#ORDER Scenarios
-scenarios <- scenarios |>  
-  mutate(scenario_order = ifelse(scenario == "MAX", 10000, as.numeric(scenario)))|>
-  mutate(scenario = forcats::fct_reorder(scenario, scenario_order))
-
-#other data:
-objectives <- causal_ewr$ewr2obj |>
-  select(-ewr_code_timing)|>
-  distinct()
-
-objectives_for_EWRs <- objectives |>
-    select(planning_unit_name, gauge, ewr_code, env_obj)
+# print(file.path(hydro_dir,'scenario_metadata.yml'))
+# # 
+# # scenarios <- yaml::read_yaml(file.path(hydro_dir,                 
+# #                                        'scenario_metadata.yml'))
+# 
+# scenarios <- scenarios |>  
+#   tibble::as_tibble() 
+# 
+# # Add max
+# MAX_scenario_scenarios <- scenarios[1,]
+# MAX_scenario_scenarios[1,]<- NA
+# MAX_scenario_scenarios[1,1] <- factor("MAX")
+# 
+# scenarios <- bind_rows(scenarios, MAX_scenario_scenarios)
+# MAX_scenario_scenarios <- NULL
+# 
+# #ORDER Scenarios
+# scenarios <- scenarios |>  
+#   mutate(scenario_order = ifelse(scenario == "MAX", 10000, as.numeric(scenario)))|>
+#   mutate(scenario = forcats::fct_reorder(scenario, scenario_order))
+# 
+# #other data:
+# objectives <- causal_ewr$ewr2obj |>
+#   select(-ewr_code_timing)|>
+#   distinct()
+# 
+# objectives_for_EWRs <- objectives |>
+#     select(planning_unit_name, gauge, ewr_code, env_obj)
 
 
 #NSW Border Rivers has env_obj called "NF" WHY IS THAT APPEARING IN THIS DATA??
 ```
 
-## agged_data - Dont run - need to update aggregation to be able for Maximum_interevent_duration
+agged_data - Dont run - need to update aggregation to be able for Maximum_interevent_duration
 
 ```{r}
-sdl_EWRS_agg <- readRDS(file.path(agg_results, "sdl_EWRS_agg", 'achievement_aggregated.rds')) #|>
-#  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
-
-sdl_target_agg <- readRDS(file.path(agg_results, "sdl_target_agg", 'achievement_aggregated.rds')) #|>
-#  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
+# sdl_EWRS_agg <- readRDS(file.path(agg_results, "sdl_EWRS_agg", 'achievement_aggregated.rds')) #|>
+# #  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
+# 
+# sdl_target_agg <- readRDS(file.path(agg_results, "sdl_target_agg", 'achievement_aggregated.rds')) #|>
+# #  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
 
 ```
 
@@ -734,61 +736,89 @@ sdl_EWR_spells_MK4_historic <-  sdl_EWR_spells_MK4 |>
  # sdl_target_spells_MK4_MAX_rel_historic <- sdl_target_spells_MK4_rel_historic |>
 ```
 
-###dont run this one:
+## Adjusting stochastic results to have median = to historic
+
+```{r}
+ sdl_EWR_spells_adjusted <-  sdl_EWR_spells |>
+   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
+   left_join(sdl_EWR_spells_MK4_historic, by = "ewr_code")|>
+   group_by(ewr_code)|>
+   mutate(median_ewr_achieved = median(ewr_achieved))|>
+   mutate(adj_ewr_achieved = ewr_achieved - (median_ewr_achieved-historic_ewr_achieved))
+ 
+ sdl_target_spells_adjusted <-  sdl_target_spells |>
+   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
+   left_join(sdl_target_spells_MK4_historic, by = "env_group")|>
+   group_by(env_group)|>
+   mutate(median_ewr_achieved = median(ewr_achieved))|>
+   mutate(adj_ewr_achieved = ewr_achieved - (median_ewr_achieved-historic_ewr_achieved))
+```
+
+dont run this one:
 
 ```{r}
 #| label: data-import
 #| include: false
 
-# DATA SETS - subsetting and ordering 
-
-#
-EWRs_sdl_units <- sdl_EWRS_agg$sdl_units |>
-    st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean")
-
-EWRs_sdl_units$ewr_code <- factor(EWRs_sdl_units$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-#
-EWRs_planning_unit <- sdl_EWRS_agg$planning_unit |>
-    st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean")
-
-EWRs_planning_unit$ewr_code <- factor(EWRs_planning_unit$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-#
-EWRs_gauge <- sdl_EWRS_agg$ewr_code |>
-    st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean")
-
-EWRs_gauge$ewr_code <- factor(EWRs_gauge$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-##TIME SERIES
-## FOR TIMESERIES
-## agregate to EWR codes
-#names(EWR_timing_timeseries)
-gauge_EWRS_timeseries <- EWR_timing_timeseries |>
-  #dplyr::group_by(dplyr::across(c(-ewr_achieved, -ewr_code_timing)))|> #didnt work - other variables relating to code_timing
-   dplyr::group_by(year, ewr_code, scenario, gauge, planning_unit_name) |>
-  dplyr::summarise(ewr_achieved = mean(ewr_achieved)) 
+# # DATA SETS - subsetting and ordering 
+# 
+# #
+# EWRs_sdl_units <- sdl_EWRS_agg$sdl_units |>
+#     st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean")
+# 
+# EWRs_sdl_units$ewr_code <- factor(EWRs_sdl_units$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+# 
+# #
+# EWRs_planning_unit <- sdl_EWRS_agg$planning_unit |>
+#     st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean")
+# 
+# EWRs_planning_unit$ewr_code <- factor(EWRs_planning_unit$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+# 
+# #
+# EWRs_gauge <- sdl_EWRS_agg$ewr_code |>
+#     st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean")
+# 
+# EWRs_gauge$ewr_code <- factor(EWRs_gauge$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+# 
+# ##TIME SERIES
+# ## FOR TIMESERIES
+# ## agregate to EWR codes
+# #names(EWR_timing_timeseries)
+# gauge_EWRS_timeseries <- EWR_timing_timeseries |>
+#   #dplyr::group_by(dplyr::across(c(-ewr_achieved, -ewr_code_timing)))|> #didnt work - other variables relating to code_timing
+#    dplyr::group_by(year, ewr_code, scenario, gauge, planning_unit_name) |>
+#   dplyr::summarise(ewr_achieved = mean(ewr_achieved)) 
 
 
 ```
 
-###dont run this one:
+dont run this one:
 
 ```{r}
-#dont run this one:
-
-#NEXT STEPS
-
-#ewr_code_nonrounding
-ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
-    st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean")
-ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
-ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
-
+# #dont run this one:
+# 
+# #NEXT STEPS
+# 
+# #ewr_code_nonrounding
+# ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
+#     st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean")
+# ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
+# ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
+# 
+# # #EWRs - aggregating gauges used at multiple planning units:
+# # ewr_code_per_gauge_nonrounding <- ewr_code_nonrounding |>
+# #   group_by(scenario, gauge, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
+# #                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2,
+# #                                                         node_type_10.3, node_type_3,
+# #                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario,
+# #                                                         names_MDBA_climate_scenario_long,
+# #                                                         names_MDBA_climate_scenario)|> #everything except ewr_achieved, polyID, and planning_unit_name
+# #   summarise(ewr_achieved = mean(ewr_achieved))
+# 
 # #EWRs - aggregating gauges used at multiple planning units:
 # ewr_code_per_gauge_nonrounding <- ewr_code_nonrounding |>
 #   group_by(scenario, gauge, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
@@ -798,131 +828,121 @@ ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = 
 #                                                         names_MDBA_climate_scenario_long,
 #                                                         names_MDBA_climate_scenario)|> #everything except ewr_achieved, polyID, and planning_unit_name
 #   summarise(ewr_achieved = mean(ewr_achieved))
-
-#EWRs - aggregating gauges used at multiple planning units:
-ewr_code_per_gauge_nonrounding <- ewr_code_nonrounding |>
-  group_by(scenario, gauge, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
-                                                        `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2,
-                                                        node_type_10.3, node_type_3,
-                                                        node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario,
-                                                        names_MDBA_climate_scenario_long,
-                                                        names_MDBA_climate_scenario)|> #everything except ewr_achieved, polyID, and planning_unit_name
-  summarise(ewr_achieved = mean(ewr_achieved))
-
-#sdl_units_nonrounding EWRs for each objective
-#doing this manually so that objectives get joined at the right time. ??? probably just need another aggregation sequence
-sdl_EWRs_to_planningunitss_nonrounding <- ewr_code_nonrounding |>
-  st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean" ) |>
-  right_join(objectives_for_EWRs, by = join_by(planning_unit_name, gauge, ewr_code)) |>
-  
-  group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, gauge
-  # aggregate gauges
-  summarise(ewr_achieved = mean(ewr_achieved))|> 
-  
-  group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, polyID, and planning_unit_name
-   # aggregate planning units
-  summarise(ewr_achieved = mean(ewr_achieved))
-
-  #shouldnt have to do this manually!
-sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
-
-sdl_EWRs_objectives_nonrounding <- sdl_EWRs_to_planningunitss_nonrounding |>
-  group_by(scenario, ewr_code, env_group, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |> # everthing except ewr_achieved, env_obj 
-   # aggregate env_obj 
-  summarise(ewr_achieved = mean(ewr_achieved))
-  
-
-# #ewr_code_nonrounding
-# ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
-#     st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean")
-# ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
-# ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-    
-
-# #ewr_code rounding and nonrounding
-# ewr_code_rounding_nonrounding <- left_join(ewr_code_rounding, ewr_code_nonrounding, 
-#                                            by = join_by(scenario, planning_unit_name, gauge, polyID, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
-#                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3,
-#                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long,
-#                                                         names_MDBA_climate_scenario), #everything except ewr_achieved
-#                                            suffix = c(".rounding", ".nonrounding"))
-
-#objective scale nonrounding
-temp <- sdl_theme_nonrounding_agg$ewr_code_timing |>
-  filter(ewr_code == "SF1"| ewr_code == "SF2") |>
-  filter(names_MDBA_climate_scenario == "Wet climate")
-
-
-unique(temp$names_MDBA_climate_scenario)
-
-
-sdl_objectives_nonrounding <- sdl_theme_nonrounding_agg$sdl_units |>
-  st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean")|>
-dplyr::filter(!is.na(StateID))
-
-sdl_objectives_nonrounding$names_climate_scenario <- factor(sdl_objectives_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_objectives_nonrounding$names_climate_scenario)))) 
-
-#shouldnt have to do this manually!
-sdl_objectives_nonrounding$env_group <- stringr::str_extract(sdl_objectives_nonrounding$env_obj, "^.{2}")  
-
-unique(sdl_objectives_nonrounding$env_obj)
-sdl_objectives_nonrounding[sdl_objectives_nonrounding$env_obj == "NF",]
-
-
-# #temp to help fix for all objectives being attached
-SWSDLName_objectives <- sort(unique(objectives[objectives$gauge %in% gauges_to_plot,]$env_obj))
-
-
-```
-
-## DOnt RUN
-
-```{r}
-#target scale nonrounding
-sdl_target <- sdl_target_agg$Target |>
-  st_drop_geometry()|>
-  filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean" & aggfun_5 == "ArithmeticMean")|>
-dplyr::filter(!is.na(StateID))
-
-# sdl_target_nonrounding$names_climate_scenario <- factor(sdl_target_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_target_nonrounding$names_climate_scenario)))) 
-
+# 
+# #sdl_units_nonrounding EWRs for each objective
+# #doing this manually so that objectives get joined at the right time. ??? probably just need another aggregation sequence
+# sdl_EWRs_to_planningunitss_nonrounding <- ewr_code_nonrounding |>
+#   st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean" ) |>
+#   right_join(objectives_for_EWRs, by = join_by(planning_unit_name, gauge, ewr_code)) |>
+#   
+#   group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, gauge
+#   # aggregate gauges
+#   summarise(ewr_achieved = mean(ewr_achieved))|> 
+#   
+#   group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, polyID, and planning_unit_name
+#    # aggregate planning units
+#   summarise(ewr_achieved = mean(ewr_achieved))
+# 
 #   #shouldnt have to do this manually!
 # sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
-  
-sdl_target <- sdl_target |>
-  mutate(env_group = case_when(Target == "Native fish" ~ "NF",
-                                  Target ==  "Native vegetation" ~ "NV",
-                                  Target == "Other species" ~ "OS",   
-                                  Target == "Priority ecosystem function" ~ "EF", 
-                                  Target == "Waterbird" ~ "WB",
-                                  Target == NA ~ NA)) 
+# 
+# sdl_EWRs_objectives_nonrounding <- sdl_EWRs_to_planningunitss_nonrounding |>
+#   group_by(scenario, ewr_code, env_group, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |> # everthing except ewr_achieved, env_obj 
+#    # aggregate env_obj 
+#   summarise(ewr_achieved = mean(ewr_achieved))
+#   
+# 
+# # #ewr_code_nonrounding
+# # ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
+# #     st_drop_geometry()|>
+# #   filter(aggfun_1 == "ArithmeticMean")
+# # ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
+# # ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+#     
+# 
+# # #ewr_code rounding and nonrounding
+# # ewr_code_rounding_nonrounding <- left_join(ewr_code_rounding, ewr_code_nonrounding, 
+# #                                            by = join_by(scenario, planning_unit_name, gauge, polyID, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
+# #                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3,
+# #                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long,
+# #                                                         names_MDBA_climate_scenario), #everything except ewr_achieved
+# #                                            suffix = c(".rounding", ".nonrounding"))
+# 
+# #objective scale nonrounding
+# temp <- sdl_theme_nonrounding_agg$ewr_code_timing |>
+#   filter(ewr_code == "SF1"| ewr_code == "SF2") |>
+#   filter(names_MDBA_climate_scenario == "Wet climate")
+# 
+# 
+# unique(temp$names_MDBA_climate_scenario)
+# 
+# 
+# sdl_objectives_nonrounding <- sdl_theme_nonrounding_agg$sdl_units |>
+#   st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean")|>
+# dplyr::filter(!is.na(StateID))
+# 
+# sdl_objectives_nonrounding$names_climate_scenario <- factor(sdl_objectives_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_objectives_nonrounding$names_climate_scenario)))) 
+# 
+# #shouldnt have to do this manually!
+# sdl_objectives_nonrounding$env_group <- stringr::str_extract(sdl_objectives_nonrounding$env_obj, "^.{2}")  
+# 
+# unique(sdl_objectives_nonrounding$env_obj)
+# sdl_objectives_nonrounding[sdl_objectives_nonrounding$env_obj == "NF",]
+# 
+# 
+# # #temp to help fix for all objectives being attached
+# SWSDLName_objectives <- sort(unique(objectives[objectives$gauge %in% gauges_to_plot,]$env_obj))
+
+
 ```
 
-#dont run this one:
+DOnt RUN
+
+```{r}
+# #target scale nonrounding
+# sdl_target <- sdl_target_agg$Target |>
+#   st_drop_geometry()|>
+#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean" & aggfun_5 == "ArithmeticMean")|>
+# dplyr::filter(!is.na(StateID))
+# 
+# # sdl_target_nonrounding$names_climate_scenario <- factor(sdl_target_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_target_nonrounding$names_climate_scenario)))) 
+# 
+# #   #shouldnt have to do this manually!
+# # sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
+#   
+# sdl_target <- sdl_target |>
+#   mutate(env_group = case_when(Target == "Native fish" ~ "NF",
+#                                   Target ==  "Native vegetation" ~ "NV",
+#                                   Target == "Other species" ~ "OS",   
+#                                   Target == "Priority ecosystem function" ~ "EF", 
+#                                   Target == "Waterbird" ~ "WB",
+#                                   Target == NA ~ NA)) 
+```
+
+Dont run this one:
 
 \## To work out which gauges to include:
 
 ```{r}
-#dont run this one:
-#| include: false
-# to work out which gauges to include:
-all_scenarios <- sdl_objective_nonrounding_agg$ewr_code_timing |>
-  group_by(gauge, ewr_code) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n = n())
-
-ggplot(data = all_scenarios, aes(x = ewr_code, y = 1))+
-  geom_tile(aes(fill = ewr_achieved))+
-  geom_text(aes(label = n))+
-  facet_grid(gauge~.)
-
-all_scenarios_allEWRS <- all_scenarios |>
-  group_by(gauge) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n = n())
+# #dont run this one:
+# #| include: false
+# # to work out which gauges to include:
+# all_scenarios <- sdl_objective_nonrounding_agg$ewr_code_timing |>
+#   group_by(gauge, ewr_code) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n = n())
+# 
+# ggplot(data = all_scenarios, aes(x = ewr_code, y = 1))+
+#   geom_tile(aes(fill = ewr_achieved))+
+#   geom_text(aes(label = n))+
+#   facet_grid(gauge~.)
+# 
+# all_scenarios_allEWRS <- all_scenarios |>
+#   group_by(gauge) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n = n())
 
 ```
 
@@ -1016,7 +1036,7 @@ pal_Target <-  stats::setNames(c("#1B1B1BFF", "#A1D8B6FF", "#005D67FF", "#67223F
                "End of system flows", "Water allocation", "Agricultural benefits"))
 class(pal_Target) <- 'colors'
 
-pal_EWR <- stats::setNames(c("#1B1B1BFF", '#7B3014FF', "#9E3D22FF", '#C35322FF', '#E77129FF', '#F59843FF',
+pal_EWR <- stats::setNames(c("#555555FF", '#7B3014FF', "#9E3D22FF", '#C35322FF', '#E77129FF', '#F59843FF',
                                             '#FCAD52FF', '#FFC07CFF', '#FFEDDAFF', '#D6E8F3FF', '#A3CCE5FF', '#7DAED1FF',
                                             '#6094BFFF', '#4677A5FF', '#2B5C8AFF'), 
                                           c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
@@ -1056,9 +1076,7 @@ class(pal_CSIRO_climate_scenario) <- 'colors'
 
 ```
 
-## Plots
-
-\## fig-causal-example
+\## Plot - fig-causal-example
 
 ```{r}
 #| eval: false
@@ -1067,297 +1085,297 @@ class(pal_CSIRO_climate_scenario) <- 'colors'
 #| label: fig-causal-example
 #| fig-cap: The toolkit incorporates causal networks that describe the environmental objectives for a system. In the current example these causal networks are extracted from the Murray-Darling Basin Long Term Watering Plans (LTWPs), which sets environmental watering requirements (EWRs), objectives, and long-term targets for key water-dependent plants, waterbirds, fish and ecosystem functions. From left to right, the columns here represent EWR codes, proximate Environmental Objectives, Specific Goals, Target Groups, and 5-year Management Targets.
 
-edges <- make_edges(dflist = causal_ewr, 
-               fromtos = list(c('ewr_code', 'env_obj'), 
-                              c('env_obj', 'Specific_goal'), 
-                              c('Specific_goal', 'Target'), 
-                              c('env_obj', 'target_5_year_2024')),
-               gaugefilter = gauges_to_plot[1]) 
-
-nodes <- make_nodes(edges)
-
-
-# To work with both html and word, save out and read back in.
-causal_example <- make_causal_plot(nodes,
-                 edges,
-                 focalnodes = filter(nodes, NodeType == "ewr_code")$Name,
-                 edge_pal = 'black',
-                 node_pal = list(NodeType = 'nationalparkcolors::MtRainier'),
-                 render = FALSE,
-                 save = TRUE,
-                 savedir = 'images',
-                 savename = 'causal_structure') 
-
-# if (knitr::is_html_output()) {
-  # causal_example |> 
-  # DiagrammeR::render_graph()
-# } else {
-#   knitr::include_graphics("images/causal_structure.png")
-# }
-
-causal_structure <- png::readPNG('images/causal_structure.png')
-causal_structure_grob <- grid::rasterGrob(causal_structure, interpolate = TRUE)
-patchwork::wrap_plots(causal_structure_grob)
+# edges <- make_edges(dflist = causal_ewr, 
+#                fromtos = list(c('ewr_code', 'env_obj'), 
+#                               c('env_obj', 'Specific_goal'), 
+#                               c('Specific_goal', 'Target'), 
+#                               c('env_obj', 'target_5_year_2024')),
+#                gaugefilter = gauges_to_plot[1]) 
+# 
+# nodes <- make_nodes(edges)
+# 
+# 
+# # To work with both html and word, save out and read back in.
+# causal_example <- make_causal_plot(nodes,
+#                  edges,
+#                  focalnodes = filter(nodes, NodeType == "ewr_code")$Name,
+#                  edge_pal = 'black',
+#                  node_pal = list(NodeType = 'nationalparkcolors::MtRainier'),
+#                  render = FALSE,
+#                  save = TRUE,
+#                  savedir = 'images',
+#                  savename = 'causal_structure') 
+# 
+# # if (knitr::is_html_output()) {
+#   # causal_example |> 
+#   # DiagrammeR::render_graph()
+# # } else {
+# #   knitr::include_graphics("images/causal_structure.png")
+# # }
+# 
+# causal_structure <- png::readPNG('images/causal_structure.png')
+# causal_structure_grob <- grid::rasterGrob(causal_structure, interpolate = TRUE)
+# patchwork::wrap_plots(causal_structure_grob)
 
 
 ```
 
-## Manual data for plots
+Manual data for plots
 
 ```{r}
 #| label: simplfy-for-plots
 #| include: false
-objectives <- causal_ewr$ewr2obj |>
-  select(-ewr_code_timing)|>
-  distinct()
-
-objectives <- causal_ewr$ewr2obj
-
-causal_ewr$obj2target
-
-ewr_code_timing <- st_join(sdl_objective_nonrounding_agg$ewr_code_timing, sdl_units)
-
-# EWR timing scale
-# raw EWR tool output
-ewr_code_timing <- ewr_code_timing |>
-    st_drop_geometry()
-
-
-# THis is fixed already in the toolkit.
-# #Fix OB
-# ewr_code_timing <- ewr_code_timing|>
-#   dplyr::mutate(ewr_code = case_when(ewr_code == "OB" & ewr_code_timing == "WL" ~ "OB-WL",
-#                               ewr_code == "OB" & ewr_code_timing == "WM" ~ "OB-WM",
-#                               ewr_code == "OB" & ewr_code_timing == "WS1" ~ "OB-WS1",
-#                               ewr_code == "OB" & ewr_code_timing == "WS2" ~ "OB-WS2",
-#                               ewr_code == "OB" & ewr_code_timing == "WS3" ~ "OB-WS3",
-#                               ewr_code == "OB" & ewr_code_timing == "WS4" ~ "OB-WS4",
-#                               ewr_code != "OB" ~ ewr_code
-#                               ))
-
-ewr_code_timing$ewr_code <- factor(ewr_code_timing$ewr_code, 
-                                   levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-                                              "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-  
-
-# ewr_code_timing <- ewr_code_timing
-# mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
+# objectives <- causal_ewr$ewr2obj |>
+#   select(-ewr_code_timing)|>
+#   distinct()
+# 
+# objectives <- causal_ewr$ewr2obj
+# 
+# causal_ewr$obj2target
+# 
+# ewr_code_timing <- st_join(sdl_objective_nonrounding_agg$ewr_code_timing, sdl_units)
+# 
+# # EWR timing scale
+# # raw EWR tool output
+# ewr_code_timing <- ewr_code_timing |>
+#     st_drop_geometry()
+# 
+# 
+# # THis is fixed already in the toolkit.
+# # #Fix OB
+# # ewr_code_timing <- ewr_code_timing|>
+# #   dplyr::mutate(ewr_code = case_when(ewr_code == "OB" & ewr_code_timing == "WL" ~ "OB-WL",
+# #                               ewr_code == "OB" & ewr_code_timing == "WM" ~ "OB-WM",
+# #                               ewr_code == "OB" & ewr_code_timing == "WS1" ~ "OB-WS1",
+# #                               ewr_code == "OB" & ewr_code_timing == "WS2" ~ "OB-WS2",
+# #                               ewr_code == "OB" & ewr_code_timing == "WS3" ~ "OB-WS3",
+# #                               ewr_code == "OB" & ewr_code_timing == "WS4" ~ "OB-WS4",
+# #                               ewr_code != "OB" ~ ewr_code
+# #                               ))
+# 
+# ewr_code_timing$ewr_code <- factor(ewr_code_timing$ewr_code, 
+#                                    levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
+#                                               "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+#   
+# 
+# # ewr_code_timing <- ewr_code_timing
+# # mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
+# #                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
+# 
+# #ewr_code_timing <- filter(ewr_code_timing, !gauge %in% c("421019", "421023", "421146"))
+# 
+# # EWR scale
+# # Aggregate EWR timings
+# ewr_code_gauge <- ewr_code_timing |>
+#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name, gauge) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = n())
+# 
+# ewr_code <- left_join(ewr_code_gauge, scenarios, by = join_by(scenario))
+# 
+# 
+# #EWR scale
+# # Aggregate gauges
+# ewr_code_planning_unit <- ewr_code |>
+#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
+#            # env_obj, Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = n())
+# 
+# #EWR scale
+# # Aggregate planning units to SWSDL
+# ewr_code_SWSDLName <- ewr_code_planning_unit |>
+#   group_by(scenario, ewr_code, SWSDLName,
+#            # env_obj, Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = sum(n_gauges),
+#             n_planning_unit = n())
+# ewr_code_SWSDLName$names_climate_scenario <- factor(ewr_code_SWSDLName$names_climate_scenario, levels=c(rev(levels(scenarios$names_climate_scenario))))
+# 
+# #Objective scale
+# #Objectives have to be joined to gauge level data
+# ewr_code_to_objectives_gauge <- left_join(ewr_code, objectives, by = join_by(ewr_code, gauge))
+# # ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2target)
+# # ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2yrtarget)
+# ewr_code_to_objectives_gauge <- ewr_code_to_objectives_gauge |>
+# filter(!is.na(env_obj)) # not all EWRS for each gauge are needed for an objective?
+# 
+# # Aggregate gauges
+# ewr_code_to_objectives_planning_unit <- ewr_code_to_objectives_gauge |>
+#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
+#            env_obj, 
+#            # Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = n())
+# 
+# # Aggregate planning units
+# ewr_code_to_objectives_SWSDLName <- ewr_code_to_objectives_planning_unit |>
+#   group_by(scenario, ewr_code, SWSDLName,
+#            env_obj, 
+#            # Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = sum(n_gauges),
+#             n_planning_unit = n())
+# 
+# # Aggregate EWRs
+# objectives_SWSDLName <- ewr_code_to_objectives_SWSDLName |>
+#   group_by(scenario, SWSDLName,
+#            env_obj, 
+#            # Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = sum(n_gauges),
+#             n_planning_unit = sum(n_planning_unit),
+#             n_ewr_code = n())
+# 
+# objectives_SWSDLName$env_group <- stringr::str_extract(objectives_SWSDLName$env_obj, "^.{2}")  
+# ewr_code_to_objectives_SWSDLName$env_group <- stringr::str_extract(ewr_code_to_objectives_SWSDLName$env_obj, "^.{2}")  
+# 
+# # Aggregate Objectives
+# groups_SWSDLName <- objectives_SWSDLName |>
+#     group_by(scenario, SWSDLName,
+#            env_group, 
+#            # Specific_goal, Objective, Target, Target_Category,
+#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
+#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
+#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
+#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
+#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
+#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
+#   summarise(ewr_achieved = mean(ewr_achieved),
+#             n_versions_of_EWR = sum(n_versions_of_EWR),
+#             n_gauges = sum(n_gauges),
+#             n_planning_unit = sum(n_planning_unit),
+#             n_ewr_code = sum(n_ewr_code),
+#             n_env_obj = n())
+# 
+# 
+# 
+# 
+# ```
+# 
+# ```{r}
+# #| label: simplfy-for-plots
+# #| include: false
+# 
+# plot <- ggplot(data = filter(sdl_objective_nonrounding_agg$ewr_code, scenario == "historical_scale_rain_1_0_evap_1_0_licvolfactor_1_0"), aes(x = ewr_code, y = names_scenario))+
+#   geom_tile(aes(fill = ewr_achieved))+
+#   #geom_text(aes(label = n_versions_of_EWR))+
+#   facet_grid(gauge~.)
+# 
+# sdl_objective_nonrounding_agg$ewr_code_timing |>
+#   filter(scale_rain == 1,
+#          scale_evap == 1, 
+#          licvolfactor == 1,
+#          ewr_code == "CF",
+#          gauge == "421090")
+# 
+# plot
+# ```
+# 
+# ## table-scenarios
+# 
+# ```{r}
+# #| label: tbl-scenarios
+# #| tbl-cap: Demonstration scenarios are a factorial combination of 'climate' (scaled flow) and 'adaptation' (pulsed additions). Climate scenarios... Adaptation options were applied to each climate scenario with ... 
+# 
+# #| layout-ncol: 3
+# #| tbl-subcap: 
+# #|  - "Climate scenarios"
+# #|  - "Climate scenarios"
+# #|  - "Adaptation option scenarios"
+# gauges <- tibble(`Gauges` =  unique(sdl_objective_nonrounding_agg$ewr_code$gauge[!is.na(sdl_objective_rounding_agg$ewr_code$gauge)]))
+# 
+# scale_evap_scenes <- tibble(`Change in evapo-transpiration` =  unique(scenarios$scale_evap[!is.na(scenarios$scale_evap)]))
+# 
+# scale_rain_scenes <- tibble(`Change in rainfall` =  unique(scenarios$scale_rain[!is.na(scenarios$scale_rain)]))
+# 
+# licvolfactor_scenes <- tibble(`Change in Licence volume` =  unique(scenarios$licvolfactor[!is.na(scenarios$licvolfactor)]))
+# 
+# #Gauges:
+# knitr::kable(gauges)
+# #climate scenarios:
+# knitr::kable(scale_evap_scenes)
+# knitr::kable(scale_rain_scenes)
+# #Adaptaion scenarios:
+# knitr::kable(licvolfactor_scenes)
+# ```
+# 
+# ## table- causal network
+# 
+# ```{r}
+# objectives <- causal_ewr$ewr2obj |>
+#   select(-ewr_code_timing)|>
+#   distinct()
+# 
+# Planning_units_gauges_EWRS <- objectives|>
+#   group_by(PlanningUnitID, gauge)|>
+#   filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
+#   distinct(PlanningUnitID, gauge, ewr_code)|>
+#   mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
 #                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-
-#ewr_code_timing <- filter(ewr_code_timing, !gauge %in% c("421019", "421023", "421146"))
-
-# EWR scale
-# Aggregate EWR timings
-ewr_code_gauge <- ewr_code_timing |>
-  group_by(scenario, ewr_code, SWSDLName, planning_unit_name, gauge) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = n())
-
-ewr_code <- left_join(ewr_code_gauge, scenarios, by = join_by(scenario))
-
-
-#EWR scale
-# Aggregate gauges
-ewr_code_planning_unit <- ewr_code |>
-  group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
-           # env_obj, Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = n())
-
-#EWR scale
-# Aggregate planning units to SWSDL
-ewr_code_SWSDLName <- ewr_code_planning_unit |>
-  group_by(scenario, ewr_code, SWSDLName,
-           # env_obj, Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = sum(n_gauges),
-            n_planning_unit = n())
-ewr_code_SWSDLName$names_climate_scenario <- factor(ewr_code_SWSDLName$names_climate_scenario, levels=c(rev(levels(scenarios$names_climate_scenario))))
-
-#Objective scale
-#Objectives have to be joined to gauge level data
-ewr_code_to_objectives_gauge <- left_join(ewr_code, objectives, by = join_by(ewr_code, gauge))
-# ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2target)
-# ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2yrtarget)
-ewr_code_to_objectives_gauge <- ewr_code_to_objectives_gauge |>
-filter(!is.na(env_obj)) # not all EWRS for each gauge are needed for an objective?
-
-# Aggregate gauges
-ewr_code_to_objectives_planning_unit <- ewr_code_to_objectives_gauge |>
-  group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
-           env_obj, 
-           # Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = n())
-
-# Aggregate planning units
-ewr_code_to_objectives_SWSDLName <- ewr_code_to_objectives_planning_unit |>
-  group_by(scenario, ewr_code, SWSDLName,
-           env_obj, 
-           # Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = sum(n_gauges),
-            n_planning_unit = n())
-
-# Aggregate EWRs
-objectives_SWSDLName <- ewr_code_to_objectives_SWSDLName |>
-  group_by(scenario, SWSDLName,
-           env_obj, 
-           # Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = sum(n_gauges),
-            n_planning_unit = sum(n_planning_unit),
-            n_ewr_code = n())
-
-objectives_SWSDLName$env_group <- stringr::str_extract(objectives_SWSDLName$env_obj, "^.{2}")  
-ewr_code_to_objectives_SWSDLName$env_group <- stringr::str_extract(ewr_code_to_objectives_SWSDLName$env_obj, "^.{2}")  
-
-# Aggregate Objectives
-groups_SWSDLName <- objectives_SWSDLName |>
-    group_by(scenario, SWSDLName,
-           env_group, 
-           # Specific_goal, Objective, Target, Target_Category,
-           # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-           scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-           `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-           filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-           node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-           names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-  summarise(ewr_achieved = mean(ewr_achieved),
-            n_versions_of_EWR = sum(n_versions_of_EWR),
-            n_gauges = sum(n_gauges),
-            n_planning_unit = sum(n_planning_unit),
-            n_ewr_code = sum(n_ewr_code),
-            n_env_obj = n())
-
-
-
-
-```
-
-```{r}
-#| label: simplfy-for-plots
-#| include: false
-
-plot <- ggplot(data = filter(sdl_objective_nonrounding_agg$ewr_code, scenario == "historical_scale_rain_1_0_evap_1_0_licvolfactor_1_0"), aes(x = ewr_code, y = names_scenario))+
-  geom_tile(aes(fill = ewr_achieved))+
-  #geom_text(aes(label = n_versions_of_EWR))+
-  facet_grid(gauge~.)
-
-sdl_objective_nonrounding_agg$ewr_code_timing |>
-  filter(scale_rain == 1,
-         scale_evap == 1, 
-         licvolfactor == 1,
-         ewr_code == "CF",
-         gauge == "421090")
-
-plot
-```
-
-## table-scenarios
-
-```{r}
-#| label: tbl-scenarios
-#| tbl-cap: Demonstration scenarios are a factorial combination of 'climate' (scaled flow) and 'adaptation' (pulsed additions). Climate scenarios... Adaptation options were applied to each climate scenario with ... 
-
-#| layout-ncol: 3
-#| tbl-subcap: 
-#|  - "Climate scenarios"
-#|  - "Climate scenarios"
-#|  - "Adaptation option scenarios"
-gauges <- tibble(`Gauges` =  unique(sdl_objective_nonrounding_agg$ewr_code$gauge[!is.na(sdl_objective_rounding_agg$ewr_code$gauge)]))
-
-scale_evap_scenes <- tibble(`Change in evapo-transpiration` =  unique(scenarios$scale_evap[!is.na(scenarios$scale_evap)]))
-
-scale_rain_scenes <- tibble(`Change in rainfall` =  unique(scenarios$scale_rain[!is.na(scenarios$scale_rain)]))
-
-licvolfactor_scenes <- tibble(`Change in Licence volume` =  unique(scenarios$licvolfactor[!is.na(scenarios$licvolfactor)]))
-
-#Gauges:
-knitr::kable(gauges)
-#climate scenarios:
-knitr::kable(scale_evap_scenes)
-knitr::kable(scale_rain_scenes)
-#Adaptaion scenarios:
-knitr::kable(licvolfactor_scenes)
-```
-
-## table- causal network
-
-```{r}
-objectives <- causal_ewr$ewr2obj |>
-  select(-ewr_code_timing)|>
-  distinct()
-
-Planning_units_gauges_EWRS <- objectives|>
-  group_by(PlanningUnitID, gauge)|>
-  filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
-  distinct(PlanningUnitID, gauge, ewr_code)|>
-  mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-                                                "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-  arrange(ewr_code)|>
-  summarise(n_EWR = n(),
-            EWRs = paste(ewr_code, collapse = "; ")) |>
- arrange(PlanningUnitID, gauge)
-  
-ewr_code_to_objectives <- objectives|>
-  group_by(ewr_code, env_obj)|>
-  filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
-  mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-                                                "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-  distinct(ewr_code, env_obj)|>
-  select(ewr_code, env_obj) |>
-  group_by(ewr_code)|>
-  summarise(n_env_obj = n(),
-            env_obj = paste(env_obj, collapse = "; ")) |>
-  arrange(ewr_code)
-
-
-# Three planning units use the same 2 gauges but have a few differences in the EWRs
-# Eastern Macquarie Marshes
-# Northern Macquarie Marshes
-# Southern Macquarie Marshes
-knitr::kable(Planning_units_gauges_EWRS)
-knitr::kable(ewr_code_to_objectives)
-
-#Dont know what that was 
-# paste(unique(Planning_units_gauges$PlanningUnitID), collapse = ", ")
-# paste(unique(Planning_units_gauges$gauge), collapse = ", ")
+#   arrange(ewr_code)|>
+#   summarise(n_EWR = n(),
+#             EWRs = paste(ewr_code, collapse = "; ")) |>
+#  arrange(PlanningUnitID, gauge)
+#   
+# ewr_code_to_objectives <- objectives|>
+#   group_by(ewr_code, env_obj)|>
+#   filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
+#   mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
+#                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
+#   distinct(ewr_code, env_obj)|>
+#   select(ewr_code, env_obj) |>
+#   group_by(ewr_code)|>
+#   summarise(n_env_obj = n(),
+#             env_obj = paste(env_obj, collapse = "; ")) |>
+#   arrange(ewr_code)
+# 
+# 
+# # Three planning units use the same 2 gauges but have a few differences in the EWRs
+# # Eastern Macquarie Marshes
+# # Northern Macquarie Marshes
+# # Southern Macquarie Marshes
+# knitr::kable(Planning_units_gauges_EWRS)
+# knitr::kable(ewr_code_to_objectives)
+# 
+# #Dont know what that was 
+# # paste(unique(Planning_units_gauges$PlanningUnitID), collapse = ", ")
+# # paste(unique(Planning_units_gauges$gauge), collapse = ", ")
 
 ```
 
@@ -2999,6 +3017,41 @@ ggsave(plot = plot_sdl_variability_sh, filename = file.path(comp_results, paste0
 
 ```
 
+## 4) Variability - Adjusted stochastic + historic data - no climate change
+
+```{r}
+plot_sdl_EWR_variability_sh <- ggplot() + 
+  geom_jitter(data = sdl_EWR_spells_adjusted, aes(y = adj_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
+              height = 0) + 
+  geom_violin(data = sdl_EWR_spells_adjusted, aes(y = adj_ewr_achieved, x = ewr_code),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_EWR_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
+              aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data)+
+  coord_cartesian(ylim = c(0,1))
+
+plot_sdl_target_variability_sh <- ggplot() +  
+  geom_jitter(data = sdl_target_spells_adjusted, aes(y = adj_ewr_achieved, x = env_group, colour = env_group, shape = Data),
+              height = 0) + 
+  geom_violin(data = sdl_target_spells_adjusted, aes(y = adj_ewr_achieved, x = env_group),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_target_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
+              aes(y = ewr_achieved, x = env_group, colour = env_group, shape = Data),fill = "black", size = 3) + 
+  #geom_boxplot(colour = "black") +
+  theme_werp_toolkit()+
+  scale_colour_manual(values = pal_envgroup)+
+  #scale_linetype_manual(values = linetype_data)+
+  scale_shape_manual(values = shapes_data)+
+  coord_cartesian(ylim = c(0,1))
+
+
+plot_sdl_variability_sh_adjusted <- plot_sdl_EWR_variability_sh + plot_sdl_target_variability_sh + plot_layout(ncol = 1)
+plot_sdl_variability_sh
+
+ggsave(plot = plot_sdl_variability_sh_adjusted, filename = file.path(comp_results, paste0("plot_sdl_variability_adjusted_stoch_and_historic",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 10)
+```
+
 ## 5) Variability - stochastic + historic data - with climate change (violin plot version)
 
 ```{r}
@@ -3044,7 +3097,7 @@ ggsave(plot = plot_sdl_variability_sh_climatechange, filename = file.path(comp_r
 
 ```
 
-## 5) relative change 
+## 5) relative change
 
 ```{r}
 plot_sdl_EWR_relativechange_climate <- ggplot() + 
@@ -3084,7 +3137,7 @@ ggsave(plot = plot_sdl_EWR_relativechange_climate, filename = file.path(comp_res
 ggsave(plot = plot_sdl_target_relativechange_climate, filename = file.path(comp_results, paste0("plot_sdl_target_relativechange",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
 ```
 
-## combined plot 
+## combined plot
 
 ```{r}
 plot_sdl_relativechange_climate <- plot_sdl_EWR_variability_sh_climatechange + 
