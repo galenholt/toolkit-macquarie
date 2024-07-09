@@ -106,11 +106,11 @@ objectives_for_EWRs <- objectives |>
 ## agged_data
 
 ```{r}
-sdl_EWRS_agg <- readRDS(file.path(agg_results, "sdl_EWRS_agg", 'achievement_aggregated.rds')) |>
-  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
+sdl_EWRS_agg <- readRDS(file.path(agg_results, "sdl_EWRS_agg", 'achievement_aggregated.rds')) #|>
+#  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
 
-sdl_target_agg <- readRDS(file.path(agg_results, "sdl_target_agg", 'achievement_aggregated.rds')) |>
-  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
+sdl_target_agg <- readRDS(file.path(agg_results, "sdl_target_agg", 'achievement_aggregated.rds')) #|>
+#  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
 
  EWR_timing_timeseries <- read.csv(file.path(agg_results, 'EWR_timeseries.csv'))
  EWR_timing_timeseries_0 <- read.csv(file.path(ewr_results, "0", 'yearly.csv'))
@@ -163,6 +163,8 @@ gauge_EWRS_timeseries <- EWR_timing_timeseries |>
 ```
 
 ```{r}
+#dont run this one:
+
 #NEXT STEPS
 
 #ewr_code_nonrounding
@@ -258,15 +260,24 @@ sdl_objectives_nonrounding[sdl_objectives_nonrounding$env_obj == "NF",]
 # #temp to help fix for all objectives being attached
 SWSDLName_objectives <- sort(unique(objectives[objectives$gauge %in% gauges_to_plot,]$env_obj))
 
+
+```
+
+## DO RUN
+
+```{r}
 #target scale nonrounding
-sdl_target_nonrounding <- sdl_theme_nonrounding_agg$Target |>
+sdl_target <- sdl_target_agg$Target |>
   st_drop_geometry()|>
   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean" & aggfun_5 == "ArithmeticMean")|>
 dplyr::filter(!is.na(StateID))
 
-sdl_target_nonrounding$names_climate_scenario <- factor(sdl_target_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_target_nonrounding$names_climate_scenario)))) 
+# sdl_target_nonrounding$names_climate_scenario <- factor(sdl_target_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_target_nonrounding$names_climate_scenario)))) 
+
+#   #shouldnt have to do this manually!
+# sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
   
-sdl_target_nonrounding <- sdl_target_nonrounding |>
+sdl_target <- sdl_target |>
   mutate(env_group = case_when(Target == "Native fish" ~ "NF",
                                   Target ==  "Native vegetation" ~ "NV",
                                   Target == "Other species" ~ "OS",   
@@ -278,6 +289,7 @@ sdl_target_nonrounding <- sdl_target_nonrounding |>
 \## To work out which gauges to include:
 
 ```{r}
+#dont run this one:
 #| include: false
 # to work out which gauges to include:
 all_scenarios <- sdl_objective_nonrounding_agg$ewr_code_timing |>
@@ -308,17 +320,17 @@ gauges_to_plot <- c('421001' ,'421004' ,'421012' ,'421019' ,'421022' ,'421090' ,
 
 ODD_gauges <- c("421019", "421023", "421146") #(EWRS never pass)
 
-scenarios_to_plot <- unique(scenarios$scenario)
-
-# scenarios_to_compare_historical <- unique(filter(scenarios, scale_evap != 1.07)$scenario)
-
-scenarios_scale_evap_climate_comp <- unique(scenarios$scenario)
-
- Dry_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07")
- Median_comparison <- c("SR1.0_SE1.00", "SR1.0_SE1.07")
- Wet_comparison <- c("SR1.0_SE1.00", "SR1.2_SE1.07")
- 
- MDBA_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07", "SR1.0_SE1.07", "SR1.2_SE1.07")
+# scenarios_to_plot <- unique(scenarios$scenario)
+# 
+# # scenarios_to_compare_historical <- unique(filter(scenarios, scale_evap != 1.07)$scenario)
+# 
+# scenarios_scale_evap_climate_comp <- unique(scenarios$scenario)
+# 
+#  Dry_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07")
+#  Median_comparison <- c("SR1.0_SE1.00", "SR1.0_SE1.07")
+#  Wet_comparison <- c("SR1.0_SE1.00", "SR1.2_SE1.07")
+#  
+#  MDBA_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07", "SR1.0_SE1.07", "SR1.2_SE1.07")
  
  SWSDLName_subset <-  "Macquarie–Castlereagh"
  
@@ -336,8 +348,8 @@ scenarios_scale_evap_climate_comp <- unique(scenarios$scenario)
 # Trying to organise by the sort of palette we need for each
 
 # Qualitative
-pal_SDL <- make_pal(unique(sdl_objective_nonrounding_agg$sdl_units$SWSDLName), 
-                    palette = "impressionist.colors::la_recolte_des_foins_eragny")
+# pal_SDL <- make_pal(unique(sdl_objective_nonrounding_agg$sdl_units$SWSDLName), 
+#                     palette = "impressionist.colors::la_recolte_des_foins_eragny")
 
 pal_gauge <- make_pal(unique(gauges_to_plot),                       
                       palette = 'ggsci::nrc_npg')
@@ -886,7 +898,7 @@ Plot_EWRs_per_gauge1
 ```{r}
 
 EWRs_gauge_temp <- EWRs_gauge |>
-  filter(scenario != "MAX" & ewr_code == "CF" )|>
+  filter(scenario != "MAX") |> # & ewr_code == "CF" )|>
   mutate(name = "ewr_achieved")
 
 Plot_EWRs_gauge_PDF <- ggplot(data = EWRs_gauge_temp, 
@@ -953,6 +965,187 @@ Plot_EWRs_PDF
 
 ggsave(plot = Plot_EWRs_PDF, filename = file.path(comp_results, paste0("Plot_EWRs_PDF", Sys.Date(), ".tiff")), device = "tiff",
        width = 8, height = 5)
+```
+
+## density plots - Env Obj/target
+
+```{r}
+target_temp <- sdl_target |>
+  filter(scenario != "MAX")|>
+  filter(!is.na(Target))|>
+  mutate(name = "ewr_achieved")
+
+Plot_EWRs_PDF <- ggplot(data = target_temp, 
+       aes(x = ewr_achieved, y = name, fill = ..x..))+
+  #geom_density(colour = "black")+
+  geom_density_ridges_gradient()+
+  #geom_text(aes(label = n))+
+  facet_wrap(~Target, strip.position = "left")+
+  paletteer::scale_fill_paletteer_c('grDevices::Viridis', limits = c(0,1)) +
+  theme_werp_toolkit()+
+  xlim(0,1)+
+  labs(x = "Proportion EWR achieved", y = "Target", fill = "Proportion \nEWR achieved")+
+  theme(axis.text.x = element_text(angle = 90),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+Plot_EWRs_PDF
+
+ggsave(plot = Plot_EWRs_PDF, filename = file.path(comp_results, paste0("Plot_EWRs_PDF", Sys.Date(), ".tiff")), device = "tiff",
+       width = 8, height = 5)
+```
+
+```{r}
+# Is made in box plots : EWRs_gauge_to_target
+
+target_temp <- EWRs_gauge_to_target |>
+  filter(scenario != "MAX")|>
+  filter(!is.na(Target))|>
+  mutate(name = "ewr_achieved")
+
+Plot_target_gauge_PDF <- ggplot(data = target_temp, 
+       aes(x = ewr_achieved, y = name, fill = ..x.., colour = gauge))+
+  #geom_density(colour = "black")+
+  geom_density_ridges_gradient()+
+  #geom_text(aes(label = n))+
+  facet_wrap(~Target, strip.position = "left")+
+  paletteer::scale_fill_paletteer_c('grDevices::Viridis', limits = c(0,1)) +
+  theme_werp_toolkit()+
+  xlim(0,1)+
+  labs(x = "Proportion EWR achieved", y = "Target", fill = "Proportion \nEWR achieved")+
+  theme(axis.text.x = element_text(angle = 90),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())
+
+Plot_target_gauge_PDF
+
+ggsave(plot = Plot_target_gauge_PDF, filename = file.path(comp_results, paste0("Plot_target_gauge_PDF", Sys.Date(), ".tiff")), device = "tiff",
+       width = 8, height = 5)
+```
+
+## Box plots - EWRS
+
+```{r}
+
+ewr_code_per_gauge_Variance <- EWRs_gauge |>
+  ungroup()|>
+  filter(scenario != "MAX")|>
+  group_by(gauge, ewr_code)|>
+  mutate(Variance = Variance(ewr_achieved),
+         Variance_round = round(Variance(ewr_achieved), 2))|>
+  arrange(Variance)
+
+Boxplot_EWRs_stochastic <- ggplot(filter(ewr_code_per_gauge_Variance, scenario != "MAX"), aes("", ewr_achieved)) + 
+  geom_boxplot(width=0.7, position=position_dodge(0.7)) + 
+  theme_bw() +
+  ggh4x::facet_nested(. ~ Variance_round + ewr_code + gauge) +
+  theme(panel.spacing=unit(0,"lines"),
+        strip.background=element_rect(color="grey30", fill="grey90"),
+        panel.border=element_rect(color="grey90"),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  labs(x="")
+
+ggsave(plot = Boxplot_EWRs_stochastic, filename = file.path(comp_results, 
+                                                           paste0("Boxplot_EWRs_stochastic", 
+                                                                  Sys.Date(), ".tiff")), device = "tiff",
+       width = 20, height = 5)##
+
+
+Boxplot_EWRs_stochastic_variance <- ggplot(filter(ewr_code_per_gauge_Variance, scenario != "MAX"), aes("", ewr_achieved)) + 
+  geom_boxplot(width=0.7, position=position_dodge(0.7)) + 
+  theme_bw() +
+  ggh4x::facet_nested(. ~ Variance_round + ewr_code + gauge) +
+  theme(panel.spacing=unit(0,"lines"),
+        strip.background=element_rect(color="grey30", fill="grey90"),
+        panel.border=element_rect(color="grey90"),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  labs(x="")
+
+ggsave(plot = Boxplot_EWRs_stochastic_variance, filename = file.path(comp_results, 
+                                                           paste0("Boxplot_EWRs_stochastic_variance", 
+                                                                  Sys.Date(), ".tiff")), device = "tiff",
+       width = 20, height = 5)##
+```
+
+## Box plots - ENV objs
+
+```{r}
+sdl_target
+target_per_sdl_Variance <- sdl_target |>
+  ungroup()|>
+  filter(scenario != "MAX")|>
+  group_by(Target)|>
+  mutate(Variance = Variance(ewr_achieved),
+         Variance_round = round(Variance(ewr_achieved), 2))|>
+  arrange(Variance)
+
+
+Boxplot_target_stochastic_variance <- ggplot(filter(target_per_sdl_Variance, scenario != "MAX"), aes("", ewr_achieved)) + 
+  geom_boxplot(width=0.7, position=position_dodge(0.7)) + 
+  theme_bw() +
+  ggh4x::facet_nested(. ~ Variance_round + Target) +
+  theme(panel.spacing=unit(0,"lines"),
+        strip.background=element_rect(color="grey30", fill="grey90"),
+        panel.border=element_rect(color="grey90"),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  labs(x="")
+
+# Generated data
+comp_results <- file.path(qaelpath, 'Toolkit', 'macq-data', 'historic', 'comparer_output') 
+
+ggsave(plot = Boxplot_target_stochastic_variance, filename = file.path(comp_results, 
+                                                           paste0("Boxplot_target_stochastic_variance", 
+                                                                  Sys.Date(), ".tiff")), device = "tiff",
+       width = 10, height = 5)##
+```
+
+## Box plots - ENV objs \[er gauge
+
+```{r}
+
+EWRs_gauge_to_target <- EWRs_gauge |>
+  left_join(causal_ewr$ewr2obj, by = join_by(planning_unit_name, gauge, ewr_code))
+
+  #   #shouldnt have to do this manually!
+EWRs_gauge_to_target$env_group <- stringr::str_extract(EWRs_gauge_to_target$env_obj, "^.{2}")
+  
+EWRs_gauge_to_target <- EWRs_gauge_to_target |>
+  mutate(Target = case_when(env_group == "NF" ~ "Native fish",
+                                  env_group ==  "NV" ~ "Native vegetation",
+                                  env_group == "OS" ~ "Other species",   
+                                  env_group == "EF" ~ "Priority ecosystem function", 
+                                  env_group == "WB" ~ "Waterbird",
+                                  env_group == NA ~ NA)) 
+
+target_gauge <- EWRs_gauge_to_target|>
+  filter(scenario != "MAX")|>
+  filter(!is.na(Target))|>
+  group_by(Target, gauge)|>
+    mutate( Variance = Variance(ewr_achieved),
+            Variance_round = round(Variance(ewr_achieved), 2))|>
+  arrange(Variance)
+
+Boxplot_target_gauge_stochastic_variance <- ggplot(filter(target_gauge, scenario != "MAX"), aes("", ewr_achieved)) + 
+  geom_boxplot(width=0.7, position=position_dodge(0.7)) + 
+  theme_bw() +
+  ggh4x::facet_nested(. ~ Variance_round + Target + gauge) +
+  theme(panel.spacing=unit(0,"lines"),
+        strip.background=element_rect(color="grey30", fill="grey90"),
+        panel.border=element_rect(color="grey90"),
+        axis.ticks.x=element_blank(),
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank())+
+  labs(x="")
+
+# Generated data
+comp_results <- file.path(qaelpath, 'Toolkit', 'macq-data', 'historic', 'comparer_output') 
+
+ggsave(plot = Boxplot_target_gauge_stochastic_variance, filename = file.path(comp_results, 
+                                                           paste0("Boxplot_target_gauge_stochastic_variance", 
+                                                                  Sys.Date(), ".tiff")), device = "tiff",
+       width = 30, height = 5)##
 ```
 
 ## Timeseries
