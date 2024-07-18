@@ -11,7 +11,6 @@ execute:
 ```{r}
 #| include: false
 
-
 library(werptoolkitr)
 library(dplyr)
 library(sf)
@@ -193,6 +192,8 @@ gauge_EWR_timing_spells <- EWR_timing_timeseries |>
 
 # obbective mapping: 
 #-----------------------------------
+# These grow because there's >1 'target' per Ewr_code_timing
+
 #Target data timeseries
 EWR_timing_target_timeseries <- EWR_timing_timeseries |>
   mutate(gauge = as.character(gauge)) |>
@@ -206,6 +207,8 @@ EWR_timing_target_timeseries <- EWR_timing_timeseries |>
                                   env_group == NA ~ NA))
 
 #TIME aggregated
+
+
 gauge_EWR_timing_target_spells <- gauge_EWR_timing_spells |>
   mutate(gauge = as.character(gauge)) |>
   left_join(objective_mapping, by = join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name)) |>
@@ -233,6 +236,8 @@ gauge_EWR_target_timeseries <- EWR_timing_target_timeseries |>
           ewr_achieved = mean(ewr_achieved))
 
 #EWR data (time aggregated)
+
+# THIS AGGREGATES OVER CODE_TIMING?
 gauge_EWR_spells <- gauge_EWR_timing_spells |>
   group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name)|>
   reframe(n_EWR_versions = n(),
@@ -290,6 +295,8 @@ planning_unit_target_timeseries <- gauge_target_timeseries |>
                 ewr_achieved = mean(ewr_achieved))
 
 #EWR data
+
+# THIS AGGREGATES TO PLANNNG UNITS?
 planning_unit_EWR_spells <- gauge_EWR_spells |>
   group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, planning_unit_name)|>
   reframe(n_EWR_versions = Sum(n_EWR_versions),
@@ -571,6 +578,8 @@ sdl_EWR_spells_MK4 <- planning_unit_EWR_spells_MK4 |>
 
 ## Aggregate scenarios
 
+*Galen note*- this is comparison, right? It goes across scenarios?
+
 ```{r}
 # Stochastic - no climate change
 #-------------------------------
@@ -617,7 +626,7 @@ sdl_EWR_vulnerability_MK4  <- sdl_EWR_spells_MK4 |>
           Maximum_interevent_duration = max(Maximum_interevent_duration))
 
 #aggregate planning units - ONLY have one sdl - respective of Targets 
-sdl_target_vulnerability_MK4  <- sdl_target_spells_MK4  |>
+sdl_target_vulnerability_MK4 <- sdl_target_spells_MK4  |>
         ungroup()|>
         group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>  #NOT SCENARIO
         reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),

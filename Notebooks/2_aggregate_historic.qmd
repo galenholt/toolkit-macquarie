@@ -157,13 +157,20 @@ unique(agged_data$ewr_code$scenario)
 ## MANUAL AGGREGATION - needed for timeseries
 
 ```{r}
-ewr_results_paths <- list.files(Mk4_dir,  pattern="*yearly.csv", full.names=TRUE, recursive = TRUE)
+
+# Galen note- there's no files here, so I'm changing it to test
+# ewr_results_paths <- list.files(Mk4_dir,  pattern="*yearly.csv", full.names=TRUE, recursive = TRUE)
+
+ewr_results_paths <- list.files(file.path(qaelpath, 'Toolkit', 'macquarie', 'module_output', 'EWR', 'macq_cut', 'historical', 'MACQ_CC_EFR'),
+                                pattern="*yearly.csv", 
+                                full.names=TRUE, recursive = TRUE)
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
     dplyr::mutate(filename = flnm)
 }
 
+# why loop over a single thing and then loop over the rest in a different kind of loop?
 Merged_EWR_init <- do.call(rbind,
           lapply(ewr_results_paths[1], read_plus))
 
@@ -201,6 +208,8 @@ Merged_EWR_clean <- Merged_EWR |>
   cleanewrs()|>
   select(-`multigauge`)|>
   rename_with(~ stringr::str_remove(., "_*"), everything())
+
+# TARGET FREQUENCY IS STILL CHAR HERE.
 
 year_roll <- 10
   # Frequency checks (ACHIEVEMENT test)

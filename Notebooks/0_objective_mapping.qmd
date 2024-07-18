@@ -57,7 +57,7 @@ ashpath <- file.path(qaelpath, 'Toolkit', 'AshData')
 
 ```{r}
 
-objectives_mapping <- read.csv(file.path(qaelpath, 'Toolkit','CausalNetworks', 'parameter_sheet_eco.csv'))
+objectives_mapping <- readr::read_csv(file.path(qaelpath, 'Toolkit','CausalNetworks', 'parameter_sheet_eco.csv'))
  # EWR_timing_timeseries_0 <- read.csv(file.path(ewr_results, "0", 'yearly.csv'))
 
 ```
@@ -103,3 +103,5 @@ objectives_mapping_long <- objectives_mapping_long |>
 
 write.csv(objectives_mapping_long, file.path(qaelpath, 'Toolkit','CausalNetworks', 'EWR_to_Target_mapping.csv'))
 ```
+
+Galen note to self- will need to use the above or something updated to get the toolkit to not return missed links.
