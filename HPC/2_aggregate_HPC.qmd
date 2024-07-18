@@ -33,6 +33,8 @@ To run this on the hpc, purl it with
 ```{r}
 #| eval: false
 
+infile <- 'HPC/2_aggregate_HPC.qmd'
+
   rfile <- stringr::str_replace(infile, '.qmd', '.R')
 
   knitr::purl(input = infile, output = rfile)
@@ -75,11 +77,18 @@ ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
 I keep doing things very similar to this to deal with the nested dirs. Should make it a function, but it's not quite stable yet.
 
 ```{r}
-# Get all the EWR dir paths should I save this like i did with the gauges? I
-# think probably not, it's quick and will run once in the main control process
-inner_dirs <- list.dirs(
+# Get all the EWR dir paths should I save this like i did with the gauges? 
+# Wouldn't locally, but it's really slow on petrichor.
+
+if (!file.exists('HPC/inner_dirs.rds')) {
+    inner_dirs <- list.dirs(
   ewr_results, recursive = TRUE
   )
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs.rds')
+} else {
+    inner_dirs = readRDS('HPC/inner_dirs.rds')
+}
+
 
 inner_climdirs <- grepl('r[0-9]_[0-9]_e1_[0-9]{1,2}$', inner_dirs)
 inner_parents <- inner_dirs[inner_climdirs]
