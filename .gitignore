@@ -18,7 +18,12 @@ template_data/module_output/*
 *_files
 *.html
 *.rds
+*.err
+*.out
 
 poetry.lock
 
 renv.lock
+
+# some files created with purl
+HPC/2_aggregate_HPC.R
