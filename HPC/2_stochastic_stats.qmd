@@ -1,0 +1,114 @@
+---
+title: "Stochastic stats"
+format: html
+---
+
+```{r}
+library(werptoolkitr)
+library(sf)
+library(future.batchtools)
+library(furrr)
+```
+
+```{r}
+source('R/read_in_aggs.R')
+```
+
+## Paths
+
+```{r}
+#| include: false
+
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'hol436') {
+  qaelpath <- '' 
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+```
+
+```{r}
+if (Sys.info()['user'] == 'hol436') {
+  project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
+} else {
+  project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
+}
+
+```
+
+```{r}
+retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+
+name_sEt <- 'sdl_ewr_timeseries'
+name_sTt <- 'sdl_target_timeseries'
+name_sEs <- 'sdl_ewr_spells'
+name_sTs <- 'sdl_target_spells'
+```
+
+# Read in desired
+
+I think what we'll often do is historical and stoch for each set as here:
+
+```{r}
+theseewrs <- read_in_aggs(project_dir = project_dir,
+                          data_type = c('historical', 'stochastic'),
+                            mark = 'MACQ_CC_EFR',
+                            licvol = c('licvolfactor_1_0'),
+                            climate = c('r1_0_e1_0'),
+                            aggname = 'sdl_ewr_timeseries',
+                            lastagg = 'sdl_units',
+                            retain_cols = retained_sEt)
+```
+
+But for the stats, we'll actually want to loop over EVERYTHING (so use the data_path argument with the full inner_subdirs (not 'all' for everything, because we'll want to read in one at a time and process and save out)).
+
+What are the stats?
+```{r}
+# Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
+groups <- names(theseewrs)[!names(theseewrs) %in% c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved', 'stoch_replicate', 'scenario')]
+
+ts_stats <- theseewrs |> 
+  dplyr::summarise(mean_ewr_achieved = ArithmeticMean(sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved),
+                   .by = {{groups}})
+```
+
+That's it. So i could loop over that. Can I use one of the _aggregate functions to make it clearer? Not obviously. It'd have to be theme because spatiail goes over space and time goes over time, (special types). But I'd have to monkey with a 'causal network' to get this to work. I suppose I could just use general_aggregate, but would that be helpful?
+
+It does make some of the sequencing much clearer for data provenance.
+
+```{r}
+# Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
+groups <- names(theseewrs)[!names(theseewrs) %in% c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved', 'stoch_replicate', 'scenario')]
+
+# not sure how i feel about this
+quant95 <- function(x) {
+  quantile(x, probs = c(0.05, 0.95), na.rm = TRUE) |> 
+    list() # To make it fit in one column
+}
+
+ts_general <- theseewrs |> 
+  general_aggregate(groupers = groups, aggCols = tidyselect::ends_with('ewr_achieved'),
+                    funlist = c('ArithmeticMean', 'quant95'),
+                    prefix = 'stochreps_') |> 
+  # again, jst a test with the quantiles. I don't think they make sense here; would be better for the cdfs, but this isn't making those.
+  tidyr::unnest_wider(stochreps_quant95_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved)
+```
+
+Anywya, that should modify to work
