@@ -44,14 +44,19 @@ if (Sys.info()['user'] == 'hol436') {
   project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
 }
 
+
+agg_dir <- file.path(project_dir, 'aggregated')
 ```
 
 ```{r}
 retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+
 retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+
 retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                   'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                   'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+
 retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                   'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                   'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
@@ -62,53 +67,138 @@ name_sEs <- 'sdl_ewr_spells'
 name_sTs <- 'sdl_target_spells'
 ```
 
+We'll need to do another round of retaining after the summaries
+```{r}
+
+retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Max_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+
+retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Max_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+
+
+retained_vuln <- list(retained_vE, retained_vT)
+```
+
+
 # Read in desired
+
+```{r}
+# Get all the EWR dir paths should I save this like i did with the gauges? 
+# Wouldn't locally, but it's really slow on petrichor.
+
+if (!file.exists('HPC/inner_dirs_agg.rds')) {
+    inner_dirs <- list.dirs(
+  agg_dir, recursive = TRUE
+  )
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg.rds')
+} else {
+    inner_dirs = readRDS('HPC/inner_dirs_agg.rds')
+}
+
+
+inner_climdirs <- grepl('r[0-9]_[0-9]_e1_[0-9]{1,2}$', inner_dirs)
+inner_parents <- inner_dirs[inner_climdirs]
+# Those will be the hydro_dirs, each with 76 scenarios inside
+# Then we want to make the outputs work, so put them in subdirs with the same structure
+inner_subdirs <- gsub(agg_dir, '', inner_parents)
+inner_subdirs <- gsub('^/', '', inner_subdirs)
+```
+
 
 I think what we'll often do is historical and stoch for each set as here:
 
 ```{r}
-theseewrs <- read_in_aggs(project_dir = project_dir,
-                          data_type = c('historical', 'stochastic'),
-                            mark = 'MACQ_CC_EFR',
-                            licvol = c('licvolfactor_1_0'),
-                            climate = c('r1_0_e1_0'),
-                            aggname = 'sdl_ewr_timeseries',
-                            lastagg = 'sdl_units',
-                            retain_cols = retained_sEt)
-```
+# looplists for the aggregations
+spellframes <- list('sdl_ewr_spells', 'sdl_target_spells')
+retainedframes <- list(retained_sEs, retained_sTs)
 
-But for the stats, we'll actually want to loop over EVERYTHING (so use the data_path argument with the full inner_subdirs (not 'all' for everything, because we'll want to read in one at a time and process and save out)).
-
-What are the stats?
-```{r}
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
-groups <- names(theseewrs)[!names(theseewrs) %in% c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved', 'stoch_replicate', 'scenario')]
+param_groups <- c('Data', 'Mk', 'licvolfactor', 'Rainfall', 'Evapotranspiration', 'aggregation')
+dimgroups <- c('ewr_code', 'target', 'date', 'polyID', 'SWSDLID', 'SWSDLName', 'StateID', 'geometry')
 
-ts_stats <- theseewrs |> 
-  dplyr::summarise(mean_ewr_achieved = ArithmeticMean(sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved),
-                   .by = {{groups}})
+groups <- c(param_groups, dimgroups)
+
 ```
-
-That's it. So i could loop over that. Can I use one of the _aggregate functions to make it clearer? Not obviously. It'd have to be theme because spatiail goes over space and time goes over time, (special types). But I'd have to monkey with a 'causal network' to get this to work. I suppose I could just use general_aggregate, but would that be helpful?
-
-It does make some of the sequencing much clearer for data provenance.
 
 ```{r}
-# Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
-groups <- names(theseewrs)[!names(theseewrs) %in% c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved', 'stoch_replicate', 'scenario')]
+# # These are matched indices from 1:2
+# aggin <- spellframes[[typeit]]
+# retained_in <- retainedframes[[typeit]]
+# retained_vuln <- retained_vuln[[typeit]]
 
-# not sure how i feel about this
-quant95 <- function(x) {
-  quantile(x, probs = c(0.05, 0.95), na.rm = TRUE) |> 
-    list() # To make it fit in one column
-}
+looplist <- list(aggin = spellframes, 
+                 retained_in = retainedframes,
+                 retained_vuln = retained_vuln,
+                 inner_subdirs = list(inner_subdirs, inner_subdirs))
 
-ts_general <- theseewrs |> 
-  general_aggregate(groupers = groups, aggCols = tidyselect::ends_with('ewr_achieved'),
-                    funlist = c('ArithmeticMean', 'quant95'),
-                    prefix = 'stochreps_') |> 
-  # again, jst a test with the quantiles. I don't think they make sense here; would be better for the cdfs, but this isn't making those.
-  tidyr::unnest_wider(stochreps_quant95_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved)
+
+
 ```
+
+
 
 Anywya, that should modify to work
+
+Write the function to furrr over. I think maybe don't even bother with the nestedness? Or maybe?
+
+```{r}
+calc_vulnerability <- function(subdir, aggin, retained_in, retained_vuln) {
+  onespells <- read_in_aggs(project_dir = project_dir,
+                            data_path = file.path(subdir, aggin),
+                            lastagg = 'sdl_units',
+                            retain_cols = retained_in)
+  
+  vulnerability <- onespells |> 
+    general_aggregate(groupers = groups, 
+                      aggCols = tidyselect::ends_with(c('ewr_achieved',
+                                                        'event_years')),
+                      funlist = c('ArithmeticMean', 'Max', 'Variance'),
+                      prefix = 'replicates_',
+                      failmissing = FALSE) # lets us have a full set of possible groupers
+  
+  vuln <- select_sequence(vulnerability, 
+                          lastagg = 'replicates', 
+                          retain_cols = retained_vuln)
+  # all(retained_vuln %in% names(vuln))
+  
+  # change the aggregation name
+  vuln$aggregation <- gsub('_spells', '_vulnerability', vuln$aggregation)
+  
+  outdir <- file.path(project_dir, 'aggregated', 
+                      subdir, gsub('_spells', '_vulnerability', aggin))
+  
+  if (!dir.exists(outdir)) {
+    dir.create(outdir)
+  }
+  
+  saveRDS(vuln, file = file.path(outdir, 'achievement_aggregated.rds'))
+  
+}
+
+dirloop <- function(aggin, retained_in, retained_vuln, inner_subdirs) {
+  furrr::future_map(inner_subdirs, 
+                    \(x) calc_vulnerability(x, aggin, 
+                                            retained_in, retained_vuln))
+  
+}
+```
+
+```{r}
+# If I run this locally, I don't want to parallel over this outer layer
+if (Sys.info()['user'] == 'hol436') {
+  system.time(aggloop <- furrr::future_pmap(looplist, dirloop))
+} else {
+  system.time(aggloop <- purrr::pmap(looplist, dirloop))
+}
+
+```
+
