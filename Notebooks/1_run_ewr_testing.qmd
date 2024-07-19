@@ -1,0 +1,162 @@
+---
+title: "EWR parallel testing"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(sf) # Needed? I think not here, but just in case
+library(future)
+
+# set the future plan for parallelising.
+plan(multisession)
+```
+
+## Paths
+
+I'm going to set this up to dump data to the QAEL WERP share for now. Unfortunately, that calls itself something different for each of us.
+
+```{r}
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  #qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+```
+
+```{r}
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Test on a single directory
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-ewr-test')
+
+# Hydrographs
+# very short and only one for testing
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/cutout')
+
+# a single set of 76 * 6 runs
+hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut/stochastic/MACQ_CC_EFR')
+
+# The whole thing- almost certainly a bad idea
+# hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut')
+
+# The catch here is I need to move them around if I don't do the whole thing. I need a subsetter on prep_run_save_ewrs
+
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+#ewr_results <- file.path(project_dir, 'module_output', 'EWR_nonrounding')
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+```
+
+## Module controls
+
+We need 'summary' and 'yearly' to assess EWR achievement. No reason to return them to the session.
+
+```{r}
+outputType <- list('summary', 'yearly')
+returnType <- list('none') # list('summary', 'yearly')
+```
+
+# Run EWR tool
+
+Run it in parallel, and use the 'IQQM - netcdf\` format. (and note timing)
+
+```{r}
+
+ewr_time <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = hydro_dir, 
+                                  output_parent_dir = project_dir,
+                                  output_subdir = 'stochastic/MACQ_CC_EFR',
+                              model_format = 'IQQM - netcdf',
+                                  outputType = outputType,
+                                  returnType = returnType,
+                              rparallel = TRUE))
+```
+
+The timing
+
+```{r}
+glue::glue("The run of all files through the EWR took {ewr_time['elapsed']} seconds, which is
+           {ewr_time['elapsed']/60} minutes, which is
+           {ewr_time['elapsed']/60/60} hours")
+```
+
+Under a minute for the test. 7.8 hours for the mk4
+
+```{r}
+ewr_time5 <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut/stochastic/MACQ_CC_EFR_mkv'), 
+                                  output_parent_dir = project_dir,
+                                  output_subdir = 'stochastic/MACQ_CC_EFR_mkv',
+                              model_format = 'IQQM - netcdf',
+                                  outputType = outputType,
+                                  returnType = returnType,
+                              rparallel = TRUE))
+```
+
+```{r}
+glue::glue("The run of all files through the EWR took {ewr_time5['elapsed']} seconds, which is
+           {ewr_time5['elapsed']/60} minutes, which is
+           {ewr_time5['elapsed']/60/60} hours")
+```
+
+```{r}
+ewr_time5a <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut/stochastic/MACQ_CC_EFR_mkva'), 
+                                  output_parent_dir = project_dir,
+                                  output_subdir = 'stochastic/MACQ_CC_EFR_mkva',
+                              model_format = 'IQQM - netcdf',
+                                  outputType = outputType,
+                                  returnType = returnType,
+                              rparallel = TRUE))
+```
+
+```{r}
+glue::glue("The run of all files through the EWR took {ewr_time5a['elapsed']} seconds, which is
+           {ewr_time5a['elapsed']/60} minutes, which is
+           {ewr_time5a['elapsed']/60/60} hours")
+```
+
+```{r}
+# testing the missings needs the same settings, which aren't necessarily optimized
+ewr_time4a <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut/stochastic/MACQ_CC_EFR_mkiv'), 
+                                  output_parent_dir = project_dir,
+                                  output_subdir = 'stochastic/MACQ_CC_EFR_mkiv',                                  fill_missing = TRUE,
+                              model_format = 'IQQM - netcdf',
+                                  outputType = outputType,
+                                  returnType = returnType,
+                              rparallel = TRUE,
+                              print_runs = TRUE))
+```
+
+Making some changes here to try to get to work with a big set of runs
+
+```{r}
+ewr_time4a <- system.time(ewr_out <- prep_run_save_ewrs(hydro_dir = file.path(qaelpath, 'Toolkit/macquarie_cut/stochastic'), 
+                                  output_parent_dir = project_dir,
+                                  output_subdir = 'stochastic',
+                                  file_search = "MACQ_CC_EFR_mkiv",
+                                  fill_missing = TRUE,
+                              model_format = 'IQQM - netcdf',
+                                  outputType = outputType,
+                                  returnType = returnType,
+                              rparallel = TRUE,
+                              print_runs = TRUE))
+```
+
+```{r}
+glue::glue("The run of all files through the EWR took {ewr_time4a['elapsed']} seconds, which is
+           {ewr_time4a['elapsed']/60} minutes, which is
+           {ewr_time4a['elapsed']/60/60} hours")
+```

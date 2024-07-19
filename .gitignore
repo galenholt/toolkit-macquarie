@@ -1,19 +1,29 @@
 # ignore environments
 .venv/*
 .python_version
+.future/*
 
 .Rproj.user
 
 .Rhistory
 
 # ignore outputs
-template_data/aggregator_output/
-template_data/module_output/
-toolkit_project/module_output/EWR/
+template_data/aggregator_output/*
+template_data/module_output/*
+template_data/netcdfs/aggregator_output/*
+template_data/netcdfs/module_output/*
+toolkit_project/module_output/EWR/*
+template_data/module_output/*
 
 *_files
 *.html
+*.rds
+*.err
+*.out
 
 poetry.lock
 
 renv.lock
+
+# some files created with purl
+HPC/2_aggregate_HPC.R

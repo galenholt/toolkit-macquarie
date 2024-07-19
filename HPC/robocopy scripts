@@ -1,0 +1,17 @@
+# Limited sets of Ash's data to bring over.
+# I've clipped the netcdfs, but we also need those other files (I think?)
+# /s means don't copy empties, /R:3 means retry 3 times.
+
+# I'm hoping that since the directory structure is the same, I can bring over my cut cdfs and then the other files later.
+
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\ash_cut" `
+"\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie_cut" `
+cutflows.nc `
+/s /R:3
+
+# In one line because powershell is annoying
+# /s includes subdirs
+# This HAS to be done from the main citrix login, NOT from a remote (e.g. petrichor, a VM)
+# The hydrographs
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module_output" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module_output" /s /R:3
