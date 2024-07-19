@@ -154,6 +154,10 @@ agged_data - Dont run - need to update aggregation to be able for Maximum_intere
 
 ```{r}
 # DATA
+# flow chart?
+# need intermediate steps?
+# baseline_compare {werptoolkitr]
+
 #------
 #QAEL - WERP in house - WERP/Toolkit/macq-data-no_climate_change/aggregator_output/EWR_timeseries.csv"
 EWR_timing_timeseries <- read.csv(file.path(hydro_dir_stochastic, 'aggregator_output', 'EWR_timeseries.csv')) |>
@@ -574,7 +578,7 @@ sdl_EWR_spells_MK4 <- planning_unit_EWR_spells_MK4 |>
 ```{r}
 # Stochastic - no climate change
 #-------------------------------
-#aggregate planning units - ONLY have one sdl - irrespective of Targets 
+
 sdl_EWR_vulnerability <- sdl_EWR_spells |>
   group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|> #NOT SCENARIO
   reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
@@ -587,8 +591,8 @@ sdl_EWR_vulnerability <- sdl_EWR_spells |>
           mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
           Maximum_interevent_duration = max(Maximum_interevent_duration))
 
-#aggregate planning units - ONLY have one sdl - respective of Targets 
-      sdl_target_vulnerability <- sdl_target_spells |>
+ 
+sdl_target_vulnerability <- sdl_target_spells |>
         ungroup()|>
         group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>  #NOT SCENARIO
         reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
