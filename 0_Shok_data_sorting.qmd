@@ -135,6 +135,7 @@ Merged_economic <- NULL
 Merged_economic_init <- dplyr::bind_rows(Merged_economic_historic, Merged_economic_stochastic)
 ```
 
+
 ```{r}
 Merged_economic_data <- Merged_economic_init  |>
   dplyr::mutate(date = as.Date(paste0(as.character(year), '-07-01')))|>
