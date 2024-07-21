@@ -107,7 +107,7 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, subdir) {
       dplyr::mutate(scenario = paste0(subdir, '/', scenario)) |>
       tidyr::separate_wider_delim(scenario, '/',
                                   names = c('Data', 'Mk', 'licvolfactor',
-                                            'rem', 'aggregation', 'stoch_replicate'),
+                                            'rem', 'aggregation', 'replicate'),
                                   cols_remove = FALSE) |>
       tidyr::separate_wider_delim(rem, "_e",
                                   names = c("Rainfall","Evapotranspiration")) |>
