@@ -1,5 +1,23 @@
+#' Reader-inner for aggregated Macquarie data
+#'
+#' @param project_dir outer directory (usually qaelpath/macquarie)
+#' @param data_path optional, list or character vector of paths to get data from. If not included, need the searcher terms below
+#' @param info_list optional (otherwise need lastagg and retain_cols). list with a name matching aggname, and the lastcol and retain cols in it so it's easier to track
+#' @param lastagg name of the last aggregation step, e.g. 'sdl_units'
+#' @param retain_cols columns to retain
+#' @param data_type search column, historical or stochastic
+#' @param mark search, Mark
+#' @param licvol search
+#' @param climate search
+#' @param aggname search, but also references info_list if available. Which aggregation set to pull
+#'
+#' @return
+#' @export
+#'
+#' @examples
 read_in_aggs <- function(project_dir,
                          data_path = NULL,
+                         info_list = NULL,
                          lastagg,
                          retain_cols,
                          data_type = c('historical', 'stochastic'),
@@ -7,6 +25,17 @@ read_in_aggs <- function(project_dir,
                          licvol = 'all',
                          climate = 'all',
                          aggname = 'all') {
+
+
+  if (!is.null(info_list)) {
+    if (length(aggname) == 1 && aggname == 'all') {
+      aggname <- names(info_list)
+    }
+
+    lastagg <- purrr::map_chr(aggname, \(x) info_list[[x]]$lastagg)
+    retain_cols <- purrr::map(aggname, \(x) info_list[[x]]$retain) |> unlist()
+  }
+
 
   if (is.null(data_path)) {
     data_path <- get_scenariodir(project_dir = project_dir,
@@ -72,18 +101,23 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, subdir) {
     x <- as.numeric(x)
   }
 
-  oneagg <- oneagg |>
-    dplyr::mutate(scenario = paste0(subdir, '/', scenario)) |>
-    tidyr::separate_wider_delim(scenario, '/',
-                                names = c('Data', 'Mk', 'licvolfactor',
-                                          'rem', 'aggregation', 'stoch_replicate'),
-                                cols_remove = FALSE) |>
-    tidyr::separate_wider_delim(rem, "_e",
-                                names = c("Rainfall","Evapotranspiration")) |>
-    dplyr::mutate(across(c(licvolfactor, Rainfall, Evapotranspiration), fix_)) |>
+  # some later processing no longer has a scenario column because we've aggregated over parts of the values.
+  if ('scenario' %in% names(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(scenario = paste0(subdir, '/', scenario)) |>
+      tidyr::separate_wider_delim(scenario, '/',
+                                  names = c('Data', 'Mk', 'licvolfactor',
+                                            'rem', 'aggregation', 'stoch_replicate'),
+                                  cols_remove = FALSE) |>
+      tidyr::separate_wider_delim(rem, "_e",
+                                  names = c("Rainfall","Evapotranspiration")) |>
+      dplyr::mutate(across(c(licvolfactor, Rainfall, Evapotranspiration), fix_)) |>
+      dplyr::select(scenario, tidyselect::everything())
+  }
+
+   oneagg <- oneagg |>
     # not sure about this; it's Cudgegong NAs
     dplyr::filter(!is.na(polyID)) |>
-    dplyr::select(scenario, tidyselect::everything()) |>
     dplyr::relocate(geometry, .after = last_col())
 
   return(oneagg)

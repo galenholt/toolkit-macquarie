@@ -20,6 +20,7 @@ theseewrs <- read_in_aggs(project_dir = project_dir,
 But for the stats, we'll actually want to loop over EVERYTHING (so use the data_path argument with the full inner_subdirs (not 'all' for everything, because we'll want to read in one at a time and process and save out)).
 
 What are the stats?
+
 ```{r}
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
 groups <- names(theseewrs)[!names(theseewrs) %in% c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved', 'stoch_replicate', 'scenario')]
@@ -29,7 +30,7 @@ ts_stats <- theseewrs |>
                    .by = {{groups}})
 ```
 
-That's it. So i could loop over that. Can I use one of the _aggregate functions to make it clearer? Not obviously. It'd have to be theme because spatiail goes over space and time goes over time, (special types). But I'd have to monkey with a 'causal network' to get this to work. I suppose I could just use general_aggregate, but would that be helpful?
+That's it. So i could loop over that. Can I use one of the \_aggregate functions to make it clearer? Not obviously. It'd have to be theme because spatiail goes over space and time goes over time, (special types). But I'd have to monkey with a 'causal network' to get this to work. I suppose I could just use general_aggregate, but would that be helpful?
 
 It does make some of the sequencing much clearer for data provenance.
 
