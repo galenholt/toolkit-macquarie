@@ -6,6 +6,12 @@ execute:
   cache: true
 ---
 
+```{r setup}
+
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+
+```
+
 ## Librarys
 
 library(sf)
@@ -20,148 +26,17 @@ library(ggplot2)
 library(patchwork)
 library(tidyr)
 library(ggridges)
-library(future.batchtools)
+#library(future.batchtools)
 library(furrr)
-```
-
-## Paths
-
-```{r}
-#| include: false
-
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
-
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-
-# Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macquarie')
-
-# module_output
-ewr_results <- c(project_dir, 'aggregated') 
-agg_dir <- file.path(project_dir, 'aggregated')
-
-files_EWR_all <- list.files(path = list.dirs(path = ewr_results), pattern = ".rds", full.names=TRUE)
-
-comp_results <- file.path(project_dir, 'comparer_output_for_paper') 
-
-hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Hydrology")  
-  
-
 ```
 
 ## Functions
 
 ```{r}
+source('R/paths.R')
 source('R/read_in_aggs.R')
+source('R/agg_variables.R')
 
-```
-
-## Names of the various aggregations
-
-Not actually sure we need these as variables, but here they are.
-
-```{r}
-name_sEt <- 'sdl_ewr_timeseries' 
-name_sTt <- 'sdl_target_timeseries' 
-name_sEs <- 'sdl_ewr_spells' 
-name_sTs <- 'sdl_target_spells' 
-name_sEv <- 'sdl_ewr_vulnerability' 
-name_sTv <- 'sdl_target_vulnerability'
-```
-
-## Variables to retain and rename
-
-```{r}
-# sdl_ewr_timeseries
-retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-rename_sEt <- c('ewr_achieved')
-
-# sdl_target_timeseries
-retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-rename_sTt <- c('ewr_achieved')
-
-# sdl_ewr_spells
-retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-rename_sEs <- c('ewr_achieved',
-                  'mean_max_interevent',
-                  'max_interevent')
-
-# sdl_target_spells
-retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-rename_sTs <- c('ewr_achieved',
-                  'mean_max_interevent',
-                  'max_interevent')
-```
-
-## And the vulnerabilities
-
-```{r}
-# sdl_ewr_vulnerability
-retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Max_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-rename_vE <- c('ewr_achieved',
-               'mean_max_interevent',
-               'max_interevent',
-               'variance_ewr_achieved',
-               'variance_mean_max_interevent',
-               'variance_max_interevent')
-
-# sdl_target_vulnerability
-retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Max_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-rename__vT <- c('ewr_achieved',
-               'mean_max_interevent',
-               'max_interevent',
-               'variance_ewr_achieved',
-               'variance_mean_max_interevent',
-               'variance_max_interevent')
-```
-
-## A list with the aggregation/dataframe name as name, retained cols and last_agg as the values.
-
-```{r}
-#TO DO FIX renames = rename_sEs
-aggregation_info <- list(sdl_ewr_timeseries = list(lastagg = 'sdl_units',
-                                                   retained = retained_sEt,
-                                                   renames = rename_sEt),
-                         sdl_target_timeseries = list(lastagg = 'sdl_units',
-                                                      retained = retained_sTt,
-                                                      renames = rename_sTt),
-                         sdl_ewr_spells = list(lastagg = 'sdl_units', 
-                                               retained = retained_sEs,
-                                               renames = rename_sEs),
-                         sdl_target_spells = list(lastagg = 'sdl_units',
-                                                  retained = retained_sTs,
-                                                  renames = rename_sTs),
-                         sdl_ewr_vulnerability = list(lastagg = 'replicates',
-                                                      retained = retained_vE,
-                                                      renames = rename_vE),
-                         sdl_target_vulnerability = list(lastagg = 'replicates',
-                                                         retained = retained_vT,
-                                                         renames = rename_vT))
 ```
 
 ## Data
@@ -171,574 +46,11 @@ aggregation_info <- list(sdl_ewr_timeseries = list(lastagg = 'sdl_units',
 #Only read in what is necessary
 
 #Economic
-Merged_economic_summary <- read.csv(file.path(project_dir, 'module_output', 'Economic', "Economic_summary.csv"))
+Merged_economic_summary <- read.csv(file.path(Economic_results, "Economic_summary.csv"))
 
 #Hydrology
-Merged_allocation_reliability <- read.csv(file.path(hydro_results, "allocation_reliability_merged.csv"))
-Merged_allocation_resilience <- read.csv(file.path(hydro_results, "allocation_resilience_merged.csv"))
-Merged_hs_delivered_to_ordered_ratio_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))
-Merged_hs_delivered_to_ordered_ratio_resilience <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))
-
-```
-
-Scenario info
-
-```{r}
-#| label: scenario-info
-#| include: false
-
-# dig1 <- function(x) {
-#   paste0(sprintf("%.1f", x))
-# }
-# dig2 <- function(x) {
-#   paste0(sprintf("%.2f", x))
-#   }
-# 
-# print(file.path(hydro_dir,'scenario_metadata.yml'))
-# # 
-# # scenarios <- yaml::read_yaml(file.path(hydro_dir,                 
-# #                                        'scenario_metadata.yml'))
-# 
-# scenarios <- scenarios |>  
-#   tibble::as_tibble() 
-# 
-# # Add max
-# MAX_scenario_scenarios <- scenarios[1,]
-# MAX_scenario_scenarios[1,]<- NA
-# MAX_scenario_scenarios[1,1] <- factor("MAX")
-# 
-# scenarios <- bind_rows(scenarios, MAX_scenario_scenarios)
-# MAX_scenario_scenarios <- NULL
-# 
-# #ORDER Scenarios
-# scenarios <- scenarios |>  
-#   mutate(scenario_order = ifelse(scenario == "MAX", 10000, as.numeric(scenario)))|>
-#   mutate(scenario = forcats::fct_reorder(scenario, scenario_order))
-# 
-# #other data:
-# objectives <- causal_ewr$ewr2obj |>
-#   select(-ewr_code_timing)|>
-#   distinct()
-# 
-# objectives_for_EWRs <- objectives |>
-#     select(planning_unit_name, gauge, ewr_code, env_obj)
-
-
-#NSW Border Rivers has env_obj called "NF" WHY IS THAT APPEARING IN THIS DATA??
-```
-
-agged_data - Dont run - need to update aggregation to be able for Maximum_interevent_duration
-
-```{r}
-# sdl_EWRS_agg <- readRDS(file.path(agg_results, "sdl_EWRS_agg", 'achievement_aggregated.rds')) #|>
-# #  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
-# 
-# sdl_target_agg <- readRDS(file.path(agg_results, "sdl_target_agg", 'achievement_aggregated.rds')) #|>
-# #  purrr::map(\(x) left_join(x, scenarios, by = 'scenario'))
-
-```
-
-## Manual aggregation (Stochastic data)
-
--   1\) aggregate EWR versions \> gauges \> planning units = sdl_EWR_spells
-
--   2\) aggregate EWR versions \> EWRs \> gauges \> planning units = sdl_target_spells
-
--   calculate: ewr achieved, Maximum_interevent_duration, Variance
-
-```{r}
-# DATA
-# flow chart?
-# need intermediate steps?
-# baseline_compare {werptoolkitr]
-
-#------
-#QAEL - WERP in house - WERP/Toolkit/macq-data-no_climate_change/aggregator_output/EWR_timeseries.csv"
-EWR_timing_timeseries <- read.csv(file.path(hydro_dir_stochastic, 'aggregator_output', 'EWR_timeseries.csv')) |>
-    #switch CFs:
-  dplyr::mutate(event_years = ifelse(grepl("CF", ewr_code), 1-event_years, event_years))
-
-EWR_timing_timeseries$ewr_code <- factor(EWR_timing_timeseries$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-
-objective_mapping <- read.csv(file.path(qaelpath, 'Toolkit','CausalNetworks', 'EWR_to_Target_mapping.csv'))
-objective_mapping$ewr_code <- factor(objective_mapping$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-
-# Join scenario info
-#-------------------
-#Add temporarily the scenario info for NOW ONLY 
-EWR_timing_timeseries <- EWR_timing_timeseries |>
-  dplyr::mutate(Rainfall = as.numeric(1.0),
-                Evapotranspiration = as.numeric(1.0),
-                licvolfactor = as.numeric(1.0),
-                Mk = as.character("Mk4"),
-                Data = "Stochastic")
-
-# Calculate Max inter-event durations
-#------------------------------------
-gauge_EWR_timing_spells <- EWR_timing_timeseries |>
-  group_by(scenario, ewr_code, ewr_code_timing, gauge, planning_unit_name)|>
-  dplyr::mutate(event_group = cumsum(abs(c(0, diff(event_years)))),
-                ewr_achieved = mean(ewr_achieved, na.rm = TRUE))|>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, ewr_code_timing, gauge, planning_unit_name, event_group)|>
-  dplyr::mutate(event_group_n = n())|>
-  dplyr::filter(event_years == 0)|>
-  ungroup()|>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, ewr_code_timing, gauge, planning_unit_name)|>
-  reframe(ewr_achieved = unique(ewr_achieved),  #this is right - saves making 2 separate dfs for ewr_achieved and interevent
-          Maximum_interevent_duration = max(event_group_n))
-
-# obbective mapping: 
-#-----------------------------------
-# These grow because there's >1 'target' per Ewr_code_timing
-
-#Target data timeseries
-EWR_timing_target_timeseries <- EWR_timing_timeseries |>
-  mutate(gauge = as.character(gauge)) |>
-  left_join(objective_mapping, by = join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name)) |>
-  rename(env_group = target)|>
-  mutate(target = case_when(      env_group == "NF" ~ "Native fish",
-                                  env_group == "NV" ~ "Native vegetation" ,
-                                  env_group == "OS" ~ "Other species",   
-                                  env_group == "EF" ~ "Priority ecosystem function", 
-                                  env_group == "WB" ~ "Waterbird",
-                                  env_group == NA ~ NA))
-
-#TIME aggregated
-
-
-gauge_EWR_timing_target_spells <- gauge_EWR_timing_spells |>
-  mutate(gauge = as.character(gauge)) |>
-  left_join(objective_mapping, by = join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name)) |>
-  rename(env_group = target)|>
-  mutate(target = case_when(      env_group == "NF" ~ "Native fish",
-                                  env_group == "NV" ~ "Native vegetation" ,
-                                  env_group == "OS" ~ "Other species",   
-                                  env_group == "EF" ~ "Priority ecosystem function", 
-                                  env_group == "WB" ~ "Waterbird",
-                                  env_group == NA ~ NA))
-
-#aggregate EWR versions
-#----------------------
-#EWR data timeseries
-gauge_EWR_timeseries <- EWR_timing_timeseries |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved))
-
-#Target data timeseries
-gauge_EWR_target_timeseries <- EWR_timing_target_timeseries |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name, env_group,
-                   target)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved))
-
-#EWR data (time aggregated)
-
-# THIS AGGREGATES OVER CODE_TIMING?
-gauge_EWR_spells <- gauge_EWR_timing_spells |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data (time aggregated)
-gauge_EWR_target_spells <- gauge_EWR_timing_target_spells |>
-          group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name, env_group,
-                   target)|>
-          reframe(n_EWR_versions = n(),
-                  ewr_achieved = mean(ewr_achieved),
-                  mean_Maximum_interevent_duration = mean(Maximum_interevent_duration),
-                  Maximum_interevent_duration = max(Maximum_interevent_duration))
-      
-#aggregate EWRS to Target
-#----------------------
-#Target data timeseries
-gauge_target_timeseries <- gauge_EWR_target_timeseries |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  gauge, planning_unit_name, 
-                 env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = NumberOfValues(ewr_achieved),
-                EWR_Variance = Variance(ewr_achieved), # Variance = between EWRs
-                ewr_achieved = mean(ewr_achieved))
-
-#Target data (time aggregated)
-gauge_target_spells <- gauge_EWR_target_spells |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  gauge, planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = NumberOfValues(ewr_achieved),
-                EWR_Variance = Variance(ewr_achieved), # Variance = between EWRs
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#aggregate gauges
-#----------------------- 
-#EWR timeseries
-planning_unit_EWR_timeseries <- gauge_EWR_timeseries |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, planning_unit_name)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = NumberOfValues(ewr_achieved),
-          EWR_Variance = Variance(ewr_achieved), # Variance = between gauges
-          ewr_achieved = mean(ewr_achieved))
-
-#Target timeseries
-planning_unit_target_timeseries <- gauge_target_timeseries |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved))
-
-#EWR data
-
-# THIS AGGREGATES TO PLANNNG UNITS?
-planning_unit_EWR_spells <- gauge_EWR_spells |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, planning_unit_name)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = NumberOfValues(ewr_achieved),
-          EWR_Variance = Variance(ewr_achieved), # Variance = between gauges
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data
-planning_unit_target_spells <- gauge_target_spells |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#aggregate planning units - ONLY have one sdl 
-#--------------------------------------------
-#EWR timeseries 
-sdl_EWR_timeseries <- planning_unit_EWR_timeseries |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = Sum(n_gauges),
-          n_planning_units = NumberOfValues(ewr_achieved),
-          EWR_Variance = Sum(EWR_Variance),
-          ewr_achieved = mean(ewr_achieved))
-
-#Target timeseries
-sdl_target_timeseries <- planning_unit_target_timeseries |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = Sum(n_gauges),
-                n_planning_units = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved))
-      
-#EWR data - irrespective of Targets 
-sdl_EWR_spells <- planning_unit_EWR_spells |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = Sum(n_gauges),
-          n_planning_units = NumberOfValues(ewr_achieved),
-          EWR_Variance = Sum(EWR_Variance),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data
-      sdl_target_spells <- planning_unit_target_spells |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = Sum(n_gauges),
-                n_planning_units = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-```
-
-## Manual aggregation (Historic data)
-
--   1\) aggregate EWR versions \> gauges \> planning units = sdl_EWR_spells
-
--   2\) aggregate EWR versions \> EWRs \> gauges \> planning units = sdl_target_spells
-
--   calculate: ewr achieved, Maximum_interevent_duration, Variance
-
-```{r}
-# DATA
-#------
-#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macq-data/historic/Mk4"
-
-EWR_timing_timeseries_MK4 <- read.csv(file.path(Mk4_dir, "aggregator_output", 'EWR_timeseries.csv'))|>
-    #switch CFs:
-  dplyr::mutate(event_years = ifelse(grepl("CF", ewr_code), 1-event_years, event_years)) |>
-  dplyr::mutate(EWR_switch = ifelse(grepl("CF", ewr_code), T, F))
-  
-EWR_timing_timeseries_MK4$ewr_code <- factor(EWR_timing_timeseries_MK4$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-
-objective_mapping <- read.csv(file.path(qaelpath, 'Toolkit','CausalNetworks', 'EWR_to_Target_mapping.csv'))
-objective_mapping$ewr_code <- factor(objective_mapping$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
-
-
-# Join scenario info
-#-------------------
-#Add temporarily the scenario info for NOW ONLY 
-EWR_timing_timeseries_MK4 <- EWR_timing_timeseries_MK4 |>
-  dplyr::rename(Rainfall = rainfall,
-                Evapotranspiration = evapotranspiration,
-                #licvolfactor = as.numeric(1.0),
-                Mk = mk)|>
-  dplyr::mutate(Data = "Historic")
-
-# Calculate Max inter-event durations
-#------------------------------------
-gauge_EWR_timing_spells_MK4 <- EWR_timing_timeseries_MK4 |>
-  group_by(scenario, ewr_code, ewr_code_timing, gauge, planning_unit_name)|>
-  dplyr::mutate(event_group = cumsum(abs(c(0, diff(event_years)))),
-                ewr_achieved = mean(ewr_achieved, na.rm = TRUE))|>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, ewr_code_timing, gauge, planning_unit_name, event_group)|>
-  dplyr::mutate(event_group_n = n())|>
-  dplyr::filter(event_years == 0)|>
-  ungroup()|>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, ewr_code_timing, gauge, planning_unit_name)|>
-  reframe(ewr_achieved = unique(ewr_achieved),  #this is right - saves making 2 separate dfs for ewr_achieved and interevent
-          Maximum_interevent_duration = max(event_group_n))
-
-# obbective mapping: 
-#-----------------------------------
-#Target data timeseries
-EWR_timing_target_timeseries_MK4 <- EWR_timing_timeseries_MK4 |>
-  mutate(gauge = as.character(gauge)) |>
-  left_join(objective_mapping, by = join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name)) |>
-  rename(env_group = target)|>
-  mutate(target = case_when(      env_group == "NF" ~ "Native fish",
-                                  env_group == "NV" ~ "Native vegetation" ,
-                                  env_group == "OS" ~ "Other species",   
-                                  env_group == "EF" ~ "Priority ecosystem function", 
-                                  env_group == "WB" ~ "Waterbird",
-                                  env_group == NA ~ NA))
-
-#TIME aggregated
-gauge_EWR_timing_target_spells_MK4 <- gauge_EWR_timing_spells_MK4 |>
-  mutate(gauge = as.character(gauge)) |>
-  left_join(objective_mapping, by = join_by(ewr_code, ewr_code_timing, gauge, planning_unit_name)) |>
-  rename(env_group = target)|>
-  mutate(target = case_when(      env_group == "NF" ~ "Native fish",
-                                  env_group == "NV" ~ "Native vegetation" ,
-                                  env_group == "OS" ~ "Other species",   
-                                  env_group == "EF" ~ "Priority ecosystem function", 
-                                  env_group == "WB" ~ "Waterbird",
-                                  env_group == NA ~ NA))
-
-#aggregate EWR versions
-#----------------------
-#EWR data timeseries
-gauge_EWR_timeseries_MK4 <- EWR_timing_timeseries_MK4 |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved))
-
-#Target data timeseries
-gauge_EWR_target_timeseries_MK4 <- EWR_timing_target_timeseries_MK4 |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name, env_group,
-                   target)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved))
-
-#EWR data (time aggregated)
-gauge_EWR_spells_MK4 <- gauge_EWR_timing_spells_MK4 |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name)|>
-  reframe(n_EWR_versions = n(),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data (time aggregated)
-gauge_EWR_target_spells_MK4 <- gauge_EWR_timing_target_spells_MK4 |>
-          group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, gauge, planning_unit_name, env_group,
-                   target)|>
-          reframe(n_EWR_versions = n(),
-                  ewr_achieved = mean(ewr_achieved),
-                  mean_Maximum_interevent_duration = mean(Maximum_interevent_duration),
-                  Maximum_interevent_duration = max(Maximum_interevent_duration))
-      
-#aggregate EWRS to Target
-#----------------------
-#Target data timeseries
-gauge_target_timeseries_MK4 <- gauge_EWR_target_timeseries_MK4 |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  gauge, planning_unit_name, 
-                 env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = NumberOfValues(ewr_achieved),
-                EWR_Variance = Variance(ewr_achieved), # Variance = between EWRs
-                ewr_achieved = mean(ewr_achieved))
-
-#Target data (time aggregated)
-gauge_target_spells_MK4 <- gauge_EWR_target_spells_MK4 |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  gauge, planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = NumberOfValues(ewr_achieved),
-                EWR_Variance = Variance(ewr_achieved), # Variance = between EWRs
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#aggregate gauges
-#----------------------- 
-#EWR timeseries
-planning_unit_EWR_timeseries_MK4 <- gauge_EWR_timeseries_MK4 |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, planning_unit_name)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = NumberOfValues(ewr_achieved),
-          EWR_Variance = Variance(ewr_achieved), # Variance = between gauges
-          ewr_achieved = mean(ewr_achieved))
-
-#Target timeseries
-planning_unit_target_timeseries_MK4 <- gauge_target_timeseries_MK4 |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved))
-
-#EWR data
-planning_unit_EWR_spells_MK4 <- gauge_EWR_spells_MK4 |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, planning_unit_name)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = NumberOfValues(ewr_achieved),
-          EWR_Variance = Variance(ewr_achieved), # Variance = between gauges
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data
-planning_unit_target_spells_MK4 <- gauge_target_spells_MK4 |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  planning_unit_name, env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#aggregate planning units - ONLY have one sdl 
-#--------------------------------------------
-#EWR timeseries 
-sdl_EWR_timeseries_MK4 <- planning_unit_EWR_timeseries_MK4 |>
-  group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = Sum(n_gauges),
-          n_planning_units = NumberOfValues(ewr_achieved),
-          EWR_Variance = Sum(EWR_Variance),
-          ewr_achieved = mean(ewr_achieved))
-
-#Target timeseries
-sdl_target_timeseries_MK4 <- planning_unit_target_timeseries_MK4 |>
-        group_by(year, scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = Sum(n_gauges),
-                n_planning_units = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved))
-      
-#EWR data - irrespective of Targets 
-sdl_EWR_spells_MK4 <- planning_unit_EWR_spells_MK4 |>
-  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|>
-  reframe(n_EWR_versions = Sum(n_EWR_versions),
-          n_gauges = Sum(n_gauges),
-          n_planning_units = NumberOfValues(ewr_achieved),
-          EWR_Variance = Sum(EWR_Variance),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#Target data
-      sdl_target_spells_MK4 <- planning_unit_target_spells_MK4 |>
-        group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>
-        reframe(n_EWR_versions = Sum(n_EWR_versions),
-                n_EWRs = Sum(n_EWRs),
-                n_gauges = Sum(n_gauges),
-                n_planning_units = NumberOfValues(ewr_achieved),
-                EWR_Variance = Sum(EWR_Variance),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-```
-
-## Aggregate scenarios
-
-*Galen note*- this is comparison, right? It goes across scenarios?
-
-```{r}
-# Stochastic - no climate change
-#-------------------------------
-
-sdl_EWR_vulnerability <- sdl_EWR_spells |>
-  group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|> #NOT SCENARIO
-  reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
-          n_gauges = paste(unique(n_gauges), collapse = ":"),
-          n_planning_units = paste(unique(n_planning_units), collapse = ":"),
-          n_scenarios = NumberOfValues(ewr_achieved),
-          EWR_Variance = mean(EWR_Variance),
-          EWR_scenario_Variance = Variance(ewr_achieved),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
- 
-sdl_target_vulnerability <- sdl_target_spells |>
-        ungroup()|>
-        group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>  #NOT SCENARIO
-        reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
-                n_EWRs = paste(unique(n_EWRs), collapse = ":"),
-                n_gauges = paste(unique(n_gauges), collapse = ":"),
-                n_planning_units = paste(unique(n_planning_units), collapse = ":"),
-                EWR_Variance = mean(EWR_Variance),
-                EWR_scenario_Variance = Variance(ewr_achieved),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-      
-# Historic - 
-#-------------------------------
-#aggregate planning units - ONLY have one sdl - irrespective of Targets 
-sdl_EWR_vulnerability_MK4  <- sdl_EWR_spells_MK4 |>
-  group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code)|> #NOT SCENARIO
-  reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
-          n_gauges = paste(unique(n_gauges), collapse = ":"),
-          n_planning_units = paste(unique(n_planning_units), collapse = ":"),
-          n_scenarios = NumberOfValues(ewr_achieved),
-          EWR_Variance = mean(EWR_Variance),
-          EWR_scenario_Variance = Variance(ewr_achieved),
-          ewr_achieved = mean(ewr_achieved),
-          mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-          Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-#aggregate planning units - ONLY have one sdl - respective of Targets 
-sdl_target_vulnerability_MK4 <- sdl_target_spells_MK4  |>
-        ungroup()|>
-        group_by(Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  env_group, target)|>  #NOT SCENARIO
-        reframe(n_EWR_versions = paste(unique(n_EWR_versions), collapse = ":"),
-                n_EWRs = paste(unique(n_EWRs), collapse = ":"),
-                n_gauges = paste(unique(n_gauges), collapse = ":"),
-                n_planning_units = paste(unique(n_planning_units), collapse = ":"),
-                EWR_Variance = mean(EWR_Variance),
-                EWR_scenario_Variance = Variance(ewr_achieved),
-                ewr_achieved = mean(ewr_achieved),
-                mean_Maximum_interevent_duration = mean(mean_Maximum_interevent_duration),
-                Maximum_interevent_duration = max(Maximum_interevent_duration))
-
-
+Merged_hydrology_summary <- read.csv(file.path(hydro_results, "Hydrology_summary.csv"))
+sdl_hydrology_vulnerability <- read.csv(file.path(hydro_results, "sdl_hydrology_vulnerability.csv"))
 
 ```
 
@@ -762,323 +74,6 @@ sdl_EWR_ecdf <- sdl_EWR_timeseries|>
 # 
 # temp <- quantreg::rq(sdl_EWR_timeseries, tau = 0.95)
 # quantile(95)
-```
-
-## adding scenario names
-
-```{r}
-sdl_EWR_spells <- sdl_EWR_spells |>
-  mutate(names_CSIRO_climate_scenario = case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
-                                                  Evapotranspiration == 1.07 & Rainfall == 0.7  ~ "Hot and Dry",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1.3  ~ "Hot and Wet",
-                                                  Evapotranspiration == 1 & Rainfall == 0.7  ~ "Just Dry",
-                                                  Evapotranspiration == 1 & Rainfall == 1.3  ~ "Just Wet"))
-
-sdl_EWR_spells$names_CSIRO_climate_scenario <- factor(sdl_EWR_spells$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-
-sdl_EWR_spells_MK4 <- sdl_EWR_spells_MK4 |>
-  mutate(names_CSIRO_climate_scenario = case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
-                                                  Evapotranspiration == 1.07 & Rainfall == 0.7  ~ "Hot and Dry",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1.3  ~ "Hot and Wet",
-                                                  Evapotranspiration == 1 & Rainfall == 0.7  ~ "Just Dry",
-                                                  Evapotranspiration == 1 & Rainfall == 1.3  ~ "Just Wet"))
-
-sdl_EWR_spells_MK4$names_CSIRO_climate_scenario <- factor(sdl_EWR_spells_MK4$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-
-sdl_target_spells <- sdl_target_spells |>
-  mutate(names_CSIRO_climate_scenario = case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
-                                                  Evapotranspiration == 1.07 & Rainfall == 0.7  ~ "Hot and Dry",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1.3  ~ "Hot and Wet",
-                                                  Evapotranspiration == 1 & Rainfall == 0.7  ~ "Just Dry",
-                                                  Evapotranspiration == 1 & Rainfall == 1.3  ~ "Just Wet"))
-
-sdl_target_spells$names_CSIRO_climate_scenario <- factor(sdl_target_spells$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-
-sdl_target_spells_MK4 <- sdl_target_spells_MK4 |>
-  mutate(names_CSIRO_climate_scenario = case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
-                                                  Evapotranspiration == 1.07 & Rainfall == 0.7  ~ "Hot and Dry",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
-                                                  Evapotranspiration == 1.07 & Rainfall == 1.3  ~ "Hot and Wet",
-                                                  Evapotranspiration == 1 & Rainfall == 0.7  ~ "Just Dry",
-                                                  Evapotranspiration == 1 & Rainfall == 1.3  ~ "Just Wet"))
-
-sdl_target_spells_MK4$names_CSIRO_climate_scenario <- factor(sdl_target_spells_MK4$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-```
-
-## Relative change from historic
-
-```{r}
-sdl_EWR_spells_MK4_historic <-  sdl_EWR_spells_MK4 |>
-   filter(names_CSIRO_climate_scenario == "Historical climate")|>
-   select(ewr_code, ewr_achieved)|>
-   rename(historic_ewr_achieved = ewr_achieved)
-
- sdl_target_spells_MK4_historic <-  sdl_target_spells_MK4 |>
-   filter(names_CSIRO_climate_scenario == "Historical climate")|>
-   select(env_group, ewr_achieved)|>
-   rename(historic_ewr_achieved = ewr_achieved)
- 
- sdl_EWR_spells_MK4_rel_historic <-  sdl_EWR_spells_MK4 |>
-   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
-   left_join(sdl_EWR_spells_MK4_historic, by = "ewr_code")|>
-   mutate(rel_ewr_achieved = ewr_achieved/historic_ewr_achieved)
- 
- sdl_target_spells_MK4_rel_historic <-  sdl_target_spells_MK4 |>
-   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
-   left_join(sdl_target_spells_MK4_historic, by = "env_group")|>
-   mutate(rel_ewr_achieved = ewr_achieved/historic_ewr_achieved)
- 
- # #within climate what is the biggest change in licvolfactor
- # sdl_EWR_spells_MK4_MAX_rel_historic <- sdl_EWR_spells_MK4_rel_historic |>
- #   group_by(names_CSIRO_climate_scenario)|>
- #   reframe(max_rel_ewr_achieved = max(rel_ewr_achieved))
- #   
- #   
- # sdl_target_spells_MK4_MAX_rel_historic <- sdl_target_spells_MK4_rel_historic |>
-```
-
-## Adjusting stochastic results to have median = to historic
-
-```{r}
- sdl_EWR_spells_adjusted <-  sdl_EWR_spells |>
-   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
-   left_join(sdl_EWR_spells_MK4_historic, by = "ewr_code")|>
-   group_by(ewr_code)|>
-   mutate(median_ewr_achieved = median(ewr_achieved))|>
-   mutate(adj_ewr_achieved = ewr_achieved - (median_ewr_achieved-historic_ewr_achieved))
- 
- sdl_target_spells_adjusted <-  sdl_target_spells |>
-   #filter(names_CSIRO_climate_scenario != "Historical climate")|>
-   left_join(sdl_target_spells_MK4_historic, by = "env_group")|>
-   group_by(env_group)|>
-   mutate(median_ewr_achieved = median(ewr_achieved))|>
-   mutate(adj_ewr_achieved = ewr_achieved - (median_ewr_achieved-historic_ewr_achieved))
-```
-
-dont run this one:
-
-```{r}
-#| label: data-import
-#| include: false
-
-# # DATA SETS - subsetting and ordering 
-# 
-# #
-# EWRs_sdl_units <- sdl_EWRS_agg$sdl_units |>
-#     st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean")
-# 
-# EWRs_sdl_units$ewr_code <- factor(EWRs_sdl_units$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-# 
-# #
-# EWRs_planning_unit <- sdl_EWRS_agg$planning_unit |>
-#     st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean")
-# 
-# EWRs_planning_unit$ewr_code <- factor(EWRs_planning_unit$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-# 
-# #
-# EWRs_gauge <- sdl_EWRS_agg$ewr_code |>
-#     st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean")
-# 
-# EWRs_gauge$ewr_code <- factor(EWRs_gauge$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-# 
-# ##TIME SERIES
-# ## FOR TIMESERIES
-# ## agregate to EWR codes
-# #names(EWR_timing_timeseries)
-# gauge_EWRS_timeseries <- EWR_timing_timeseries |>
-#   #dplyr::group_by(dplyr::across(c(-ewr_achieved, -ewr_code_timing)))|> #didnt work - other variables relating to code_timing
-#    dplyr::group_by(year, ewr_code, scenario, gauge, planning_unit_name) |>
-#   dplyr::summarise(ewr_achieved = mean(ewr_achieved)) 
-
-
-```
-
-dont run this one:
-
-```{r}
-# #dont run this one:
-# 
-# #NEXT STEPS
-# 
-# #ewr_code_nonrounding
-# ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
-#     st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean")
-# ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
-# ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
-# 
-# # #EWRs - aggregating gauges used at multiple planning units:
-# # ewr_code_per_gauge_nonrounding <- ewr_code_nonrounding |>
-# #   group_by(scenario, gauge, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
-# #                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2,
-# #                                                         node_type_10.3, node_type_3,
-# #                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario,
-# #                                                         names_MDBA_climate_scenario_long,
-# #                                                         names_MDBA_climate_scenario)|> #everything except ewr_achieved, polyID, and planning_unit_name
-# #   summarise(ewr_achieved = mean(ewr_achieved))
-# 
-# #EWRs - aggregating gauges used at multiple planning units:
-# ewr_code_per_gauge_nonrounding <- ewr_code_nonrounding |>
-#   group_by(scenario, gauge, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
-#                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2,
-#                                                         node_type_10.3, node_type_3,
-#                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario,
-#                                                         names_MDBA_climate_scenario_long,
-#                                                         names_MDBA_climate_scenario)|> #everything except ewr_achieved, polyID, and planning_unit_name
-#   summarise(ewr_achieved = mean(ewr_achieved))
-# 
-# #sdl_units_nonrounding EWRs for each objective
-# #doing this manually so that objectives get joined at the right time. ??? probably just need another aggregation sequence
-# sdl_EWRs_to_planningunitss_nonrounding <- ewr_code_nonrounding |>
-#   st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean" ) |>
-#   right_join(objectives_for_EWRs, by = join_by(planning_unit_name, gauge, ewr_code)) |>
-#   
-#   group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, gauge
-#   # aggregate gauges
-#   summarise(ewr_achieved = mean(ewr_achieved))|> 
-#   
-#   group_by(scenario, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario, env_obj) |> # everthing except ewr_achieved, polyID, and planning_unit_name
-#    # aggregate planning units
-#   summarise(ewr_achieved = mean(ewr_achieved))
-# 
-#   #shouldnt have to do this manually!
-# sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
-# 
-# sdl_EWRs_objectives_nonrounding <- sdl_EWRs_to_planningunitss_nonrounding |>
-#   group_by(scenario, ewr_code, env_group, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |> # everthing except ewr_achieved, env_obj 
-#    # aggregate env_obj 
-#   summarise(ewr_achieved = mean(ewr_achieved))
-#   
-# 
-# # #ewr_code_nonrounding
-# # ewr_code_nonrounding <- sdl_EWRs_nonrounding_agg$ewr_code |>
-# #     st_drop_geometry()|>
-# #   filter(aggfun_1 == "ArithmeticMean")
-# # ewr_code_nonrounding$names_climate_scenario <- factor(ewr_code_nonrounding$names_climate_scenario, levels=c(rev(levels(ewr_code_nonrounding$names_climate_scenario))))
-# # ewr_code_nonrounding$ewr_code <- factor(ewr_code_nonrounding$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-#     
-# 
-# # #ewr_code rounding and nonrounding
-# # ewr_code_rounding_nonrounding <- left_join(ewr_code_rounding, ewr_code_nonrounding, 
-# #                                            by = join_by(scenario, planning_unit_name, gauge, polyID, ewr_code, aggfun_1, aggLevel_1, scale_rain, scale_evap, licvolfactor, Tributary,
-# #                                                         `GS Irrig`, `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`, filename, node_type_10.2, node_type_10.3, node_type_3,
-# #                                                         node_type_8, node_type_8.2, node_type_9, node_type_9.1, names_scenario, names_climate_scenario, names_MDBA_climate_scenario_long,
-# #                                                         names_MDBA_climate_scenario), #everything except ewr_achieved
-# #                                            suffix = c(".rounding", ".nonrounding"))
-# 
-# #objective scale nonrounding
-# temp <- sdl_theme_nonrounding_agg$ewr_code_timing |>
-#   filter(ewr_code == "SF1"| ewr_code == "SF2") |>
-#   filter(names_MDBA_climate_scenario == "Wet climate")
-# 
-# 
-# unique(temp$names_MDBA_climate_scenario)
-# 
-# 
-# sdl_objectives_nonrounding <- sdl_theme_nonrounding_agg$sdl_units |>
-#   st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean")|>
-# dplyr::filter(!is.na(StateID))
-# 
-# sdl_objectives_nonrounding$names_climate_scenario <- factor(sdl_objectives_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_objectives_nonrounding$names_climate_scenario)))) 
-# 
-# #shouldnt have to do this manually!
-# sdl_objectives_nonrounding$env_group <- stringr::str_extract(sdl_objectives_nonrounding$env_obj, "^.{2}")  
-# 
-# unique(sdl_objectives_nonrounding$env_obj)
-# sdl_objectives_nonrounding[sdl_objectives_nonrounding$env_obj == "NF",]
-# 
-# 
-# # #temp to help fix for all objectives being attached
-# SWSDLName_objectives <- sort(unique(objectives[objectives$gauge %in% gauges_to_plot,]$env_obj))
-
-
-```
-
-DOnt RUN
-
-```{r}
-# #target scale nonrounding
-# sdl_target <- sdl_target_agg$Target |>
-#   st_drop_geometry()|>
-#   filter(aggfun_1 == "ArithmeticMean" & aggfun_2 == "ArithmeticMean"  & aggfun_3 == "ArithmeticMean" & aggfun_4 == "ArithmeticMean" & aggfun_5 == "ArithmeticMean")|>
-# dplyr::filter(!is.na(StateID))
-# 
-# # sdl_target_nonrounding$names_climate_scenario <- factor(sdl_target_nonrounding$names_climate_scenario, levels=c(rev(levels(sdl_target_nonrounding$names_climate_scenario)))) 
-# 
-# #   #shouldnt have to do this manually!
-# # sdl_EWRs_to_planningunitss_nonrounding$env_group <- stringr::str_extract(sdl_EWRs_to_planningunitss_nonrounding$env_obj, "^.{2}")
-#   
-# sdl_target <- sdl_target |>
-#   mutate(env_group = case_when(Target == "Native fish" ~ "NF",
-#                                   Target ==  "Native vegetation" ~ "NV",
-#                                   Target == "Other species" ~ "OS",   
-#                                   Target == "Priority ecosystem function" ~ "EF", 
-#                                   Target == "Waterbird" ~ "WB",
-#                                   Target == NA ~ NA)) 
-```
-
-Dont run this one:
-
-\## To work out which gauges to include:
-
-```{r}
-# #dont run this one:
-# #| include: false
-# # to work out which gauges to include:
-# all_scenarios <- sdl_objective_nonrounding_agg$ewr_code_timing |>
-#   group_by(gauge, ewr_code) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n = n())
-# 
-# ggplot(data = all_scenarios, aes(x = ewr_code, y = 1))+
-#   geom_tile(aes(fill = ewr_achieved))+
-#   geom_text(aes(label = n))+
-#   facet_grid(gauge~.)
-# 
-# all_scenarios_allEWRS <- all_scenarios |>
-#   group_by(gauge) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n = n())
-
-```
-
-## Scenario subsets
-
-```{r}
-#| label: data-subsets
-#| include: false
-
-gauges_to_plot <- c('421001' ,'421004' ,'421012' ,'421019' ,'421022' ,'421090' ,'421023' ,'421146')
-#paste(unique(sdl_objective_nonrounding_agg$ewr_code_timing$gauge), collapse = "' ,'")
-
-ODD_gauges <- c("421019", "421023", "421146") #(EWRS never pass)
-
-# scenarios_to_plot <- unique(scenarios$scenario)
-# 
-# # scenarios_to_compare_historical <- unique(filter(scenarios, scale_evap != 1.07)$scenario)
-# 
-# scenarios_scale_evap_climate_comp <- unique(scenarios$scenario)
-# 
-#  Dry_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07")
-#  Median_comparison <- c("SR1.0_SE1.00", "SR1.0_SE1.07")
-#  Wet_comparison <- c("SR1.0_SE1.00", "SR1.2_SE1.07")
-#  
-#  MDBA_comparison <- c("SR1.0_SE1.00", "SR0.8_SE1.07", "SR1.0_SE1.07", "SR1.2_SE1.07")
- 
- SWSDLName_subset <-  "Macquarie–Castlereagh"
- 
 ```
 
 ## Palettes
@@ -1148,7 +143,7 @@ pal_envgroup <- purrr::imap_chr(pal_env,
 
 pal_Target <-  stats::setNames(c("#1B1B1BFF", "#A1D8B6FF", "#005D67FF", "#67223FFF", "#023FA5FF", "#EA4C3BFF", 
                                  "#4873B8", "#B7A447", "#FDC010"), 
-            c('Priority ecosystem function', 'Native fish', 'Native vegetation', 'Other species', 'Waterbird', 
+            c('Priority ecosystem function', 'Native fish', 'Native vegetation', 'Other species', 'Waterbirds', 
                "End of system flows", "Water allocation", "Agricultural benefits"))
 class(pal_Target) <- 'colors'
 
@@ -1189,7 +184,7 @@ pal_CSIRO_climate_scenario <- stats::setNames(
   c("Just Wet", "Hot and Wet", "Historical climate",  "Just Hot", "Just Dry", "Hot and Dry", NA))
 class(pal_CSIRO_climate_scenario) <- 'colors'
 
-
+SWSDLName_subset <-  "Macquarie–Castlereagh"
 
 ```
 
@@ -1428,7 +423,7 @@ Manual data for plots
 # 
 # ```{r}
 # #| label: tbl-scenarios
-# #| tbl-cap: Demonstration scenarios are a factorial combination of 'climate' (scaled flow) and 'adaptation' (pulsed additions). Climate scenarios... Adaptation options were applied to each climate scenario with ... 
+# #| tbl-cap: Demonstration scenarios are a factorial combination of 'climate' (scaled flow) and 'management' (pulsed additions). Climate scenarios... Adaptation options were applied to each climate scenario with ... 
 # 
 # #| layout-ncol: 3
 # #| tbl-subcap: 
@@ -1548,7 +543,7 @@ files_sdl_target_spells_adjusted <- files_EWR_all |>
   dplyr::filter(grepl('sdl_target_spells_adjusted', filename))
 ```
 
-## 1) Vulnerability - historic data - no climate change (to add to the bottom of stochastic v.)
+## 1A) Vulnerability - no climate change
 
 ```{r}
 sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
@@ -1558,124 +553,420 @@ sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
                                     licvol = 'licvolfactor_1_0',
                                     climate = 'r1_0_e1_0',
                                     aggname = 'sdl_ewr_vulnerability')
+names(sdl_EWR_vulnerability)
+
+#TEMP FIX
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
 
 sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
                                     info_list = aggregation_info,
                                     mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = 'licvolfactor_1_0',
+                                    licvol = c('licvolfactor_1_0',"licvolfactor_1_0"),
                                     climate = 'r1_0_e1_0',
                                     aggname = 'sdl_target_vulnerability')
 
-#select measure
+sdl_target_vulnerability <- sdl_target_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+names(sdl_target_vulnerability)
+
+mean_EWR_Stoch_var <- 0.01 #mean(filter(sdl_EWR_vulnerability, Data == "Stochastic")$variance_ewr_achieved)
+mean_target_Stoch_var <- mean(filter(sdl_target_vulnerability, Data == "Stochastic")$variance_ewr_achieved)
+
 #EWR
-sdl_EWR_vulnerability$ewr_achieved <- sdl_EWR_vulnerability$replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
-sdl_EWR_vulnerability$EWR_scenario_Variance <- sdl_EWR_vulnerability$replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
-
-#target
-sdl_target_vulnerability$ewr_achieved <- sdl_target_vulnerability$replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
-sdl_target_vulnerability$EWR_scenario_Variance <- sdl_target_vulnerability$replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
-
-#
-sdl_EWR_vulnerability$ewr_code <- factor(sdl_EWR_vulnerability$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-
-sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
-    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "CF",
-                                               ewr_code == "VF" ~ "VF",
-                                               ewr_code == "BF1" ~ "BF",
-                                               ewr_code == "BF2" ~ "BF",
-                                               ewr_code == "SF1" ~ "SF",
-                                               ewr_code == "SF2" ~ "SF",
-                                               ewr_code == "SF3" ~ "SF",
-                                               ewr_code == "LF1" ~ "LF",
-                                               ewr_code == "LF2" ~ "LF",
-                                               ewr_code == "OB-WL" ~ "OB",
-                                               ewr_code == "OB-WM" ~ "OB",
-                                               ewr_code == "OB-WS1" ~ "OB",
-                                               ewr_code == "OB-WS2" ~ "OB",
-                                               ewr_code == "OB-WS3" ~ "OB",
-                                               ewr_code == "OB-WS4" ~ "OB",
-                                               .default = ewr_code))
-
-sdl_EWR_vulnerability$ewr_code <- factor(sdl_EWR_vulnerability$ewr_code, levels = c("CF", "VF", "BF", "SF", "LF", "OB")) 
-
-sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
-    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "Cease to flow",
-                                               ewr_code == "VF" ~ "Very low flow",
-                                               ewr_code == "BF" ~ "Base flow",
-                                               ewr_code == "SF" ~ "Small fresh",
-                                               ewr_code == "LF" ~ "Large fresh",
-                                               ewr_code == "OB" ~ "Overbank"
-                                               .default = ewr_code))
-
-sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
-    dplyr::mutate(Data = dplyr::case_when(Data == "historical" ~ "Historic",
-                            Data == "stochastic" ~ "Stochastic",
-                            .default = Data))
-
-sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
-    dplyr::mutate(target = dplyr::case_when(env_group == "NF" ~ "Native fish",
-                                  env_group == "NV" ~ "Native vegetation" ,
-                                  env_group == "OS" ~ "Other species",   
-                                  env_group == "EF" ~ "Priority ecosystem function", 
-                                  env_group == "WB" ~ "Waterbird",
-                                  env_group == NA ~ NA,
-                                  .default = env_group))
-
-sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
-    dplyr::mutate(Mark = dplyr::case_when(Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
-                                Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
-                                Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",   
-                                Mk == "MACQ_CC_EFR" ~ "Mk4", 
-                                Mk == NA ~ NA,
-                                .default = Mk))
-
-plot_sdl_EWR_vulnerability <- ggplot(data = sdl_EWR_vulnerability, aes(y = EWR_scenario_Variance, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+plot_sdl_EWR_vulnerability_S_noclimate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
   geom_point() +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
   geom_vline(xintercept = 0.5) +
-    geom_hline(yintercept = mean(sdl_EWR_vulnerability$EWR_scenario_Variance)) +
+    geom_hline(yintercept = mean_EWR_Stoch_var) +
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data2)+
-  coord_cartesian(xlim = c(0,1), ylim = c(0 , 0.003))
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
 
-plot_sdl_target_vulnerability_MK4 <- sdl_target_vulnerability_MK4 |>
-  mutate(EWR_scenario_Variance = 0)|>
-  filter(Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0)|>
-  ggplot(aes(y = EWR_scenario_Variance, x = ewr_achieved, colour = env_group, shape = Data)) + 
+plot_sdl_EWR_vulnerability_H_noclimate <- ggplot(data = filter(sdl_EWR_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = ewr_code, shape = Data)) + 
   geom_point() +
-  geom_point(data = sdl_target_vulnerability) +
-  #geom_hex()#+
-  #facet_wrap(~target)+
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
+
+#TARGET
+plot_sdl_target_vulnerability_S_noclimate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_point() +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
   geom_vline(xintercept = 0.5) +
-  geom_hline(yintercept = mean(sdl_EWR_vulnerability$EWR_scenario_Variance)) +
-  scale_colour_manual(values = pal_envgroup)+
+    geom_hline(yintercept = mean_target_Stoch_var) +
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2) +
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_target_vulnerability_H_noclimate <- ggplot(data = filter(sdl_target_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data2)+
-  coord_cartesian(xlim = c(0,1), ylim = c(0 , 0.003))
+  coord_cartesian(xlim = c(0,1))
+
+#Hydrology:
+plot_sdl_target_vulnerability_S_noclimate <- ggplot(data = filter(sdl_hydrology_vulnerability), aes(y = variance_measure_achieved, x = measure_achieved, colour = target, shape = Data)) + 
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+    geom_hline(yintercept = mean_target_Stoch_var) +
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2) +
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_target_vulnerability_H_noclimate <- ggplot(data = filter(sdl_hydrology_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
 
 
-plot_sdl_vulnerability_MK4 <- plot_sdl_EWR_vulnerability_MK4 + plot_sdl_target_vulnerability_MK4 + plot_layout(ncol = 1, guides = "collect") & theme(legend.box = "horizontal")
 
-plot_sdl_vulnerability_MK4
+plot_sdl_EWR_vulnerability_noclimate <- plot_sdl_EWR_vulnerability_S_noclimate + plot_sdl_EWR_vulnerability_H_noclimate + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
 
-ggsave(plot = plot_sdl_vulnerability_MK4, filename = file.path(comp_results, paste0("plot_sdl_vulnerability_MK4",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+plot_sdl_target_vulnerability_noclimate <- plot_sdl_target_vulnerability_S_noclimate + plot_sdl_target_vulnerability_H_noclimate + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+ggsave(plot = plot_sdl_EWR_vulnerability_noclimate, filename = file.path(comp_results, paste0("plot_sdl_EWR_vulnerability_noclimate",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+ggsave(plot = plot_sdl_target_vulnerability_noclimate, filename = file.path(comp_results, paste0("plot_sdl_target_vulnerability_noclimate",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+
+
 
 ```
+
+## 1B) Vulnerability - no climate change - with licvol
+
+```{r}
+sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = "all",#c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_vulnerability')
+
+names(sdl_EWR_vulnerability)
+
+#TEMP FIX
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = "all",#c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_target_vulnerability')
+
+sdl_target_vulnerability <- sdl_target_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+names(sdl_target_vulnerability)
+
+plot_sdl_EWR_vulnerability_S_licvol <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = licvolfactor)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+    geom_hline(yintercept = mean_EWR_Stoch_var) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_EWR_vulnerability_H_licvol <- ggplot(data = filter(sdl_EWR_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = licvolfactor)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
+
+plot_sdl_target_vulnerability_S_licvol <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = licvolfactor)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+    geom_hline(yintercept = mean_target_Stoch_var) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2) +
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_target_vulnerability_H_licvol <- ggplot(data = filter(sdl_target_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = licvolfactor)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
+
+
+plot_sdl_EWR_vulnerability_licvol <- plot_sdl_EWR_vulnerability_S_licvol + plot_sdl_EWR_vulnerability_H_licvol + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+plot_sdl_target_vulnerability_licvol <- plot_sdl_target_vulnerability_S_licvol + plot_sdl_target_vulnerability_H_licvol + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+ggsave(plot = plot_sdl_EWR_vulnerability_licvol, filename = file.path(comp_results, paste0("plot_sdl_EWR_vulnerability_licvol",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+ggsave(plot = plot_sdl_target_vulnerability_licvol, filename = file.path(comp_results, paste0("plot_sdl_target_vulnerability_licvol",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+```
+
+## 1C) Vulnerability - no climate change - with diff marks
+
+```{r}
+sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = "all",#c("MACQ_CC_EFR", 'MACQ_CC_EFR_mkiv', "MACQ_CC_EFR_mkv"), 
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_vulnerability')
+
+names(sdl_EWR_vulnerability)
+
+#TEMP FIX
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = "all",#c("MACQ_CC_EFR", 'MACQ_CC_EFR_mkiv', "MACQ_CC_EFR_mkv"), 
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_target_vulnerability')
+
+sdl_target_vulnerability <- sdl_target_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+names(sdl_target_vulnerability)
+
+plot_sdl_EWR_vulnerability_S_mks <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = Mark)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+    geom_hline(yintercept = mean_EWR_Stoch_var) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_EWR_vulnerability_H_mks <- ggplot(data = filter(sdl_EWR_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = Mark)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
+
+plot_sdl_target_vulnerability_S_mks <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = Mark)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = mean_target_Stoch_var) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2) +
+  coord_cartesian(xlim = c(0,1))#, ylim = c(0 , 0.003))
+
+plot_sdl_target_vulnerability_H_mks <- ggplot(data = filter(sdl_target_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = Mark)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1))
+
+
+plot_sdl_EWR_vulnerability_mks <- plot_sdl_EWR_vulnerability_S_mks + plot_sdl_EWR_vulnerability_H_mks + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+plot_sdl_target_vulnerability_mks <- plot_sdl_target_vulnerability_S_mks + plot_sdl_target_vulnerability_H_mks + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+ggsave(plot = plot_sdl_EWR_vulnerability_mks, filename = file.path(comp_results, paste0("plot_sdl_EWR_vulnerability_mks",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+ggsave(plot = plot_sdl_target_vulnerability_mks, filename = file.path(comp_results, paste0("plot_sdl_target_vulnerability_mks",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+```
+
+## 1D) Vulnerability - With climate change
+```{r}
+sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR_mkiv'), 
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = "all",#c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
+                                    aggname = 'sdl_ewr_vulnerability')
+#TEMP FIX
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR_mkiv'), 
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = "all",#c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
+                                    aggname = 'sdl_target_vulnerability')
+
+#TEMP FIX
+sdl_target_vulnerability <- sdl_target_vulnerability |>
+  mutate(variance_ewr_achieved = ifelse(Data == "Stochastic", variance_ewr_achieved, NA))
+
+plot_sdl_EWR_vulnerability_S_climate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = names_CSIRO_climate_scenario)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+    geom_hline(yintercept = mean_EWR_Stoch_var) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.02))#, ylim = c(0 , 0.003))
+
+plot_sdl_EWR_vulnerability_H_climate <- ggplot(data = filter(sdl_EWR_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = ewr_code, alpha = names_CSIRO_climate_scenario)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_EWR)+
+  scale_colour_manual(values = pal_EWR)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1), ylim = c(0, 0.02))
+
+plot_sdl_target_vulnerability_S_climate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = names_CSIRO_climate_scenario)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal")+
+  geom_vline(xintercept = 0.5) +
+  geom_hline(yintercept = mean_target_Stoch_var) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2) +
+  coord_cartesian(xlim = c(0,1), ylim = c(0, 0.02))
+
+plot_sdl_target_vulnerability_H_climate <- ggplot(data = filter(sdl_target_vulnerability, Data == "Historic"), aes(y = factor(variance_ewr_achieved), x = ewr_achieved, colour = target, shape = Data)) + 
+  geom_line()+
+  geom_point(aes(fill = target, alpha = names_CSIRO_climate_scenario)) +
+  geom_point() +
+  theme_werp_toolkit()+
+  theme(legend.box = "horizontal",
+        axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())+
+  geom_vline(xintercept = 0.5) +
+  scale_fill_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target)+
+  scale_shape_manual(values = shapes_data2)+
+  coord_cartesian(xlim = c(0,1), ylim = c(0, 0.02))
+
+
+plot_sdl_EWR_vulnerability_climate <- plot_sdl_EWR_vulnerability_S_climate + plot_sdl_EWR_vulnerability_H_climate + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+plot_sdl_target_vulnerability_climate <- plot_sdl_target_vulnerability_S_climate + plot_sdl_target_vulnerability_H_climate + plot_layout(ncol = 1, heights = c(7, 1), axes = "collect_x", guides = "collect")
+
+ggsave(plot = plot_sdl_EWR_vulnerability_climate, filename = file.path(comp_results, paste0("plot_sdl_EWR_vulnerability_climate",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+ggsave(plot = plot_sdl_target_vulnerability_climate, filename = file.path(comp_results, paste0("plot_sdl_target_vulnerability_climate",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+```
+
+## Figure 1
+
+```{r}
+
+plot_sdl_EWR_vulnerability_S_noclimate + plot_sdl_EWR_vulnerability_S_licvol + 
+plot_sdl_EWR_vulnerability_S_mks + plot_sdl_EWR_vulnerability_S_climate + 
+  plot_layout(nrow = 2, axes = "collect", guides = "collect") & 
+  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.02))#, ylim = c(0 , 0.003))
+
+plot_sdl_target_vulnerability_S_noclimate + plot_sdl_target_vulnerability_S_licvol + 
+plot_sdl_target_vulnerability_S_mks + plot_sdl_target_vulnerability_S_climate + 
+  plot_layout(nrow = 2, axes = "collect", guides = "collect") & 
+  coord_cartesian(xlim = c(0,1), ylim = c(0 , 0.003))
+
+```
+
 
 ## 2) Temporal variability - stochastic error band with historic data - no climate change
 
 ```{r}
 
-plot_sdl_EWR_temporal_variability <- sdl_EWR_timeseries_MK4|> 
-  filter(Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0)|>
+sdl_EWR_timeseries <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_timeseries')
+
+sdl_target_timeseries <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_target_timeseries')
+
+plot_sdl_EWR_temporal_variability <- sdl_EWR_timeseries|> 
   ggplot(aes(x = ewr_achieved, colour = ewr_code, linetype = Data)) + 
   stat_ecdf(data = sdl_EWR_timeseries, aes(group = scenario), alpha = 0.1) + 
   stat_ecdf(data = sdl_EWR_timeseries, geom = "step", colour = "black") +
-  stat_ecdf(geom = "step", colour = "black") +
-  #geom_step(data = sdl_EWR_ecdf, aes(x = ewr_achieved, y = ecdf_mean, colour = ewr_code))+
   theme_werp_toolkit()+ 
   scale_colour_manual(values = pal_EWR)+ 
   scale_fill_manual(values = pal_EWR)+ 
@@ -1684,12 +975,11 @@ plot_sdl_EWR_temporal_variability <- sdl_EWR_timeseries_MK4|>
 
 plot_sdl_EWR_temporal_variability
 
-plot_sdl_target_temporal_variability <- sdl_EWR_timeseries_MK4|> 
+plot_sdl_target_temporal_variability <- sdl_target_timeseries|> 
   filter(Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0)|>
   ggplot(aes(x = ewr_achieved, colour = env_group, linetype = Data)) + 
   stat_ecdf(data = sdl_target_timeseries, aes(group = scenario), alpha = 0.1) + 
   stat_ecdf(data = sdl_target_timeseries, geom = "step", colour = "black") +
-  stat_ecdf(geom = "step", colour = "black") +
   theme_werp_toolkit()+ 
   scale_colour_manual(values = pal_envgroup)+ 
   scale_fill_manual(values = pal_envgroup)+ 
@@ -1716,20 +1006,47 @@ null_data <- data.frame(
 null_data <- null_data |>
   mutate(n_years_achieved = 130*ewr_achieved,
          n_years_not_achieved = 130*(1-ewr_achieved),
-         mean_Maximum_interevent_duration = n_years_not_achieved/n_years_achieved)|>
-  mutate(mean_Maximum_interevent_duration = ifelse(mean_Maximum_interevent_duration == Inf, 130, mean_Maximum_interevent_duration))
+         mean_max_interevent = n_years_not_achieved/n_years_achieved)|>
+  mutate(mean_max_interevent = ifelse(mean_max_interevent == Inf, 130, mean_max_interevent),
+         Data = "Stochastic")
+
+null_data1 <- null_data
+null_data1$Data <- "Historic"
+
+null_data <- bind_rows(null_data, null_data1)
+
 ```
 
 ## 3) Spells plot- stochastic + historic data - no climate change
 
 ```{r}
+
+sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_spells')
+
+sdl_EWR_spells <- filter(sdl_EWR_spells, !grepl("MAX", scenario))
+
+sdl_target_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_target_spells')
+
+sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
+
 plot_sdl_EWR_spells <- sdl_EWR_spells |>
-  ggplot(aes(y = mean_Maximum_interevent_duration, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+  ggplot(aes(y = mean_max_interevent, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
   geom_point() +
-  geom_line(data = null_data, aes(y = mean_Maximum_interevent_duration, x = ewr_achieved), colour = "black")+
+  geom_line(data = null_data, aes(y = mean_max_interevent, x = ewr_achieved), colour = "black")+
   geom_line(data = null_data, aes(y = n_years_not_achieved, x = ewr_achieved), colour = "black")+
-  #geom_hex()#+
-  #facet_wrap(~ewr_code)+
+  facet_wrap(~Data)+
   theme_werp_toolkit()+
   # labs(y = "Mean Maximum_interevent_duration",
   #      x = "Mean ewr_achieved")+
@@ -1737,89 +1054,55 @@ plot_sdl_EWR_spells <- sdl_EWR_spells |>
   scale_shape_manual(values = shapes_data2)
 
 plot_sdl_target_spells <- sdl_target_spells |>
-  ggplot(aes(y = mean_Maximum_interevent_duration, x = ewr_achieved, colour = env_group, shape = Data)) + 
+  ggplot(aes(y = mean_max_interevent, x = ewr_achieved, colour = env_group, shape = Data)) + 
   geom_point() +
-  geom_line(data = null_data, aes(y = mean_Maximum_interevent_duration, x = ewr_achieved), colour = "black")+
+  geom_line(data = null_data, aes(y = mean_max_interevent, x = ewr_achieved), colour = "black")+
   geom_line(data = null_data, aes(y = n_years_not_achieved, x = ewr_achieved), colour = "black")+
-  #geom_hex()#+
-  #facet_wrap(~target)+
+  facet_wrap(~Data)+
   theme_werp_toolkit()+
   # labs(y = "Mean Maximum_interevent_duration",
   #      x = "Mean ewr_achieved")+
   scale_colour_manual(values = pal_envgroup) +
   scale_shape_manual(values = shapes_data)
 
+ggsave(plot = plot_sdl_EWR_spells, filename = file.path(comp_results, paste0("plot_sdl_EWR_spells",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
 
-plot_sdl_EWR_spells_MK4 <- sdl_EWR_spells_MK4 |>
-  filter(Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0)|>
-  ggplot(aes(y = mean_Maximum_interevent_duration, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-  geom_point() +
-    geom_line(data = null_data, aes(y = mean_Maximum_interevent_duration, x = ewr_achieved), colour = "black")+
-  geom_line(data = null_data, aes(y = n_years_not_achieved, x = ewr_achieved), colour = "black")+
-  #geom_hex()#+
-  #facet_wrap(~ewr_code)+
-  theme_werp_toolkit()+
-  # labs(y = "Mean Maximum_interevent_duration",
-  #      x = "Mean ewr_achieved")+
-  scale_colour_manual(values = pal_EWR) +
-  scale_shape_manual(values = shapes_data2)
-
-plot_sdl_target_spells_MK4 <- sdl_target_spells_MK4 |>
-  filter(Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0)|>
-  ggplot(aes(y = mean_Maximum_interevent_duration, x = ewr_achieved, colour = env_group, shape = Data)) + 
-  geom_point() +
-    geom_line(data = null_data, aes(y = mean_Maximum_interevent_duration, x = ewr_achieved), colour = "black")+
-  geom_line(data = null_data, aes(y = n_years_not_achieved, x = ewr_achieved), colour = "black")+
-  #geom_hex()#+
-  #facet_wrap(~target)+
-  theme_werp_toolkit()+
-  # labs(y = "Mean Maximum_interevent_duration",
-  #      x = "Mean ewr_achieved")+
-  scale_colour_manual(values = pal_envgroup) +
-  scale_shape_manual(values = shapes_data)
-
-#are these are just a product of the EWR definitions?
-plot_sdl_spells <- plot_sdl_EWR_spells + plot_sdl_target_spells 
-plot_sdl_spells_MK4 <- plot_sdl_EWR_spells_MK4 + plot_sdl_target_spells_MK4 
-plot_sdl_spells_both <- plot_sdl_spells + plot_sdl_spells_MK4 + plot_layout(guides = "collect")
-
-ggsave(plot = plot_sdl_spells_both, filename = file.path(comp_results, paste0("plot_sdl_spells",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 6)
+ggsave(plot = plot_sdl_target_spells, filename = file.path(comp_results, paste0("plot_sdl_target_spells",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
 
 ```
 
 ## 4) Variability - stochastic + historic data - no climate change
 
 ```{r}
-plot_sdl_EWR_variability_sh <- ggplot() + 
-  geom_jitter(data = sdl_EWR_spells, aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
+plot_sdl_EWR_variability_scatter <- ggplot(data = sdl_EWR_spells) + 
+  geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
               height = 0) + 
-  geom_violin(data = sdl_EWR_spells, aes(y = ewr_achieved, x = ewr_code),  colour = "black", fill = NA) + 
-  geom_point(data = filter(sdl_EWR_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
-              aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data)+
   coord_cartesian(ylim = c(0,1))
 
-plot_sdl_target_variability_sh <- ggplot() +  
-  geom_jitter(data = sdl_target_spells, aes(y = ewr_achieved, x = env_group, colour = env_group, shape = Data),
+plot_sdl_target_variability_scatter <- ggplot(data = sdl_target_spells) + 
+  geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data),
               height = 0) + 
-  geom_violin(data = sdl_target_spells, aes(y = ewr_achieved, x = env_group),  colour = "black", fill = NA) + 
-  geom_point(data = filter(sdl_target_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
-              aes(y = ewr_achieved, x = env_group, colour = env_group, shape = Data),fill = "black", size = 3) + 
-  #geom_boxplot(colour = "black") +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_target_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
-  scale_colour_manual(values = pal_envgroup)+
-  #scale_linetype_manual(values = linetype_data)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data)+
   coord_cartesian(ylim = c(0,1))
 
+plot_sdl_EWR_variability_scatter
+plot_sdl_target_variability_scatter
 
-plot_sdl_variability_sh <- plot_sdl_EWR_variability_sh + plot_sdl_target_variability_sh + plot_layout(ncol = 1)
-plot_sdl_variability_sh
 
-ggsave(plot = plot_sdl_variability_sh, filename = file.path(comp_results, paste0("plot_sdl_variability_stoch_and_historic",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 10)
+ggsave(plot = plot_sdl_EWR_variability_scatter, filename = file.path(comp_results, paste0("plot_sdl_EWR_variability_scatter",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+
+ggsave(plot = plot_sdl_target_variability_scatter, filename = file.path(comp_results, paste0("plot_sdl_target_variability_scatter",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 
 ```
 
@@ -1861,10 +1144,30 @@ ggsave(plot = plot_sdl_variability_sh_adjusted, filename = file.path(comp_result
 ## 5) Climate change - stochastic + historic data - with climate change (violin plot version)
 
 ```{r}
+sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_spells')
+
+sdl_EWR_spells <- filter(sdl_EWR_spells, !grepl("MAX", scenario))
+
+sdl_target_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_target_spells')
+
+sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
+
 plot_sdl_EWR_variability_sh_climatechange <- ggplot() + 
   geom_violin(data = sdl_EWR_spells, aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
               colour = "grey") + 
-  geom_point(data = filter(sdl_EWR_spells_MK4, licvolfactor == 1.0), 
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data, fill = names_CSIRO_climate_scenario), 
              size = 3) + 
   theme_werp_toolkit()+
@@ -1881,7 +1184,7 @@ plot_sdl_EWR_variability_sh_climatechange <- ggplot() +
 plot_sdl_target_variability_sh_climatechange <- ggplot() +  
   geom_violin(data = sdl_target_spells, aes(y = ewr_achieved, x = env_group, group = env_group),
               colour = "grey") + 
-  geom_point(data = filter(sdl_target_spells_MK4, licvolfactor == 1.0), 
+  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data, fill = names_CSIRO_climate_scenario),
              size = 3) + 
   #geom_boxplot() +
@@ -1943,66 +1246,39 @@ ggsave(plot = plot_sdl_relativechange_climate, filename = file.path(comp_results
 
 ```
 
-## duplicate stochastic data to put box plts in backgroud
-
-```{r}
-
-#"Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry"
-
-sdl_EWR_spells_JW <- sdl_EWR_spells
-sdl_EWR_spells_JW$names_CSIRO_climate_scenario <- "Just Wet"
-
-sdl_EWR_spells_HW <- sdl_EWR_spells
-sdl_EWR_spells_HW$names_CSIRO_climate_scenario <- "Hot and Wet"
-
-sdl_EWR_spells_JH <- sdl_EWR_spells
-sdl_EWR_spells_JH$names_CSIRO_climate_scenario <- "Just Hot"
-
-sdl_EWR_spells_JD <- sdl_EWR_spells
-sdl_EWR_spells_JD$names_CSIRO_climate_scenario <- "Just Dry"
-
-sdl_EWR_spells_HD <- sdl_EWR_spells
-sdl_EWR_spells_HD$names_CSIRO_climate_scenario <- "Hot and Dry"
-
-
-sdl_EWR_spells_background <- bind_rows(sdl_EWR_spells, sdl_EWR_spells_JW, sdl_EWR_spells_HW, sdl_EWR_spells_JH,
-                                      sdl_EWR_spells_JD, sdl_EWR_spells_HD)
-
-sdl_EWR_spells_background$names_CSIRO_climate_scenario <- factor(sdl_EWR_spells_background$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-
-
-sdl_target_spells_JW <- sdl_target_spells
-sdl_target_spells_JW$names_CSIRO_climate_scenario <- "Just Wet"
-
-sdl_target_spells_HW <- sdl_target_spells
-sdl_target_spells_HW$names_CSIRO_climate_scenario <- "Hot and Wet"
-
-sdl_target_spells_JH <- sdl_target_spells
-sdl_target_spells_JH$names_CSIRO_climate_scenario <- "Just Hot"
-
-sdl_target_spells_JD <- sdl_target_spells
-sdl_target_spells_JD$names_CSIRO_climate_scenario <- "Just Dry"
-
-sdl_target_spells_HD <- sdl_target_spells
-sdl_target_spells_HD$names_CSIRO_climate_scenario <- "Hot and Dry"
-
-
-sdl_target_spells_background <- bind_rows(sdl_target_spells, sdl_target_spells_JW, sdl_target_spells_HW, sdl_target_spells_JH,
-                                      sdl_target_spells_JD, sdl_target_spells_HD)
-
-sdl_target_spells_background$names_CSIRO_climate_scenario <- factor(sdl_target_spells_background$names_CSIRO_climate_scenario, 
-           levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")) 
-```
 
 ## 6) ewater adaptation (changing HEW)
 
 ```{r}
+
+sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = "all",#'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_spells')
+
+sdl_EWR_spells <- filter(sdl_EWR_spells, !grepl("MAX", scenario))
+
+sdl_target_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv', 
+                                    licvol = "all",#'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_target_spells')
+
+sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
+
 plot_sdl_EWR_variability_sh_adaptation <- ggplot() + 
-  geom_violin(data = sdl_EWR_spells_background, aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
+  geom_violin(data = filter(sdl_EWR_spells, Data == "Stochastic"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
               colour = "grey") + 
-  geom_point(data = filter(sdl_EWR_spells_MK4), 
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario), 
+             size = 3) + 
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data), 
              size = 3) + 
   scale_colour_manual(values = pal_EWR)+
   scale_fill_manual(values = pal_CSIRO_climate_scenario)+
@@ -2016,11 +1292,14 @@ plot_sdl_EWR_variability_sh_adaptation <- ggplot() +
   facet_wrap(~names_CSIRO_climate_scenario, nrow = 1)
 
 plot_sdl_target_variability_sh_adaptation <- ggplot() +  
-  geom_violin(data = sdl_target_spells_background, aes(y = ewr_achieved, x = env_group, group = env_group),
+  geom_violin(data = filter(sdl_target_spells, Data == "Stochastic"), aes(y = ewr_achieved, x = env_group, group = env_group),
               colour = "grey") + 
-  geom_point(data = filter(sdl_target_spells_MK4), 
+  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario),
              size = 3) + 
+  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data),
+             size = 3) +
   #geom_boxplot() +
   theme_werp_toolkit()+
   scale_colour_manual(values = pal_envgroup)+
@@ -2082,10 +1361,114 @@ ggsave(plot = plot_sdl_target_both_relativechange_adaptation, filename = file.pa
 ## 6) eWater management (Mks)
 
 ```{r}
+sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = "all",#'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_spells')
 
+sdl_EWR_spells <- filter(sdl_EWR_spells, !grepl("MAX", scenario))
+
+sdl_target_spells <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = "all",#'MACQ_CC_EFR_mkiv', 
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = "all",#'r1_0_e1_0',
+                                    aggname = 'sdl_target_spells')
+
+sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
+
+plot_sdl_EWR_variability_sh_management <- ggplot() + 
+  geom_violin(data = filter(sdl_EWR_spells, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code, scale = "width"),
+              colour = "grey") + 
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = ewr_code, group = ewr_code, alpha = Mark, shape = Data, fill = names_CSIRO_climate_scenario), 
+             size = 3) + 
+  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data), 
+             size = 3) + 
+  scale_colour_manual(values = pal_EWR)+
+  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
+  #scale_linetype_manual(values = linetype_data)+
+  scale_shape_manual(values = shapes_data)+
+  theme_werp_toolkit()+
+  #theme(legend.box = "horizontal")+
+  guides(fill=guide_legend(override.aes=list(shape=21)),
+         colour=guide_legend(override.aes=list(shape=21)),
+         alpha=guide_legend(override.aes=list(shape=21)))+
+  facet_wrap(~names_CSIRO_climate_scenario, nrow = 1)
+
+plot_sdl_target_variability_sh_management <- ggplot() +  
+  geom_violin(data = filter(sdl_target_spells, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = env_group, group = env_group),
+              colour = "grey") + 
+  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = env_group, group = env_group, alpha = Mark, shape = Data, fill = names_CSIRO_climate_scenario),
+             size = 3) + 
+  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+              aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data),
+             size = 3) +
+  #geom_boxplot() +
+  theme_werp_toolkit()+
+  scale_colour_manual(values = pal_envgroup)+
+  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
+  #scale_linetype_manual(values = linetype_data)+
+  scale_shape_manual(values = shapes_data)+
+  #theme(legend.box = "horizontal")+
+  guides(fill=guide_legend(override.aes=list(shape=21)),
+         colour=guide_legend(override.aes=list(shape=21)))+
+  facet_wrap(~names_CSIRO_climate_scenario)
+
+ggsave(plot = plot_sdl_EWR_variability_sh_management, filename = file.path(comp_results, paste0("plot_sdl_EWR_variability_stoch_and_historic_climatechange_management",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 8)
+
+ggsave(plot = plot_sdl_target_variability_sh_management, filename = file.path(comp_results, paste0("plot_sdl_target_variability_stoch_and_historic_climatechange_management",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 8)
+
+
+plot_sdl_EWR_relativechange_management <- ggplot() + 
+  geom_point(data = filter(sdl_EWR_spells_MK4_rel_historic), 
+              aes(y = rel_ewr_achieved, x = ewr_code, group = ewr_code, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario), 
+             size = 3) + 
+  scale_colour_manual(values = pal_EWR)+
+  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
+  #scale_linetype_manual(values = linetype_data)+
+  scale_shape_manual(values = shapes_data)+
+  theme_werp_toolkit()+
+  #theme(legend.box = "horizontal")+
+  guides(fill=guide_legend(override.aes=list(shape=21)),
+         colour=guide_legend(override.aes=list(shape=21)),
+         alpha=guide_legend(override.aes=list(shape=21)))+
+  facet_wrap(~names_CSIRO_climate_scenario, nrow = 1)
+
+plot_sdl_target_relativechange_management <- ggplot(data = filter(sdl_target_spells_MK4_rel_historic), aes(y = rel_ewr_achieved, x = env_group,  alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario)) +  
+  geom_point(position=position_dodge(width=0.5), size = 3) + 
+  #geom_boxplot() +
+  theme_werp_toolkit()+
+  #scale_colour_manual(values = pal_envgroup)+
+  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
+  #scale_linetype_manual(values = linetype_data)+
+  scale_shape_manual(values = shapes_data)+
+  #theme(legend.box = "horizontal")+
+  guides(fill=guide_legend(override.aes=list(shape=21)),
+         alpha=guide_legend(override.aes=list(shape=21)))#+
+  #facet_wrap(~names_CSIRO_climate_scenario)
+
+ggsave(plot = plot_sdl_EWR_relativechange_management, filename = file.path(comp_results, paste0("plot_sdl_EWR_relativechange_management",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 8)
+
+ggsave(plot = plot_sdl_target_relativechange_management, filename = file.path(comp_results, paste0("plot_sdl_target_relativechange_management",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+
+plot_sdl_EWR_both_relativechange_management <- plot_sdl_EWR_variability_sh_management + 
+plot_sdl_EWR_relativechange_management + plot_layout(ncol = 1, guides = "collect", axis_titles ="collect")
+  
+plot_sdl_target_both_relativechange_management <- plot_sdl_target_variability_sh_management + plot_sdl_target_relativechange_management + plot_layout(ncol = 2, guides = "collect")
+
+ggsave(plot = plot_sdl_EWR_both_relativechange_management, filename = file.path(comp_results, paste0("plot_sdl_4panels_management",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 5)
+
+ggsave(plot = plot_sdl_target_both_relativechange_management, filename = file.path(comp_results, paste0("plot_target_4panels_management",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 5)
 ```
 
-## 7)
+## 7) radar plot
 
 ```         
 ```

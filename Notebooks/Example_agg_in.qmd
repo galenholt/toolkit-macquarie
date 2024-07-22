@@ -21,7 +21,6 @@ source('R/paths.R')
 # source('R/agg_variables.R')
 ```
 
-
 ## Names of the various aggregations
 
 Not actually sure we need these as variables, but here they are.
@@ -208,6 +207,7 @@ What I haven't tested much is combinations, ie historical and stochastic, with a
 ## same as above, just not with the list
 
 and not passing in the renames
+
 ```{r}
 sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
                           data_type = 'stochastic',

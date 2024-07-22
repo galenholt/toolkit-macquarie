@@ -223,16 +223,54 @@ Merged_balance_init <- NULL
 Merged_balance_temp <- NULL
 ```
 
+## Temporary aggregator
+
 ```{r}
 
-Merged_df <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))
+GS_reliability <- read.csv(file.path(hydro_results, "allocation_reliability_merged.csv"))|> #453mB
+  dplyr::mutate(measure = "GS_reliability",
+                measure_achieved = X02.aal)|>
+  dplyr::filter(threshold == 80)|>
+  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
-# scenario_meta_list <- as.list(Merged_balance)
-# 
-# # I don't know the format we'll be using, but this works to create yaml metadata
-# yaml::write_yaml(scenario_meta_list, 
-#                  file = file.path(hydro_dir, 'scenario_metadata.yml'))
-# # and this does the same with JSON
-# jsonlite::write_json(scenario_meta_list, 
-#                      path = file.path(hydro_dir, 'scenario_metadata.json'))
+GS_resilience <- read.csv(file.path(hydro_results, "allocation_resilience_merged.csv"))|>
+  dplyr::mutate(measure = "GS_resilience",
+                measure_achieved = X02.aal)|>
+  dplyr::filter(threshold == 80)|>
+  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
+
+#HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))|>
+HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))|>
+  dplyr::mutate(measure = "HS_reliability",
+                measure_achieved = hs_delivered_to_ordered_ratio,
+                threshold = threshold*100)|>
+  dplyr::filter(threshold == 80)|>
+  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
+
+HS_resilience <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))|>
+  dplyr::mutate(measure = "HS_resilience",
+                measure_achieved = hs_delivered_to_ordered_ratio,
+                threshold = threshold*100)|>
+  dplyr::filter(threshold == 80)|>
+  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
+
+Merged_hydrology_summary <- bind_rows(GS_reliability, GS_resilience, HS_reliability, HS_resilience)
+
+write.csv(Merged_hydrology_summary, file = file.path(project_dir, 'module_output', 'Hydrology', "Hydrology_summary.csv"))
+
+```
+
+## scenario aggregation
+
+```{r}
+
+Merged_hydrology_summary <- read.csv(file.path(hydro_results, "Hydrology_summary.csv"))
+
+Merged_hydrology_vulnerability <- Merged_hydrology_summary |>
+  dplyr::group_by(Data, Mk, licvolfactor, climate, measure)|>
+  dplyr::summarise(
+    variance_measure_achieved = Variance(measure_achieved),
+    measure_achieved = mean(measure_achieved))
+
+write.csv(Merged_hydrology_vulnerability, file.path(hydro_results, "sdl_hydrology_vulnerability.csv"))
 ```

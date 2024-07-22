@@ -5,7 +5,6 @@
 #' @param info_list optional (otherwise need lastagg and retain_cols). list with a name matching aggname, and the lastcol and retain cols in it so it's easier to track
 #' @param lastagg name of the last aggregation step, e.g. 'sdl_units'
 #' @param retain_cols columns to retain
-#' @param rename_cols columns to rename
 #' @param data_type search column, historical or stochastic
 #' @param mark search, Mark
 #' @param licvol search
@@ -21,7 +20,6 @@ read_in_aggs <- function(project_dir,
                          info_list = NULL,
                          lastagg,
                          retain_cols,
-                         rename_cols,
                          data_type = c('historical', 'stochastic'),
                          mark = 'all',
                          licvol = 'all',
@@ -38,16 +36,17 @@ read_in_aggs <- function(project_dir,
 
     lastagg <- purrr::map_chr(aggname, \(x) info_list[[x]]$lastagg)
     retain_cols <- purrr::map(aggname, \(x) info_list[[x]]$retain) |> unlist()
+    rename_names <- purrr::map(aggname, \(x) info_list[[x]]$rename) |> unlist()
   }
 
 
   if (is.null(data_path)) {
     data_path <- get_scenariodir(project_dir = project_dir,
-                                   data_type = data_type,
-                                   mark = mark,
-                                   licvol = licvol,
-                                   climate = climate,
-                                   aggname = aggname)
+                                 data_type = data_type,
+                                 mark = mark,
+                                 licvol = licvol,
+                                 climate = climate,
+                                 aggname = aggname)
   }
 
   fullpaths <- file.path(project_dir, 'aggregated', data_path, 'achievement_aggregated.rds')
@@ -65,6 +64,7 @@ read_in_aggs <- function(project_dir,
                                                     lastagg = lastagg,
                                                     retain_cols = retain_cols,
                                                     rename_names = rename_names,
+                                                    subdir = y))
 
   if (bind_dfs) {
     clean_aggs <- clean_aggs |> dplyr::bind_rows()
@@ -75,7 +75,7 @@ read_in_aggs <- function(project_dir,
 }
 
 
-select_sequence <- function(aggdata, lastagg, retain_cols, rename_cols) {
+select_sequence <- function(aggdata, lastagg, retain_cols) {
   # aggregated columns will always start with the last aggsequence name
   not_aggs <- which(!grepl(paste0('^',
                                   lastagg,
@@ -84,11 +84,7 @@ select_sequence <- function(aggdata, lastagg, retain_cols, rename_cols) {
   desired_aggs <- tidyselect::eval_select(retain_cols, aggdata)
 
   aggdata <- aggdata |>
-    dplyr::select(tidyselect::all_of(c(not_aggs, desired_aggs)))|>
-
-  aggdata <- aggdata |>
-    dplyr::rename(rename_cols = retain_cols)
-
+    dplyr::select(tidyselect::all_of(c(not_aggs, desired_aggs)))
 
 
   return(aggdata)
@@ -98,7 +94,7 @@ select_sequence <- function(aggdata, lastagg, retain_cols, rename_cols) {
 clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, subdir) {
 
 
-  oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols, rename_cols)
+  oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols)
 
   # If we keep MAX, will need to be careful on read-in of multiple agg files not to duplicate it.
 
@@ -126,8 +122,6 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
       dplyr::mutate(across(c(licvolfactor, Rainfall, Evapotranspiration), fix_)) |>
       dplyr::select(scenario, tidyselect::everything())
 
-    #oneagg
-
   }
 
 
@@ -137,79 +131,162 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
       dplyr::rename_with(.fn = \(x) rename_names, .cols = all_of(retain_cols))
   }
 
-   oneagg <- oneagg |>
+  oneagg <- oneagg |>
     # not sure about this; it's Cudgegong NAs
     dplyr::filter(!is.na(polyID)) |>
     dplyr::relocate(geometry, .after = last_col())
+
+  oneagg <- oneagg |>
+    dplyr::mutate(Mark = dplyr::case_when(Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
+                                          Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
+                                          Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",
+                                          Mk == "MACQ_CC_EFR" ~ "Mk4",
+                                          Mk == NA ~ NA,
+                                          .default = Mk))
+
+   oneagg$Mark <- factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5"))
+
+
+  oneagg <- oneagg |>
+    dplyr::mutate(Data = dplyr::case_when(Data == "historical" ~ "Historic",
+                                          Data == "stochastic" ~ "Stochastic",
+                                          .default = Data))
+
+  oneagg <- oneagg |>
+    dplyr::mutate(names_CSIRO_climate_scenario = dplyr::case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
+                                                                  Evapotranspiration == 1.07 & Rainfall == 0.8  ~ "Hot and Dry",
+                                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
+                                                                  Evapotranspiration == 1.07 & Rainfall == 1.2  ~ "Hot and Wet",
+                                                                  Evapotranspiration == 1 & Rainfall == 0.8  ~ "Just Dry",
+                                                                  Evapotranspiration == 1 & Rainfall == 1.2  ~ "Just Wet"))
+
+  oneagg$names_CSIRO_climate_scenario <- factor(oneagg$names_CSIRO_climate_scenario,
+                                                levels = c("Just Wet", "Historical climate", "Hot and Wet", "Just Hot", "Just Dry", "Hot and Dry"))
+
+  #EWR scale data
+  if("ewr_code" %in% colnames(oneagg)) {
+  oneagg$ewr_code <- factor(oneagg$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
+
+  oneagg <- oneagg |>
+    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "CF",
+                                               ewr_code == "VF" ~ "VF",
+                                               ewr_code == "BF1" ~ "BF",
+                                               ewr_code == "BF2" ~ "BF",
+                                               ewr_code == "SF1" ~ "SF",
+                                               ewr_code == "SF2" ~ "SF",
+                                               ewr_code == "SF3" ~ "SF",
+                                               ewr_code == "LF1" ~ "LF",
+                                               ewr_code == "LF2" ~ "LF",
+                                               ewr_code == "OB-WL" ~ "OB",
+                                               ewr_code == "OB-WM" ~ "OB",
+                                               ewr_code == "OB-WS1" ~ "OB",
+                                               ewr_code == "OB-WS2" ~ "OB",
+                                               ewr_code == "OB-WS3" ~ "OB",
+                                               ewr_code == "OB-WS4" ~ "OB",
+                                               .default = ewr_code))
+
+  oneagg$ewr_group <- factor(oneagg$ewr_group, levels = c("CF", "VF", "BF", "SF", "LF", "OB"))
+
+  oneagg <- oneagg |>
+    dplyr::mutate(ewr_group_name = dplyr::case_when(ewr_group == "CF" ~ "Cease to flow",
+                                                    ewr_group == "VF" ~ "Very low flow",
+                                                    ewr_group == "BF" ~ "Base flow",
+                                                    ewr_group == "SF" ~ "Small fresh",
+                                                    ewr_group == "LF" ~ "Large fresh",
+                                               ewr_group == "OB" ~ "Overbank",
+                                               .default = ewr_group))
+
+  oneagg$ewr_group_name <- factor(oneagg$ewr_group_name, levels = c("Cease to flow", "Very low flow", "Base flow", "Small fresh", "Large fresh", "Overbank"))
+
+  }
+
+  #Target scale data
+  if("target" %in% colnames(oneagg)) {
+  oneagg <- oneagg |>
+    dplyr::mutate(env_group  = dplyr::case_when(target == "Native fish" ~ "NF",
+                                                target == "Native vegetation" ~ "NV",
+                                                target == "Other species" ~ "OS",
+                                                target == "Priority ecosystem function" ~ "EF" ,
+                                                target == "Waterbird" ~ "WB",
+                                                target == NA ~ NA,
+                                            .default = target))
+  oneagg <- oneagg |>
+    dplyr::mutate(target  = dplyr::case_when(target == "Waterbird" ~ "Waterbirds",
+                                                target == NA ~ NA,
+                                                .default = target))
+  }
+
+
+
 
   return(oneagg)
 }
 
 get_scenariodir <- function(project_dir,
-                              data_type = c('historical', 'stochastic'),
-                              mark = 'all',
-                              licvol = 'all',
-                              climate = 'all',
-                              aggname = 'all') {
+                            data_type = c('historical', 'stochastic'),
+                            mark = 'all',
+                            licvol = 'all',
+                            climate = 'all',
+                            aggname = 'all') {
 
-    # assume only one project_dir
+  # assume only one project_dir
 
-    # keep working on this stuff as the aggs run.
+  # keep working on this stuff as the aggs run.
 
-    # get the data type dirs
-    if (length(data_type) == 1 && data_type == 'all') {
-      data_path <- list.dirs(file.path(project_dir, 'aggregated'),
-                             recursive = FALSE, full.names = FALSE) |>
-        as.list()
-    } else {
-      data_path <- data_type |> as.list()
-    }
+  # get the data type dirs
+  if (length(data_type) == 1 && data_type == 'all') {
+    data_path <- list.dirs(file.path(project_dir, 'aggregated'),
+                           recursive = FALSE, full.names = FALSE) |>
+      as.list()
+  } else {
+    data_path <- data_type |> as.list()
+  }
 
-    # file.path does not build factorially, so have to do it manually
+  # file.path does not build factorially, so have to do it manually
 
-    # add mark level
-    if (length(mark) == 1 && mark == 'all') {
-      mark_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
+  # add mark level
+  if (length(mark) == 1 && mark == 'all') {
+    mark_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
+                                                      recursive = FALSE, full.names = FALSE))
+  } else {
+    mark_list <- rep(list(mark), length(data_path))
+  }
+
+  # easiest way to go will be joining at each point
+  data_path <- purrr::map2(data_path, mark_list, file.path) |>
+    unlist()
+
+  # add licvol level
+  if (length(licvol) == 1 && licvol == 'all') {
+    licvol_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
                                                         recursive = FALSE, full.names = FALSE))
-    } else {
-      mark_list <- rep(list(mark), length(data_path))
-    }
+  } else {
+    licvol_list <- rep(list(licvol), length(data_path))
+  }
 
-    # easiest way to go will be joining at each point
-    data_path <- purrr::map2(data_path, mark_list, file.path) |>
-      unlist()
+  data_path <- purrr::map2(data_path, licvol_list, file.path) |>
+    unlist()
 
-    # add licvol level
-    if (length(licvol) == 1 && licvol == 'all') {
-      licvol_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
-                                                          recursive = FALSE, full.names = FALSE))
-    } else {
-      licvol_list <- rep(list(licvol), length(data_path))
-    }
+  # add climate level
+  if (length(climate) == 1 && climate == 'all') {
+    climate_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
+                                                         recursive = FALSE, full.names = FALSE))
+  } else {
+    climate_list <- rep(list(climate), length(data_path))
+  }
 
-    data_path <- purrr::map2(data_path, licvol_list, file.path) |>
-      unlist()
+  data_path <- purrr::map2(data_path, climate_list, file.path) |>
+    unlist()
 
-    # add climate level
-    if (length(climate) == 1 && climate == 'all') {
-      climate_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
-                                                           recursive = FALSE, full.names = FALSE))
-    } else {
-      climate_list <- rep(list(climate), length(data_path))
-    }
+  # add aggname level
+  if (length(aggname) == 1 && aggname == 'all') {
+    aggname_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
+                                                         recursive = FALSE, full.names = FALSE))
+  } else {
+    aggname_list <- rep(list(aggname), length(data_path))
+  }
 
-    data_path <- purrr::map2(data_path, climate_list, file.path) |>
-      unlist()
-
-    # add aggname level
-    if (length(aggname) == 1 && aggname == 'all') {
-      aggname_list <- purrr::map(data_path, \(x) list.dirs(file.path(project_dir, 'aggregated', x),
-                                                           recursive = FALSE, full.names = FALSE))
-    } else {
-      aggname_list <- rep(list(aggname), length(data_path))
-    }
-
-    data_path <- purrr::map2(data_path, aggname_list, file.path) |> unlist()
+  data_path <- purrr::map2(data_path, aggname_list, file.path) |> unlist()
 
   return(data_path)
 }
