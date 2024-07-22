@@ -8,6 +8,8 @@ execute:
 
 ## Librarys
 
+library(sf)
+
 ```{r}
 #| include: false
 
@@ -18,6 +20,8 @@ library(ggplot2)
 library(patchwork)
 library(tidyr)
 library(ggridges)
+library(future.batchtools)
+library(furrr)
 ```
 
 ## Paths
@@ -45,8 +49,9 @@ project_dir = file.path(qaelpath, 'Toolkit', 'macquarie')
 
 # module_output
 ewr_results <- c(project_dir, 'aggregated') 
+agg_dir <- file.path(project_dir, 'aggregated')
 
-files_EWR_all <- data.frame(filename = list.files(path = list.dirs(path = ewr_results), pattern = ".rds", full.names=TRUE))
+files_EWR_all <- list.files(path = list.dirs(path = ewr_results), pattern = ".rds", full.names=TRUE)
 
 comp_results <- file.path(project_dir, 'comparer_output_for_paper') 
 
@@ -58,17 +63,112 @@ hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "H
 ## Functions
 
 ```{r}
-read_plus_rds <- function(flnm) {
-    readRDS(flnm) |>
-    dplyr::mutate(filename = flnm)
-}
+source('R/read_in_aggs.R')
+
+```
+
+## Names of the various aggregations
+
+Not actually sure we need these as variables, but here they are.
+
+```{r}
+name_sEt <- 'sdl_ewr_timeseries' 
+name_sTt <- 'sdl_target_timeseries' 
+name_sEs <- 'sdl_ewr_spells' 
+name_sTs <- 'sdl_target_spells' 
+name_sEv <- 'sdl_ewr_vulnerability' 
+name_sTv <- 'sdl_target_vulnerability'
+```
+
+## Variables to retain and rename
+
+```{r}
+# sdl_ewr_timeseries
+retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+rename_sEt <- c('ewr_achieved')
+
+# sdl_target_timeseries
+retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+rename_sTt <- c('ewr_achieved')
+
+# sdl_ewr_spells
+retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_sEs <- c('ewr_achieved',
+                  'mean_max_interevent',
+                  'max_interevent')
+
+# sdl_target_spells
+retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_sTs <- c('ewr_achieved',
+                  'mean_max_interevent',
+                  'max_interevent')
+```
+
+## And the vulnerabilities
+
+```{r}
+# sdl_ewr_vulnerability
+retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Max_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_vE <- c('ewr_achieved',
+               'mean_max_interevent',
+               'max_interevent',
+               'variance_ewr_achieved',
+               'variance_mean_max_interevent',
+               'variance_max_interevent')
+
+# sdl_target_vulnerability
+retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Max_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename__vT <- c('ewr_achieved',
+               'mean_max_interevent',
+               'max_interevent',
+               'variance_ewr_achieved',
+               'variance_mean_max_interevent',
+               'variance_max_interevent')
+```
+
+## A list with the aggregation/dataframe name as name, retained cols and last_agg as the values.
+
+```{r}
+#TO DO FIX renames = rename_sEs
+aggregation_info <- list(sdl_ewr_timeseries = list(lastagg = 'sdl_units',
+                                                   retained = retained_sEt,
+                                                   renames = rename_sEt),
+                         sdl_target_timeseries = list(lastagg = 'sdl_units',
+                                                      retained = retained_sTt,
+                                                      renames = rename_sTt),
+                         sdl_ewr_spells = list(lastagg = 'sdl_units', 
+                                               retained = retained_sEs,
+                                               renames = rename_sEs),
+                         sdl_target_spells = list(lastagg = 'sdl_units',
+                                                  retained = retained_sTs,
+                                                  renames = rename_sTs),
+                         sdl_ewr_vulnerability = list(lastagg = 'replicates',
+                                                      retained = retained_vE,
+                                                      renames = rename_vE),
+                         sdl_target_vulnerability = list(lastagg = 'replicates',
+                                                         retained = retained_vT,
+                                                         renames = rename_vT))
 ```
 
 ## Data
 
 ```{r}
 #EWR tool
-
+#Only read in what is necessary
 
 #Economic
 Merged_economic_summary <- read.csv(file.path(project_dir, 'module_output', 'Economic', "Economic_summary.csv"))
@@ -989,9 +1089,17 @@ ODD_gauges <- c("421019", "421023", "421146") #(EWRS never pass)
 #| label: palettes
 #| include: false
 
-scenarios <- gauge_EWR_timing_spells |>
-  distinct(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk)
+sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
+                          data_type = 'historical',
+                          info_list = aggregation_info,
+                          aggname = 'sdl_ewr_timeseries',
+                            mark = 'all',
+                            licvol = 'all',
+                            climate = 'all')
 
+scenarios <- sdl_ewr_time_example |>
+  distinct(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk)
+rm(sdl_ewr_time_example)
 # I'm adding these from Georgia as needed
 # Trying to organise by the sort of palette we need for each
 
@@ -1064,10 +1172,10 @@ pal_scene <- make_pal(unique(scenarios$scenario),
 
 # Data sets
 shapes_data <- c(21,24)
-names(shapes_data) <- c("historical", "stochastic")
+names(shapes_data) <- c("Historic", "Stochastic")
 
 shapes_data2 <- c(24,21)
-names(shapes_data2) <- c("stochastic", "historical")
+names(shapes_data2) <- c("Stochastic", "Historic")
 
 linetype_data <- c("dotted", "solid")
 names(linetype_data) <- c("Historic", "Stochastic")
@@ -1080,6 +1188,7 @@ pal_CSIRO_climate_scenario <- stats::setNames(
   c('#2166ACFF', '#92C5DEFF', '#F7F7F7FF',  '#F4A582FF', '#D6604DFF', '#B2182BFF', '#1A1A1AFF'),
   c("Just Wet", "Hot and Wet", "Historical climate",  "Just Hot", "Just Dry", "Hot and Dry", NA))
 class(pal_CSIRO_climate_scenario) <- 'colors'
+
 
 
 ```
@@ -1442,29 +1551,84 @@ files_sdl_target_spells_adjusted <- files_EWR_all |>
 ## 1) Vulnerability - historic data - no climate change (to add to the bottom of stochastic v.)
 
 ```{r}
-#filter filenames
-files_sdl_EWR_vulnerability <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_ewr_vulnerability/', filename))|>
-  dplyr::filter(grepl('licvolfactor_1_0/', filename))|>
-  dplyr::filter(grepl('r1_0_e1_0/', filename))|>
-  dplyr::filter(grepl('MACQ_CC_EFR_mkiv/', filename))
+sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_ewr_vulnerability')
 
-files_sdl_EWR_vulnerability <- list(files_sdl_EWR_vulnerability$filename)
-
-#load in data
-sdl_EWR_vulnerability <- do.call(rbind,
-          lapply(files_sdl_EWR_vulnerability[[1]][1], read_plus_rds))
-
-for (i in 2:length(files_sdl_EWR_vulnerability)) {
-  Merged_temp <- do.call(rbind,
-          lapply(files_sdl_EWR_vulnerability[[1]][i], read_plus_rds))
-  
-sdl_EWR_vulnerability <- rbind(sdl_EWR_vulnerability, Merged_temp)
-}
+sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = 'licvolfactor_1_0',
+                                    climate = 'r1_0_e1_0',
+                                    aggname = 'sdl_target_vulnerability')
 
 #select measure
+#EWR
 sdl_EWR_vulnerability$ewr_achieved <- sdl_EWR_vulnerability$replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
 sdl_EWR_vulnerability$EWR_scenario_Variance <- sdl_EWR_vulnerability$replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
+
+#target
+sdl_target_vulnerability$ewr_achieved <- sdl_target_vulnerability$replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
+sdl_target_vulnerability$EWR_scenario_Variance <- sdl_target_vulnerability$replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved
+
+#
+sdl_EWR_vulnerability$ewr_code <- factor(sdl_EWR_vulnerability$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
+
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "CF",
+                                               ewr_code == "VF" ~ "VF",
+                                               ewr_code == "BF1" ~ "BF",
+                                               ewr_code == "BF2" ~ "BF",
+                                               ewr_code == "SF1" ~ "SF",
+                                               ewr_code == "SF2" ~ "SF",
+                                               ewr_code == "SF3" ~ "SF",
+                                               ewr_code == "LF1" ~ "LF",
+                                               ewr_code == "LF2" ~ "LF",
+                                               ewr_code == "OB-WL" ~ "OB",
+                                               ewr_code == "OB-WM" ~ "OB",
+                                               ewr_code == "OB-WS1" ~ "OB",
+                                               ewr_code == "OB-WS2" ~ "OB",
+                                               ewr_code == "OB-WS3" ~ "OB",
+                                               ewr_code == "OB-WS4" ~ "OB",
+                                               .default = ewr_code))
+
+sdl_EWR_vulnerability$ewr_code <- factor(sdl_EWR_vulnerability$ewr_code, levels = c("CF", "VF", "BF", "SF", "LF", "OB")) 
+
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "Cease to flow",
+                                               ewr_code == "VF" ~ "Very low flow",
+                                               ewr_code == "BF" ~ "Base flow",
+                                               ewr_code == "SF" ~ "Small fresh",
+                                               ewr_code == "LF" ~ "Large fresh",
+                                               ewr_code == "OB" ~ "Overbank"
+                                               .default = ewr_code))
+
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+    dplyr::mutate(Data = dplyr::case_when(Data == "historical" ~ "Historic",
+                            Data == "stochastic" ~ "Stochastic",
+                            .default = Data))
+
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+    dplyr::mutate(target = dplyr::case_when(env_group == "NF" ~ "Native fish",
+                                  env_group == "NV" ~ "Native vegetation" ,
+                                  env_group == "OS" ~ "Other species",   
+                                  env_group == "EF" ~ "Priority ecosystem function", 
+                                  env_group == "WB" ~ "Waterbird",
+                                  env_group == NA ~ NA,
+                                  .default = env_group))
+
+sdl_EWR_vulnerability <- sdl_EWR_vulnerability |>
+    dplyr::mutate(Mark = dplyr::case_when(Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
+                                Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
+                                Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",   
+                                Mk == "MACQ_CC_EFR" ~ "Mk4", 
+                                Mk == NA ~ NA,
+                                .default = Mk))
 
 plot_sdl_EWR_vulnerability <- ggplot(data = sdl_EWR_vulnerability, aes(y = EWR_scenario_Variance, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
   geom_point() +
