@@ -24,7 +24,9 @@ read_in_aggs <- function(project_dir,
                          mark = 'all',
                          licvol = 'all',
                          climate = 'all',
-                         aggname = 'all') {
+                         aggname = 'all',
+                         rename_names = NULL,
+                         bind_dfs = TRUE) {
 
 
   if (!is.null(info_list)) {
@@ -34,6 +36,8 @@ read_in_aggs <- function(project_dir,
 
     lastagg <- purrr::map_chr(aggname, \(x) info_list[[x]]$lastagg)
     retain_cols <- purrr::map(aggname, \(x) info_list[[x]]$retain) |> unlist()
+
+    rename_names <- purrr::map(aggname, \(x) info_list[[x]]$renames) |> unlist()
   }
 
 
@@ -60,8 +64,12 @@ read_in_aggs <- function(project_dir,
                             \(x,y) clean_aggregated(x,
                                                     lastagg = lastagg,
                                                     retain_cols = retain_cols,
-                                                    subdir = y)) |>
-    dplyr::bind_rows()
+                                                    rename_names = rename_names,
+                                                    subdir = y))
+
+  if (bind_dfs) {
+    clean_aggs <- clean_aggs |> dplyr::bind_rows()
+  }
 
   return(clean_aggs)
 
@@ -83,7 +91,7 @@ select_sequence <- function(aggdata, lastagg, retain_cols) {
 }
 
 
-clean_aggregated <- function(oneagg, lastagg, retain_cols, subdir) {
+clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, subdir) {
 
 
   oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols)
@@ -113,6 +121,13 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, subdir) {
                                   names = c("Rainfall","Evapotranspiration")) |>
       dplyr::mutate(across(c(licvolfactor, Rainfall, Evapotranspiration), fix_)) |>
       dplyr::select(scenario, tidyselect::everything())
+  }
+
+
+  # rename the columns
+  if (!is.null(rename_names)) {
+    oneagg <- oneagg |>
+      dplyr::rename_with(.fn = \(x) rename_names, .cols = all_of(retain_cols))
   }
 
    oneagg <- oneagg |>

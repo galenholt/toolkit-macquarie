@@ -15,41 +15,12 @@ This is the read-in and directory-crawling functions
 
 ```{r}
 source('R/read_in_aggs.R')
+source('R/paths.R')
+
+# This is just all the list-making that's done below
+# source('R/agg_variables.R')
 ```
 
-## Paths
-
-```{r}
-#| include: false
-
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'hol436') {
-  qaelpath <- '' 
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
-
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-```
-
-```{r}
-if (Sys.info()['user'] == 'hol436') {
-  project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
-} else {
-  project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
-}
-
-
-agg_dir <- file.path(project_dir, 'aggregated')
-```
 
 ## Names of the various aggregations
 
@@ -69,11 +40,13 @@ name_sTv <- 'sdl_target_vulnerability'
 ```{r}
 # sdl_ewr_timeseries
 retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-rename_sEt <- c('ewr_achieved')
+
+rename_sEt <- 'ewr_achieved'
 
 # sdl_target_timeseries
 retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-rename_sTt <- c('ewr_achieved')
+
+rename_sTt <- 'ewr_achieved'
 
 # sdl_ewr_spells
 retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
@@ -117,6 +90,7 @@ retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_un
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                 'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+
 rename_vT <- c('ewr_achieved',
                'mean_max_interevent',
                'max_interevent',
@@ -233,6 +207,7 @@ What I haven't tested much is combinations, ie historical and stochastic, with a
 
 ## same as above, just not with the list
 
+and not passing in the renames
 ```{r}
 sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
                           data_type = 'stochastic',
