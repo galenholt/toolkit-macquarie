@@ -1,0 +1,238 @@
+---
+title: "Organise data"
+format: html
+editor: visual
+---
+
+## Data
+
+Data from Ash on his blob. https://sho108storage.blob.core.windows.net/werp-deliverables/
+
+Galen can access via CSIRO Azure account with Azure Storage Explorer. In process of sorting out programmatic access, for now it's just copied down.
+
+This file is just going to extract the zips. The toolkit actually *can* read them straight out of the zip now, but unzipping seems better for clarity.
+
+They're on the QAEL werp drive so we don't all have to have them locally. Very annoyingly, the WERP dir has different names for all of us. So it would be really nice to actually access a blob.
+
+```{r}
+#| include: false
+
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+
+# Outer directory for project data
+project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
+
+# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
+hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
+
+# Generated data
+# EWR outputs (will be created here in controller, read from here in aggregator)
+ewr_results <- file.path(project_dir, 'module_output', 'EWR')
+
+# outputs of aggregator. There may be multiple modules
+agg_results <- file.path(project_dir, 'aggregator_output')
+
+comp_results <- file.path(project_dir, 'comparer_output') 
+
+
+data_path <- file.path(qaelpath, "Toolkit", "macquarie", "macq_cut")
+
+
+hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Hydrology")
+
+
+```
+
+```{r}
+
+
+# 1. allocation_reliability.csv
+# 2. allocation_resilience.csv
+# 3. hs_delivered_to_ordered_ratio_reliability.csv
+# 4. hs_delivered_to_ordered_ratio_resilience.csv
+
+
+
+
+# # get the right scenario name and summarise to mean
+# Merged_balance <- Merged_balance_init |>
+#   tidyr::separate(filename, sep = "r1.0_e1.0/", remove = FALSE, into = c(NA,"scenario"))|>
+#   tidyr::separate(scenario, sep = "/balance.csv", remove = FALSE, into = c("scenario"))|>
+#   #dplyr::mutate(scenario = stringr::str_replace_all(scenario, "/", "_"))|>
+#   #dplyr::mutate(scenario = paste(scenario,"Straight Node (Gauge)", sep = ""))|>
+#   dplyr::group_by(scenario)|>
+#   dplyr::summarise_at(dplyr::vars(Tributary:`End sys`), mean, na.rm = TRUE)
+
+
+```
+
+## allocation_reliability.csv
+
+```{r}
+#1.
+Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_reliability.csv", full.names=TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  
+Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/macq_cut/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
+
+# # get the right scenario name 
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "/", remove = FALSE, 
+                  into = c(NA, NA, NA, NA, NA, NA, NA, NA, "Data", "Mk", "licvolfactor", "climate","replicate", "measure"))
+
+
+write.csv(Merged_balance, file.path(hydro_results, "allocation_reliability_merged.csv")) #453mB
+
+Merged_balance <- NULL
+Merged_balance_init <- NULL
+Merged_balance_temp <- NULL
+```
+
+## allocation_resilience.csv
+
+```{r}
+#2.
+Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_resilience.csv", full.names=TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  
+Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+# # get the right scenario name 
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "/", remove = FALSE, 
+                  into = c(NA, NA, NA, NA, NA, NA, NA, NA, "Data", "Mk", "licvolfactor", "climate","replicate", "measure"))
+
+write.csv(Merged_balance, file.path(hydro_results, "allocation_resilience_merged.csv"))
+
+Merged_balance <- NULL
+Merged_balance_init <- NULL
+Merged_balance_temp <- NULL
+```
+
+## hs_delivered_to_ordered_ratio_reliability.csv
+
+```{r}
+#3.
+Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "hs_delivered_to_ordered_ratio_reliability.csv", full.names=TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  
+Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+# # get the right scenario name 
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "/", remove = FALSE, 
+                  into = c(NA, NA, NA, NA, NA, NA, NA, NA, "Data", "Mk", "licvolfactor", "climate","replicate", "measure"))
+
+write.csv(Merged_balance, file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))
+
+Merged_balance <- NULL
+Merged_balance_init <- NULL
+Merged_balance_temp <- NULL
+
+```
+
+## hs_delivered_to_ordered_ratio_resilience.csv
+
+```{r}
+#4.
+Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "hs_delivered_to_ordered_ratio_resilience.csv", full.names=TRUE)
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  
+Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+# # get the right scenario name 
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "/", remove = FALSE, 
+                  into = c(NA, NA, NA, NA, NA, NA, NA, NA, "Data", "Mk", "licvolfactor", "climate","replicate", "measure"))
+
+write.csv(Merged_balance, file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))
+
+Merged_balance <- NULL
+Merged_balance_init <- NULL
+Merged_balance_temp <- NULL
+```
+
+```{r}
+
+Merged_df <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))
+
+# scenario_meta_list <- as.list(Merged_balance)
+# 
+# # I don't know the format we'll be using, but this works to create yaml metadata
+# yaml::write_yaml(scenario_meta_list, 
+#                  file = file.path(hydro_dir, 'scenario_metadata.yml'))
+# # and this does the same with JSON
+# jsonlite::write_json(scenario_meta_list, 
+#                      path = file.path(hydro_dir, 'scenario_metadata.json'))
+```
