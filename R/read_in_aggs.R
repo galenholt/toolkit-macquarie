@@ -5,6 +5,7 @@
 #' @param info_list optional (otherwise need lastagg and retain_cols). list with a name matching aggname, and the lastcol and retain cols in it so it's easier to track
 #' @param lastagg name of the last aggregation step, e.g. 'sdl_units'
 #' @param retain_cols columns to retain
+#' @param rename_cols columns to rename
 #' @param data_type search column, historical or stochastic
 #' @param mark search, Mark
 #' @param licvol search
@@ -20,6 +21,7 @@ read_in_aggs <- function(project_dir,
                          info_list = NULL,
                          lastagg,
                          retain_cols,
+                         rename_cols,
                          data_type = c('historical', 'stochastic'),
                          mark = 'all',
                          licvol = 'all',
@@ -36,8 +38,6 @@ read_in_aggs <- function(project_dir,
 
     lastagg <- purrr::map_chr(aggname, \(x) info_list[[x]]$lastagg)
     retain_cols <- purrr::map(aggname, \(x) info_list[[x]]$retain) |> unlist()
-
-    rename_names <- purrr::map(aggname, \(x) info_list[[x]]$renames) |> unlist()
   }
 
 
@@ -65,7 +65,6 @@ read_in_aggs <- function(project_dir,
                                                     lastagg = lastagg,
                                                     retain_cols = retain_cols,
                                                     rename_names = rename_names,
-                                                    subdir = y))
 
   if (bind_dfs) {
     clean_aggs <- clean_aggs |> dplyr::bind_rows()
@@ -76,7 +75,7 @@ read_in_aggs <- function(project_dir,
 }
 
 
-select_sequence <- function(aggdata, lastagg, retain_cols) {
+select_sequence <- function(aggdata, lastagg, retain_cols, rename_cols) {
   # aggregated columns will always start with the last aggsequence name
   not_aggs <- which(!grepl(paste0('^',
                                   lastagg,
@@ -85,7 +84,12 @@ select_sequence <- function(aggdata, lastagg, retain_cols) {
   desired_aggs <- tidyselect::eval_select(retain_cols, aggdata)
 
   aggdata <- aggdata |>
-    dplyr::select(tidyselect::all_of(c(not_aggs, desired_aggs)))
+    dplyr::select(tidyselect::all_of(c(not_aggs, desired_aggs)))|>
+
+  aggdata <- aggdata |>
+    dplyr::rename(rename_cols = retain_cols)
+
+
 
   return(aggdata)
 }
@@ -94,7 +98,7 @@ select_sequence <- function(aggdata, lastagg, retain_cols) {
 clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, subdir) {
 
 
-  oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols)
+  oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols, rename_cols)
 
   # If we keep MAX, will need to be careful on read-in of multiple agg files not to duplicate it.
 
@@ -121,6 +125,9 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
                                   names = c("Rainfall","Evapotranspiration")) |>
       dplyr::mutate(across(c(licvolfactor, Rainfall, Evapotranspiration), fix_)) |>
       dplyr::select(scenario, tidyselect::everything())
+
+    #oneagg
+
   }
 
 
