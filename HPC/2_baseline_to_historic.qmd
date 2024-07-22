@@ -28,7 +28,7 @@ source('R/agg_variables.R')
 
 How do I want to set this up? I could try reading in everything in the mark and baselining in one go, but not sure i have the memory for 4a? OR, I could loop through each innermost folder and grab the historical for that mark and do them one at a time. I think I'll do the one at a time, because that retains the same structure as everything else.
 
-Get the directories
+Get the directories. We'll loop over each one, reading in each file and the matching baseline file.
 
 ```{r}
 # Get all the EWR dir paths should I save this like i did with the gauges? 
@@ -52,35 +52,6 @@ inner_subdirs <- gsub(agg_dir, '', inner_parents)
 inner_subdirs <- gsub('^/', '', inner_subdirs)
 ```
 
-Is it actually going to work better to loop over this for each mark? It's what read_in_agg would do, but that would read them all in at once and this we could loop over, adding the historical baseline to each.
-
-```{r}
-dir4 <- get_scenariodir(project_dir = project_dir,
-                        data_type = c('historical', 'stochastic'),
-                        mark = 'MACQ_CC_EFR',
-                        licvol = 'all',
-                        climate = 'all',
-                        aggname = 'sdl_ewr_spells')
-```
-
-I suppose though, I should test whether I can read in all of 4a.
-
-```{r}
-dir4a <- get_scenariodir(project_dir = project_dir,
-                        data_type = c('historical', 'stochastic'),
-                        mark = 'MACQ_CC_EFR_mkiv',
-                        licvol = 'all',
-                        climate = 'all',
-                        aggname = 'sdl_ewr_spells')
-
-# I think for consistency, don't do this, even though it's tempting.
-# read_in_4a <- read_in_aggs(project_dir = project_dir,
-#                           info_list = aggregation_info,
-#                           aggname = 'sdl_ewr_spells',
-#                           data_path = dir4a)
-```
-
-Undecided, leave it for the moment.
 
 ```{r}
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
@@ -91,110 +62,6 @@ groups <- c(param_groups, dimgroups)
 ```
 
 ## set up the baselining
-
-This will get looped over dir4a (and the marks, more generally, so maybe inner_subdirs)
-
-```{r}
-di <- 50
-mark <- 'MACQ_CC_EFR_mkiv'
-aggname <- 'sdl_ewr_spells'
-thisfile <- dir4a[di]
-match_historic <- file.path('historical', mark, 'licvolfactor_1_0', 'r1_0_e1_0', aggname)
-
-thispair <- c(thisfile, match_historic)
-```
-
-We could keep the aggregation sequence names, but easier not to here.
-```{r}
-read1 <- read_in_aggs(project_dir = project_dir,
-                          info_list = aggregation_info,
-                          aggname = 'sdl_ewr_spells',
-                          data_path = thispair,
-                      max_handling = 'remove')
-```
-
-```{r}
-table(read1$Data)
-```
-
-
-Now set up the baseline comparison
-
-```{r}
-# NEED TO TWEAK THIS SO IT WORKS FOR HISTORICAL
-# SHOULD I SCRAP BASELINE_COMPARE AND JUST DO IT more directly and targetted?
-
-# This needs a SINGLE column that defines the baseline. So will need to use scenario, not any of the others
-
-reflev <- paste0(match_historic, '/0')
-
-based <- baseline_compare(val_df = read1,
-                          compare_col = 'scenario',
-                          base_lev = reflev,
-                          group_cols = dimgroups,
-                          comp_fun = relative,
-                          values_col = 'ewr_achieved',
-                          failmissing = FALSE)
-
-# for the actual loop, we'll want to remove the reference data
-based <- based |> 
-  dplyr::filter(scenario != reflev)
-```
-
-What about the edge case of the actual historical data
-
-```{r}
-di <- 21
-mark <- 'MACQ_CC_EFR_mkiv'
-aggname <- 'sdl_ewr_spells'
-thisfile <- dir4a[di]
-match_historic <- file.path('historical', mark, 'licvolfactor_1_0', 'r1_0_e1_0', aggname)
-
-# catch the edge case of the baseline df
-
-is_baseline <- thisfile == match_historic
-
-if (is_baseline) {
-  thispair <- thisfile
-} else {
-  thispair <- c(thisfile, match_historic)
-}
-
-```
-
-We could keep the aggregation sequence names, but easier not to here.
-```{r}
-read1 <- read_in_aggs(project_dir = project_dir,
-                          info_list = aggregation_info,
-                          aggname = 'sdl_ewr_spells',
-                          data_path = thispair,
-                      max_handling = 'remove')
-```
-
-```{r}
-# NEED TO TWEAK THIS SO IT WORKS FOR HISTORICAL
-# SHOULD I SCRAP BASELINE_COMPARE AND JUST DO IT more directly and targetted?
-
-# This needs a SINGLE column that defines the baseline. So will need to use scenario, not any of the others
-
-reflev <- paste0(match_historic, '/0')
-
-based <- baseline_compare(val_df = read1,
-                          compare_col = 'scenario',
-                          base_lev = reflev,
-                          group_cols = dimgroups,
-                          comp_fun = relative,
-                          values_col = 'ewr_achieved',
-                          failmissing = FALSE)
-
-
-# for the actual loop, we'll want to remove the reference data
-if (!is_baseline) {
-  based <- based |> 
-  dplyr::filter(scenario != reflev)
-}
-
-```
 
 Set up to loop
 
