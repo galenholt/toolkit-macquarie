@@ -117,7 +117,7 @@ retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_un
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                 'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-rename__vT <- c('ewr_achieved',
+rename_vT <- c('ewr_achieved',
                'mean_max_interevent',
                'max_interevent',
                'variance_ewr_achieved',
