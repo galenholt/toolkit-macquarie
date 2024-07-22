@@ -12,12 +12,12 @@ library(furrr)
 ```
 
 This is the read-in and directory-crawling functions
+
 ```{r}
 source('R/read_in_aggs.R')
 ```
 
 ## Paths
-
 
 ```{r}
 #| include: false
@@ -54,6 +54,7 @@ agg_dir <- file.path(project_dir, 'aggregated')
 ## Names of the various aggregations
 
 Not actually sure we need these as variables, but here they are.
+
 ```{r}
 name_sEt <- 'sdl_ewr_timeseries'
 name_sTt <- 'sdl_target_timeseries'
@@ -63,27 +64,37 @@ name_sEv <- 'sdl_ewr_vulnerability'
 name_sTv <- 'sdl_target_vulnerability'
 ```
 
-## Variables to retain
+## Variables to retain and rename
+
 ```{r}
 # sdl_ewr_timeseries
 retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+rename_sEt <- c('ewr_achieved')
 
 # sdl_target_timeseries
 retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+rename_sTt <- c('ewr_achieved')
 
 # sdl_ewr_spells
 retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                   'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                   'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_sEs <- c('ewr_achieved',
+                  'mean_max_interevent',
+                  'max_interevent')
 
 # sdl_target_spells
 retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                   'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                   'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_sTs <- c('ewr_achieved',
+                  'mean_max_interevent',
+                  'max_interevent')
 
 ```
 
 And the vulnerabilities
+
 ```{r}
 # sdl_ewr_vulnerability
 retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
@@ -92,6 +103,12 @@ retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_un
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                 'replicates_Variance_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename_vE <- c('ewr_achieved',
+               'mean_max_interevent',
+               'max_interevent',
+               'variance_ewr_achieved',
+               'variance_mean_max_interevent',
+               'variance_max_interevent')
 
 # sdl_target_vulnerability
 retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
@@ -100,26 +117,36 @@ retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_un
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                 'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+rename__vT <- c('ewr_achieved',
+               'mean_max_interevent',
+               'max_interevent',
+               'variance_ewr_achieved',
+               'variance_mean_max_interevent',
+               'variance_max_interevent')
 ```
-
 
 *This is probably the most useful*: A list with the aggregation/dataframe name as name, retained cols and last_agg as the values.
 
 ```{r}
 aggregation_info <- list(sdl_ewr_timeseries = list(lastagg = 'sdl_units',
-                                                   retained = retained_sEt),
+                                                   retained = retained_sEt,
+                                                   renames = rename_sEt),
                          sdl_target_timeseries = list(lastagg = 'sdl_units',
-                                                      retained = retained_sTt),
+                                                      retained = retained_sTt,
+                                                      renames = rename_sTt),
                          sdl_ewr_spells = list(lastagg = 'sdl_units', 
-                                               retained = retained_sEs),
+                                               retained = retained_sEs,
+                                               renames = rename_sEs),
                          sdl_target_spells = list(lastagg = 'sdl_units',
-                                                  retained = retained_sTs),
+                                                  retained = retained_sTs,
+                                                  renames = rename_sTs),
                          sdl_ewr_vulnerability = list(lastagg = 'replicates',
-                                                      retained = retained_vE),
+                                                      retained = retained_vE,
+                                                      renames = rename_vE),
                          sdl_target_vulnerability = list(lastagg = 'replicates',
-                                                         retained = retained_vT))
+                                                         retained = retained_vT,
+                                                         renames = rename_vT))
 ```
-
 
 # Read-in
 
@@ -142,6 +169,7 @@ sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
 All of those up to `lastagg` can be vectors that let you bring in more than one and glue them together (though it's probably a terrible idea to glue together different 'aggname's).
 
 So, if we wanted to bring in the vulnerability for both historical and stochastic for a given licvol, mark, and climate, we could use
+
 ```{r}
 sdl_vuln_hs_example <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
@@ -153,11 +181,13 @@ sdl_vuln_hs_example <- read_in_aggs(project_dir = project_dir,
 ```
 
 which has both historic and stochastic
+
 ```{r}
 unique(sdl_vuln_hs_example$Data)
 ```
 
 Similarly, maybe you want to pull in all the climates for a mark for the spells. Can use a character vector or 'all' is a special thing that goes and searches.
+
 ```{r}
 sdl_spell_clims_example <- read_in_aggs(project_dir = project_dir,
                                         data_type = 'historical',
@@ -192,11 +222,13 @@ sdl_random_target_spells <- read_in_aggs(project_dir = project_dir,
 ```
 
 Check
+
 ```{r}
 sdl_random_target_spells$Mk |> unique()
 ```
 
 ## TODO
+
 What I haven't tested much is combinations, ie historical and stochastic, with all climates, but only one mark. They should typically work, but just not well-tested so make sure you got what you wanted..
 
 ## same as above, just not with the list
@@ -215,6 +247,7 @@ sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
 All of those up to `lastagg` can be vectors that let you bring in more than one and glue them together (though it's probably a terrible idea to glue together different 'aggname's).
 
 So, if we wanted to bring in the vulnerability for both historical and stochastic for a given licvol, mark, and climate, we could use
+
 ```{r}
 sdl_vuln_hs_example <- read_in_aggs(project_dir = project_dir,
                           data_type = c('stochastic', 'historical'),
@@ -227,11 +260,13 @@ sdl_vuln_hs_example <- read_in_aggs(project_dir = project_dir,
 ```
 
 which has both historic and stochastic
+
 ```{r}
 unique(sdl_vuln_hs_example$Data)
 ```
 
 Similarly, maybe you want to pull in all the climates for a mark for the spells. Can use a character vector or 'all' is a special thing that goes and searches.
+
 ```{r}
 sdl_spell_clims_example <- read_in_aggs(project_dir = project_dir,
                           data_type = 'historical',
@@ -264,6 +299,7 @@ sdl_random_target_spells <- read_in_aggs(project_dir = project_dir,
 ```
 
 Check
+
 ```{r}
 sdl_random_target_spells$Mk |> unique()
 ```
