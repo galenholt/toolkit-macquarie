@@ -10,6 +10,9 @@
 #' @param licvol search
 #' @param climate search
 #' @param aggname search, but also references info_list if available. Which aggregation set to pull
+#' @param rename_names should match retain_cols
+#' @param bind_dfs bind_rows the dfs or return a list of dfs
+#' @param max_handling one of 'remove', 'keep1', or 'keep_all' for how to handle the MAX scneario in each dataframe
 #'
 #' @return
 #' @export
@@ -26,7 +29,8 @@ read_in_aggs <- function(project_dir,
                          climate = 'all',
                          aggname = 'all',
                          rename_names = NULL,
-                         bind_dfs = TRUE) {
+                         bind_dfs = TRUE,
+                         max_handling = NULL) {
 
 
   if (!is.null(info_list)) {
@@ -66,6 +70,36 @@ read_in_aggs <- function(project_dir,
                                                     retain_cols = retain_cols,
                                                     rename_names = rename_names,
                                                     subdir = y))
+
+  if (max_handling == 'remove') {
+    maxremove <- 1:length(clean_aggs)
+  } else if (max_handling == 'keep1') {
+    if (length(clean_aggs) > 1)
+    maxremove <- 1:(length(clean_aggs)-1)
+  } else if (max_handling == 'keep_all') {
+    maxremove <- NULL
+  } else {
+    if (length(clean_aggs) > 1) {
+      rlang::inform(c("Bringing in > 1 dataframe, but not handling max.",
+                      "You will have a MAX scenario for each dataframe.",
+                      "That might be fine if the dataframes have different possible maxes, but be sure."))
+    }
+    maxremove <- NULL
+  }
+
+  # MAX tends to show up in two places
+  if ('scenario' %in% names(clean_aggs[[1]])) {
+    clean_aggs[maxremove] <- purrr::map(clean_aggs[maxremove],
+                                        \(x) dplyr::filter(x, !grepl('MAX', scenario)))
+  } else if ('replicate' %in% names(clean_aggs[[1]])) {
+    clean_aggs[maxremove] <- purrr::map(clean_aggs[maxremove],
+                                        \(x) dplyr::filter(x, replicate != 'MAX'))
+  } else {
+    if (!is.null(maxremove)) {
+      rlang::warn("No obvious scenario column from which to remove MAX")
+    }
+  }
+
 
   if (bind_dfs) {
     clean_aggs <- clean_aggs |> dplyr::bind_rows()
