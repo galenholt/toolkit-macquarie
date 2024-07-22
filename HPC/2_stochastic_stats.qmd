@@ -12,82 +12,9 @@ library(furrr)
 
 ```{r}
 source('R/read_in_aggs.R')
+source('R/paths.R')
+source('R/agg_variables.R')
 ```
-
-## Paths
-
-```{r}
-#| include: false
-
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'hol436') {
-  qaelpath <- '' 
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
-
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-```
-
-```{r}
-if (Sys.info()['user'] == 'hol436') {
-  project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
-} else {
-  project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
-}
-
-
-agg_dir <- file.path(project_dir, 'aggregated')
-```
-
-```{r}
-retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-
-retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
-
-retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-
-retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-
-name_sEt <- 'sdl_ewr_timeseries'
-name_sTt <- 'sdl_target_timeseries'
-name_sEs <- 'sdl_ewr_spells'
-name_sTs <- 'sdl_target_spells'
-```
-
-We'll need to do another round of retaining after the summaries
-```{r}
-
-retained_vE <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Max_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_Max_planning_units_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-
-retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Max_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
-
-
-retained_vuln <- list(retained_vE, retained_vT)
-```
-
 
 # Read in desired
 
@@ -120,6 +47,8 @@ I think what we'll often do is historical and stoch for each set as here:
 # looplists for the aggregations
 spellframes <- list('sdl_ewr_spells', 'sdl_target_spells')
 retainedframes <- list(retained_sEs, retained_sTs)
+retained_vuln <- list(retained_vE, retained_vT)
+
 
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
 param_groups <- c('Data', 'Mk', 'licvolfactor', 'Rainfall', 'Evapotranspiration', 'aggregation')
@@ -155,7 +84,8 @@ calc_vulnerability <- function(subdir, aggin, retained_in, retained_vuln) {
   onespells <- read_in_aggs(project_dir = project_dir,
                             data_path = file.path(subdir, aggin),
                             lastagg = 'sdl_units',
-                            retain_cols = retained_in)
+                            retain_cols = retained_in,
+                            max_handling = 'remove')
   
   vulnerability <- onespells |> 
     general_aggregate(groupers = groups, 

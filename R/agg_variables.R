@@ -57,6 +57,17 @@ rename_vT <- c('ewr_achieved',
                'variance_max_interevent')
 
 
+
+# Baselined ---------------------------------------------------------------
+
+retained_bE <- 'relative_ewr_achieved'
+rename_bE <- 'relative_ewr_achieved'
+
+retained_bT <- 'relative_ewr_achieved'
+rename_bT <- 'relative_ewr_achieved'
+
+
+
 # Make the list -----------------------------------------------------------
 
 
@@ -77,4 +88,10 @@ aggregation_info <- list(sdl_ewr_timeseries = list(lastagg = 'sdl_units',
                                                       renames = rename_vE),
                          sdl_target_vulnerability = list(lastagg = 'replicates',
                                                          retained = retained_vT,
-                                                         renames = rename_vT))
+                                                         renames = rename_vT),
+                         sdl_ewr_baseline = list(lastagg = 'relative',
+                                                 retained = retained_bE,
+                                                 renames = rename_bE),
+                         sdl_target_baseline = list(lastagg = 'relative',
+                                                 retained = retained_bT,
+                                                 renames = rename_bT))
