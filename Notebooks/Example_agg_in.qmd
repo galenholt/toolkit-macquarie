@@ -71,9 +71,13 @@ name_sTv <- 'sdl_target_vulnerability'
 retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
 rename_sEt <- c('ewr_achieved')
 
+rename_sEt <- 'ewr_achieved'
+
 # sdl_target_timeseries
 retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
 rename_sTt <- c('ewr_achieved')
+
+rename_sTt <- 'ewr_achieved'
 
 # sdl_ewr_spells
 retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
@@ -83,6 +87,10 @@ rename_sEs <- c('ewr_achieved',
                   'mean_max_interevent',
                   'max_interevent')
 
+rename_sEs <- c('ewr_achieved', 
+                'mean_max_interevent',
+                'max_interevent')
+
 # sdl_target_spells
 retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
                   'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
@@ -90,6 +98,10 @@ retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target
 rename_sTs <- c('ewr_achieved',
                   'mean_max_interevent',
                   'max_interevent')
+
+rename_sEs <- c('ewr_achieved', 
+                'mean_max_interevent',
+                'max_interevent')
 
 ```
 
@@ -109,6 +121,13 @@ rename_vE <- c('ewr_achieved',
                'variance_ewr_achieved',
                'variance_mean_max_interevent',
                'variance_max_interevent')
+
+rename_vE <- c('ewr_achieved', 
+                'mean_max_interevent',
+                'max_interevent',
+               'var_ewr_achieved',
+               'var_mean_max_interevent',
+               'var_max_interevent')
 
 # sdl_target_vulnerability
 retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
