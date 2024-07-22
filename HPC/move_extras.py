@@ -20,6 +20,7 @@ climpattern = ['r0_8_e1_0', 'r0_8_e1_07', 'r1_0_e1_0', 'r1_0_e1_07', 'r1_2_e1_0'
 
 extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv']
 
+
 # DON'T JUST DO EVERYTHING; there are WAY more scenarios than we want.
 copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles)
 copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR_mkiv', hews = with_mgmt, clims = climpattern, extrafiles = extrafiles)
