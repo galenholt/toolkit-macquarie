@@ -8,60 +8,23 @@ editor: visual
 
 Data emailed to Georgia from Shok, and put in one drive
 
+This is the right file (23/07/24)
+
 ## Paths
 
 ```{r}
 #| include: false
 
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
+source('R/paths.R')
+economic_paths <- file.path(project_dir, 'module_output', 'Economic', "Combined_data.xlsx")
 
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-
-# Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macquarie')
-
-# module_output
-ewr_results <- c('module_output', 'EWR') 
-econimic_results <- c('module_output', 'Economic') 
-  
-  
-# outputs of aggregator. There may be multiple modules
-agg_results <- c('aggregator_output','sdl_EWRs')
-aggregations <-  c('sdl_EWRs', 'sdl_objective', 'sdl_objective_simple','sdl_target' , 'sdl_theme')
-
-comp_results <- file.path(project_dir, 'comparer_output') 
-
-
-# #DATA PATHS - by data type
-  #hydro_paths <- list.files(hydro_dir_historical,  pattern="*Straight Node*", full.names=TRUE, recursive = TRUE)
-  #balance_paths <- list.files(hydro_dir_historical,  pattern="*h2o_table.nc", full.names=TRUE, recursive = TRUE)
-  #total_licvol_paths <- list.files(hydro_dir_historical,  pattern="*total_licvol.csv", full.names=TRUE, recursive = TRUE)
-  economic_paths <- file.path(project_dir, 'module_output', 'Economic', "Combined_data.xlsx")
-  
-# #DATA PATHS - by Mk
-#   hydro_paths <- list.files(hydro_dir_Mk5,  pattern="*Straight Node*", full.names=TRUE, recursive = TRUE)
-#   balance_paths <- list.files(hydro_dir_Mk5,  pattern="*h2o_table.nc", full.names=TRUE, recursive = TRUE)
-#   total_licvol_paths <- list.files(hydro_dir_Mk5,  pattern="*total_licvol.csv", full.names=TRUE, recursive = TRUE)
-    
-  
 ```
 
 # Economic results
 
 ```{r}
 #economic_paths
-length(readxl::excel_sheets(economic_paths))
+readxl::excel_sheets(economic_paths)
 
 
 read_plus_xl <- function(flnm, sheet) {
@@ -104,7 +67,7 @@ Merged_economic <- NULL
   
 #STOCHASTIC:
 for (i in 1:length(economic_paths)) {
-  for (j in 5:8) { #length(readxl::excel_sheets(economic_paths[1]))
+  for (j in 5:length(readxl::excel_sheets(economic_paths))) { 
 
 Merged_economic <- do.call(rbind,
           lapply(economic_paths[i], sheet = j, read_plus_xl))
@@ -123,7 +86,7 @@ Merged_economic <- Merged_economic |>
   #dplyr::rename(year = Total_Macquarie) |>
   dplyr::mutate(SWSDLName = "Macquarie–Castlereagh") |>
   tidyr::pivot_longer(cols = 2:73, names_to = "shok_replicate", values_to = "economic_benefit")|>
-  dplyr::mutate(shok_climate = Merged_economic_hold_scenario[2],
+  dplyr::mutate(shok_climate = Merged_economic_hold_scenario[1],
                 shok_adaptation = "Quo",
                 Data = "Stochastic")
   
@@ -133,6 +96,8 @@ Merged_economic <- NULL
   }
 
 Merged_economic_init <- dplyr::bind_rows(Merged_economic_historic, Merged_economic_stochastic)
+
+unique(Merged_economic_stochastic$shok_climate)
 ```
 
 ```{r}
@@ -146,10 +111,11 @@ Merged_economic_data <- Merged_economic_init  |>
                                                   shok_climate == "JustHot"  ~ "Just Hot",
                                                   shok_climate == "HotWet"  ~ "Hot and Wet",
                                                   shok_climate == "JustDry"  ~ "Just Dry",
-                                                  shok_climate == "JustWet"  ~ "Just Wet"))|>
+                                                  shok_climate == "JustWet"  ~ "Just Wet",
+                                                  .default = shok_climate))|>
   dplyr::mutate(names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, 
            levels = c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry")))|>  
-  dplyr::mutate(licvolfactor = dplyr::case_when(shok_adaptation == "Quo" ~ 0.0,
+  dplyr::mutate(licvolfactor = dplyr::case_when(shok_adaptation == "Quo" ~ 1.0,
                                     shok_adaptation == "Sal"  ~ 0.5,
                                     shok_adaptation == "Pur"  ~ 1.5)) |>
   dplyr::mutate(Evapotranspiration = dplyr::case_when(names_CSIRO_climate_scenario == "Historical climate"  ~ 1,
@@ -177,10 +143,26 @@ write.csv(Merged_economic_data, file = file.path(project_dir, 'module_output', '
 
 ```{r}
 
+Merged_economic_data <- read.csv(file = file.path(Economic_results,  "Economic_yearly.csv"))
+
 Merged_economic_summary <- Merged_economic_data |>
   dplyr::group_by(filename, sheet, SWSDLName, names_CSIRO_climate_scenario, licvolfactor, Evapotranspiration, Rainfall, Mk, Data, replicate) |>
   dplyr::summarise(economic_benefit = mean(as.numeric(economic_benefit)))
 
 write.csv(Merged_economic_summary, file = file.path(project_dir, 'module_output', 'Economic', "Economic_summary.csv"))
   
+```
+
+## Scenario aggregation
+
+```{r}
+Merged_economic_summary <- read.csv(file.path(Economic_results, "Economic_summary.csv"))
+
+Merged_economic_vulnerability <- Merged_economic_summary |>
+  dplyr::group_by(Data, Mk, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario)|>
+  dplyr::summarise(
+    variance_economic_benefit = werptoolkitr::Variance(economic_benefit),
+    economic_benefit = mean(economic_benefit))
+
+write.csv(Merged_economic_vulnerability, file.path(Economic_results, "sdl_economic_vulnerability.csv")) 
 ```
