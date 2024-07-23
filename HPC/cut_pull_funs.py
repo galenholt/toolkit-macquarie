@@ -125,12 +125,13 @@ def check_expected(outparent, expected):
     print(f'Expected {expected} files. Found {nfiles}')
 
 # This lets us use the outer directory, and just change the hews and clims for the marks. And ask for matchign data from stoch and historical
-def cut_marks(fromparent, toparent, mark, hews, clims, hs = ['historical', 'stochastic'], extrafiles = []):
+def cut_marks(fromparent, toparent, mark, hews, clims, hs = ['historical', 'stochastic'], extrafiles = [], cutncs = True):
     for i in hs:
         frompath = os.path.join(fromparent, i, mark)
         topath = os.path.join(toparent, i, mark)
         print(frompath)
         print(topath)
-        cut_all_ncdf(frompath, topath, hews = hews, clims = clims)
+        if cutncs:
+            cut_all_ncdf(frompath, topath, hews = hews, clims = clims)
         copyextra(frompath, topath, hews = hews, clims = clims, extrafiles = extrafiles)
         
