@@ -143,8 +143,11 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
     x <- as.numeric(x)
   }
 
-  # some later processing no longer has a scenario column because we've aggregated over parts of the values.
-  if ('scenario' %in% names(oneagg)) {
+  # some later processing no longer has a scenario column because we've
+  # aggregated over parts of the values, or does have a scenario column but has already been parsed in an earlier step
+  if ('scenario' %in% names(oneagg)  &&
+      (!all(c('Data', 'Mk', 'licvolfactor', 'Rainfall', 'Evapotranspiration') %in%
+            names(oneagg)))) {
     oneagg <- oneagg |>
       dplyr::mutate(scenario = paste0(subdir, '/', scenario)) |>
       tidyr::separate_wider_delim(scenario, '/',
