@@ -14,8 +14,6 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 
 ## Librarys
 
-library(sf)
-
 ```{r}
 #| include: false
 
@@ -51,13 +49,41 @@ sdl_Economic_timeseries$measure <- "economic_benefit"
 
 sdl_Economic_spells <- clean_factors(read.csv(file.path(Economic_results, "Economic_summary.csv")))
 sdl_Economic_spells$measure <- "economic_benefit"
+sdl_Economic_spells <- sdl_Economic_spells|>
+  dplyr::mutate(scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Mark, Data, replicate, sep = "_"))
+dimgroups <- c('measure', 'SWSDLName', "names_CSIRO_climate_scenario")
+
+sdl_Economic_baseline <- werptoolkitr::baseline_compare(val_df = sdl_Economic_spells,
+                            compare_col = 'scenario',
+                            base_lev = "1_1_1_Mk4a_Historic_0",
+                            group_cols = dimgroups,
+                            comp_fun = relative,
+                            values_col = 'economic_benefit',
+                            failmissing = FALSE)
 
 sdl_economic_vulnerability <- clean_factors(read.csv(file.path(Economic_results, "sdl_economic_vulnerability.csv")))
 sdl_economic_vulnerability$measure <- "economic_benefit"
 
 #Hydrology
+#there are no timeseries
 sdl_hydrology_spells <- clean_factors(read.csv(file.path(hydro_results, "Hydrology_summary.csv")))
+sdl_hydrology_spells <- sdl_hydrology_spells|>
+  dplyr::mutate(scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Mark, Data, replicate, sep = "_"))
+dimgroups <- c('measure', 'SWSDLName', "names_CSIRO_climate_scenario")
+
+sdl_hydrology_baseline <- werptoolkitr::baseline_compare(val_df = sdl_hydrology_spells,
+                            compare_col = 'scenario',
+                            base_lev = "1_1_1_Mk4a_Historic_0",
+                            group_cols = dimgroups,
+                            comp_fun = relative,
+                            values_col = 'measure_achieved',
+                            failmissing = FALSE)
+
+
 sdl_hydrology_vulnerability <- clean_factors(read.csv(file.path(hydro_results, "sdl_hydrology_vulnerability.csv")))
+
+rm(sdl_Economic_spells)
+rm(sdl_hydrology_spells)
 
 ```
 
@@ -67,20 +93,20 @@ sdl_hydrology_vulnerability <- clean_factors(read.csv(file.path(hydro_results, "
 #| label: palettes
 #| include: false
 
-sdl_ewr_time_example <- read_in_aggs(project_dir = project_dir,
+
+
+sdl_ewr_vulnerability <- read_in_aggs(project_dir = project_dir,
                           data_type = 'historical',
                           info_list = aggregation_info,
-                          aggname = 'sdl_ewr_timeseries',
+                          aggname = 'sdl_ewr_vulnerability',
                             mark = 'all',
                             licvol = 'all',
                             climate = 'all',
                           max_handling = "remove")
 
-scenarios <- sdl_ewr_time_example |>
-  distinct(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk)
-rm(sdl_ewr_time_example)
-# I'm adding these from Georgia as needed
-# Trying to organise by the sort of palette we need for each
+scenarios <- sdl_ewr_vulnerability |>
+  distinct(Rainfall, Evapotranspiration, licvolfactor, Mark)
+rm(sdl_ewr_vulnerability)
 
 # Qualitative
 # pal_SDL <- make_pal(unique(sdl_objective_nonrounding_agg$sdl_units$SWSDLName), 
@@ -98,8 +124,8 @@ scale_rain_pal <- make_pal(as.character(unique(scenarios$Rainfall)),
 # pal_scale_evap_historical_comp <- make_pal(as.character(unique(scenarios$names_scale_evap_historical_comp)),
 #                       palette = 'nationalparkcolors::Redwoods')
 
-pal_scenario <- make_pal(rev(as.character(unique(scenarios$scenario))),
-                      palette = 'scico::roma')
+# pal_scenario <- make_pal(rev(as.character(unique(scenarios$scenario))),
+#                       palette = 'scico::roma')
 
 pal_climate_scenario <- make_pal(
   rev(c("SR0.8_SE1.07", "SR0.8_SE1.00", "SR1.0_SE1.07",
@@ -186,308 +212,6 @@ SWSDLName_subset <-  "Macquarie–Castlereagh"
 
 ```
 
-\## Plot - fig-causal-example
-
-```{r}
-#| eval: false
-#| include: false
-
-#| label: fig-causal-example
-#| fig-cap: The toolkit incorporates causal networks that describe the environmental objectives for a system. In the current example these causal networks are extracted from the Murray-Darling Basin Long Term Watering Plans (LTWPs), which sets environmental watering requirements (EWRs), objectives, and long-term targets for key water-dependent plants, waterbirds, fish and ecosystem functions. From left to right, the columns here represent EWR codes, proximate Environmental Objectives, Specific Goals, Target Groups, and 5-year Management Targets.
-
-# edges <- make_edges(dflist = causal_ewr, 
-#                fromtos = list(c('ewr_code', 'env_obj'), 
-#                               c('env_obj', 'Specific_goal'), 
-#                               c('Specific_goal', 'Target'), 
-#                               c('env_obj', 'target_5_year_2024')),
-#                gaugefilter = gauges_to_plot[1]) 
-# 
-# nodes <- make_nodes(edges)
-# 
-# 
-# # To work with both html and word, save out and read back in.
-# causal_example <- make_causal_plot(nodes,
-#                  edges,
-#                  focalnodes = filter(nodes, NodeType == "ewr_code")$Name,
-#                  edge_pal = 'black',
-#                  node_pal = list(NodeType = 'nationalparkcolors::MtRainier'),
-#                  render = FALSE,
-#                  save = TRUE,
-#                  savedir = 'images',
-#                  savename = 'causal_structure') 
-# 
-# # if (knitr::is_html_output()) {
-#   # causal_example |> 
-#   # DiagrammeR::render_graph()
-# # } else {
-# #   knitr::include_graphics("images/causal_structure.png")
-# # }
-# 
-# causal_structure <- png::readPNG('images/causal_structure.png')
-# causal_structure_grob <- grid::rasterGrob(causal_structure, interpolate = TRUE)
-# patchwork::wrap_plots(causal_structure_grob)
-
-
-```
-
-Manual data for plots
-
-```{r}
-#| label: simplfy-for-plots
-#| include: false
-# objectives <- causal_ewr$ewr2obj |>
-#   select(-ewr_code_timing)|>
-#   distinct()
-# 
-# objectives <- causal_ewr$ewr2obj
-# 
-# causal_ewr$obj2target
-# 
-# ewr_code_timing <- st_join(sdl_objective_nonrounding_agg$ewr_code_timing, sdl_units)
-# 
-# # EWR timing scale
-# # raw EWR tool output
-# ewr_code_timing <- ewr_code_timing |>
-#     st_drop_geometry()
-# 
-# 
-# # THis is fixed already in the toolkit.
-# # #Fix OB
-# # ewr_code_timing <- ewr_code_timing|>
-# #   dplyr::mutate(ewr_code = case_when(ewr_code == "OB" & ewr_code_timing == "WL" ~ "OB-WL",
-# #                               ewr_code == "OB" & ewr_code_timing == "WM" ~ "OB-WM",
-# #                               ewr_code == "OB" & ewr_code_timing == "WS1" ~ "OB-WS1",
-# #                               ewr_code == "OB" & ewr_code_timing == "WS2" ~ "OB-WS2",
-# #                               ewr_code == "OB" & ewr_code_timing == "WS3" ~ "OB-WS3",
-# #                               ewr_code == "OB" & ewr_code_timing == "WS4" ~ "OB-WS4",
-# #                               ewr_code != "OB" ~ ewr_code
-# #                               ))
-# 
-# ewr_code_timing$ewr_code <- factor(ewr_code_timing$ewr_code, 
-#                                    levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-#                                               "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4")) 
-#   
-# 
-# # ewr_code_timing <- ewr_code_timing
-# # mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-# #                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-# 
-# #ewr_code_timing <- filter(ewr_code_timing, !gauge %in% c("421019", "421023", "421146"))
-# 
-# # EWR scale
-# # Aggregate EWR timings
-# ewr_code_gauge <- ewr_code_timing |>
-#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name, gauge) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = n())
-# 
-# ewr_code <- left_join(ewr_code_gauge, scenarios, by = join_by(scenario))
-# 
-# 
-# #EWR scale
-# # Aggregate gauges
-# ewr_code_planning_unit <- ewr_code |>
-#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
-#            # env_obj, Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = n())
-# 
-# #EWR scale
-# # Aggregate planning units to SWSDL
-# ewr_code_SWSDLName <- ewr_code_planning_unit |>
-#   group_by(scenario, ewr_code, SWSDLName,
-#            # env_obj, Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = sum(n_gauges),
-#             n_planning_unit = n())
-# ewr_code_SWSDLName$names_climate_scenario <- factor(ewr_code_SWSDLName$names_climate_scenario, levels=c(rev(levels(scenarios$names_climate_scenario))))
-# 
-# #Objective scale
-# #Objectives have to be joined to gauge level data
-# ewr_code_to_objectives_gauge <- left_join(ewr_code, objectives, by = join_by(ewr_code, gauge))
-# # ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2target)
-# # ewr_code_to_objectives_gauge <- left_join(ewr_code_to_objectives_gauge, causal_ewr$obj2yrtarget)
-# ewr_code_to_objectives_gauge <- ewr_code_to_objectives_gauge |>
-# filter(!is.na(env_obj)) # not all EWRS for each gauge are needed for an objective?
-# 
-# # Aggregate gauges
-# ewr_code_to_objectives_planning_unit <- ewr_code_to_objectives_gauge |>
-#   group_by(scenario, ewr_code, SWSDLName, planning_unit_name,
-#            env_obj, 
-#            # Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = n())
-# 
-# # Aggregate planning units
-# ewr_code_to_objectives_SWSDLName <- ewr_code_to_objectives_planning_unit |>
-#   group_by(scenario, ewr_code, SWSDLName,
-#            env_obj, 
-#            # Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = sum(n_gauges),
-#             n_planning_unit = n())
-# 
-# # Aggregate EWRs
-# objectives_SWSDLName <- ewr_code_to_objectives_SWSDLName |>
-#   group_by(scenario, SWSDLName,
-#            env_obj, 
-#            # Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = sum(n_gauges),
-#             n_planning_unit = sum(n_planning_unit),
-#             n_ewr_code = n())
-# 
-# objectives_SWSDLName$env_group <- stringr::str_extract(objectives_SWSDLName$env_obj, "^.{2}")  
-# ewr_code_to_objectives_SWSDLName$env_group <- stringr::str_extract(ewr_code_to_objectives_SWSDLName$env_obj, "^.{2}")  
-# 
-# # Aggregate Objectives
-# groups_SWSDLName <- objectives_SWSDLName |>
-#     group_by(scenario, SWSDLName,
-#            env_group, 
-#            # Specific_goal, Objective, Target, Target_Category,
-#            # target_5_year_2024, target_10_year_2029, target_20_year_2039,
-#            scale_rain, scale_evap, licvolfactor, Tributary, `GS Irrig`, 
-#            `HS Irrig`, OFH, Residential, `Link Loss`, `Storage Loss`, `End sys`,
-#            filename, node_type_10.2, node_type_10.3, node_type_3, node_type_8,
-#            node_type_8.2, node_type_9, node_type_9.1, names_scenario,
-#            names_climate_scenario, names_MDBA_climate_scenario_long, names_MDBA_climate_scenario) |>
-#   summarise(ewr_achieved = mean(ewr_achieved),
-#             n_versions_of_EWR = sum(n_versions_of_EWR),
-#             n_gauges = sum(n_gauges),
-#             n_planning_unit = sum(n_planning_unit),
-#             n_ewr_code = sum(n_ewr_code),
-#             n_env_obj = n())
-# 
-# 
-# 
-# 
-# ```
-# 
-# ```{r}
-# #| label: simplfy-for-plots
-# #| include: false
-# 
-# plot <- ggplot(data = filter(sdl_objective_nonrounding_agg$ewr_code, scenario == "historical_scale_rain_1_0_evap_1_0_licvolfactor_1_0"), aes(x = ewr_code, y = names_scenario))+
-#   geom_tile(aes(fill = ewr_achieved))+
-#   #geom_text(aes(label = n_versions_of_EWR))+
-#   facet_grid(gauge~.)
-# 
-# sdl_objective_nonrounding_agg$ewr_code_timing |>
-#   filter(scale_rain == 1,
-#          scale_evap == 1, 
-#          licvolfactor == 1,
-#          ewr_code == "CF",
-#          gauge == "421090")
-# 
-# plot
-# ```
-# 
-# ## table-scenarios
-# 
-# ```{r}
-# #| label: tbl-scenarios
-# #| tbl-cap: Demonstration scenarios are a factorial combination of 'climate' (scaled flow) and 'management' (pulsed additions). Climate scenarios... Adaptation options were applied to each climate scenario with ... 
-# 
-# #| layout-ncol: 3
-# #| tbl-subcap: 
-# #|  - "Climate scenarios"
-# #|  - "Climate scenarios"
-# #|  - "Adaptation option scenarios"
-# gauges <- tibble(`Gauges` =  unique(sdl_objective_nonrounding_agg$ewr_code$gauge[!is.na(sdl_objective_rounding_agg$ewr_code$gauge)]))
-# 
-# scale_evap_scenes <- tibble(`Change in evapo-transpiration` =  unique(scenarios$scale_evap[!is.na(scenarios$scale_evap)]))
-# 
-# scale_rain_scenes <- tibble(`Change in rainfall` =  unique(scenarios$scale_rain[!is.na(scenarios$scale_rain)]))
-# 
-# licvolfactor_scenes <- tibble(`Change in Licence volume` =  unique(scenarios$licvolfactor[!is.na(scenarios$licvolfactor)]))
-# 
-# #Gauges:
-# knitr::kable(gauges)
-# #climate scenarios:
-# knitr::kable(scale_evap_scenes)
-# knitr::kable(scale_rain_scenes)
-# #Adaptaion scenarios:
-# knitr::kable(licvolfactor_scenes)
-# ```
-# 
-# ## table- causal network
-# 
-# ```{r}
-# objectives <- causal_ewr$ewr2obj |>
-#   select(-ewr_code_timing)|>
-#   distinct()
-# 
-# Planning_units_gauges_EWRS <- objectives|>
-#   group_by(PlanningUnitID, gauge)|>
-#   filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
-#   distinct(PlanningUnitID, gauge, ewr_code)|>
-#   mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-#                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-#   arrange(ewr_code)|>
-#   summarise(n_EWR = n(),
-#             EWRs = paste(ewr_code, collapse = "; ")) |>
-#  arrange(PlanningUnitID, gauge)
-#   
-# ewr_code_to_objectives <- objectives|>
-#   group_by(ewr_code, env_obj)|>
-#   filter(gauge %in% c("421001", "421004", "421012", "421022", "421090"))|>
-#   mutate(ewr_code = factor(ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", 
-#                                                 "OB-WL","OB-WM", "OB-WS1", "OB-WS3", "OB-WS4")))|>
-#   distinct(ewr_code, env_obj)|>
-#   select(ewr_code, env_obj) |>
-#   group_by(ewr_code)|>
-#   summarise(n_env_obj = n(),
-#             env_obj = paste(env_obj, collapse = "; ")) |>
-#   arrange(ewr_code)
-# 
-# 
-# # Three planning units use the same 2 gauges but have a few differences in the EWRs
-# # Eastern Macquarie Marshes
-# # Northern Macquarie Marshes
-# # Southern Macquarie Marshes
-# knitr::kable(Planning_units_gauges_EWRS)
-# knitr::kable(ewr_code_to_objectives)
-# 
-# #Dont know what that was 
-# # paste(unique(Planning_units_gauges$PlanningUnitID), collapse = ", ")
-# # paste(unique(Planning_units_gauges$gauge), collapse = ", ")
-```
-
 ## MAP
 
 ```{r}
@@ -511,34 +235,6 @@ Map_Macquarie
 
 ggsave(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = "tiff",
        width = 8, height = 5)
-```
-
-## Data
-
-```{r}
-files_sdl_EWR_timeseries <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_ewr_timeseries', filename))
-
-files_sdl_target_timeseries <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_target_timeseries', filename))
-
-files_sdl_EWR_spells <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_EWR_spells', filename))
-
-files_sdl_target_spells <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_target_spells', filename))
-
-files_sdl_EWR_vulnerability <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_EWR_vulnerability', filename))
-
-files_sdl_target_vulnerability <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_target_vulnerability', filename))
-
-files_sdl_EWR_spells_adjusted <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_EWR_spells_adjusted', filename))
-
-files_sdl_target_spells_adjusted <- files_EWR_all |>
-  dplyr::filter(grepl('sdl_target_spells_adjusted', filename))
 ```
 
 ## 1A) Vulnerability - no climate change
@@ -1303,27 +999,26 @@ i dont think we can calculate interevent periods for economic or water allocatio
 
 ```{r}
 
-sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
+sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
                                     info_list = aggregation_info,
                                     mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_spells',
+                                    licvol = 'all',
+                                    climate = 'all',
+                                    aggname = 'sdl_ewr_baseline',
                                     max_handling = "remove")
 
-sdl_target_spells <- read_in_aggs(project_dir = project_dir,
+sdl_target_baseline <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
                                     info_list = aggregation_info,
                                     mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_target_spells',
+                                    licvol = 'all',
+                                    climate = 'all',
+                                    aggname = 'sdl_target_baseline',
                                     max_handling = "remove")
 
-sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
-
-plot_sdl_EWR_spells <- sdl_EWR_spells |>
+Spellsplot_sdl_EWR <- sdl_ewr_baseline |>
+  filter(Mark == "Mk4a" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate")|>
   ggplot(aes(y = mean_max_interevent, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
   geom_point() +
   geom_line(data = null_data, aes(y = mean_max_interevent, x = ewr_achieved), colour = "black")+
@@ -1336,7 +1031,8 @@ plot_sdl_EWR_spells <- sdl_EWR_spells |>
   scale_shape_manual(values = shapes_data2)
 
 #TARGET
-plot_sdl_target_spells <- sdl_target_spells |>
+Spellsplot_sdl_target <- sdl_target_baseline |>
+  filter(Mark == "Mk4a" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate")|>
   ggplot(aes(y = mean_max_interevent, x = ewr_achieved, colour = env_group, shape = Data)) + 
   geom_point() +
   geom_line(data = null_data, aes(y = mean_max_interevent, x = ewr_achieved), colour = "black")+
@@ -1348,20 +1044,29 @@ plot_sdl_target_spells <- sdl_target_spells |>
   scale_colour_manual(values = pal_envgroup) +
   scale_shape_manual(values = shapes_data)
 
-ggsave(plot = plot_sdl_EWR_spells, filename = file.path(comp_results, paste0("Spellsplot_sdl_EWR",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
+ggsave(plot = Spellsplot_sdl_EWR, filename = file.path(comp_results, paste0("Spellsplot_sdl_EWR",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
 
-ggsave(plot = plot_sdl_target_spells, filename = file.path(comp_results, paste0("Spellsplot_sdl_target",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
+ggsave(plot = Spellsplot_sdl_target, filename = file.path(comp_results, paste0("Spellsplot_sdl_target",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
 
 ```
 
-## 4) Variability - stochastic + historic data - no climate change
+## 4) Variability - no climate change
 
 ```{r}
-plot_sdl_EWR_variability_scatter <- ggplot(data = sdl_EWR_spells) + 
+plot_sdl_EWR_variability_scatter <- sdl_ewr_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() + 
   geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
               height = 0) + 
   geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_ewr_baseline, 
+                           Data == "Historic" & 
+                             Mark == "Mk4a" & 
+                             licvolfactor == 1.0 & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_EWR)+
@@ -1369,11 +1074,20 @@ plot_sdl_EWR_variability_scatter <- ggplot(data = sdl_EWR_spells) +
   coord_cartesian(ylim = c(0,1))
 
 #TARGET
-plot_sdl_target_variability_scatter <- ggplot(data = sdl_target_spells) + 
+plot_sdl_target_variability_scatter <- sdl_target_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() + 
   geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data),
               height = 0) + 
   geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_target_baseline, 
+                           Mark == "Mk4a" & 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_Target)+
@@ -1381,44 +1095,73 @@ plot_sdl_target_variability_scatter <- ggplot(data = sdl_target_spells) +
   coord_cartesian(ylim = c(0,1))
 
 #Hydrology
-plot_sdl_Hydrology_variability_scatter <- ggplot(data = filter(sdl_hydrology_spells, Data == "Stochastic" & names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Mk4a")) + 
+plot_sdl_Hydrology_variability_scatter <- sdl_hydrology_spells |>
+  filter(Data == "Stochastic" & 
+           names_CSIRO_climate_scenario == "Historical climate" & 
+           licvolfactor == 1.0 & 
+           Mark == "Mk4a")) + 
+  ggplot()+
   geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data),
               height = 0) + 
   geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_hydrology_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_hydrology_spells, 
+                           Data == "Historic" & 
+                             Mark == "Mk4a" & 
+                             licvolfactor == 1.0 & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_hydro)+
   scale_shape_manual(values = shapes_data)
 
 #Economic
-plot_sdl_Economic_variability_scatter <- ggplot(data = filter(sdl_Economic_spells, Data == "Stochastic" & names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Mk4a")) + 
+plot_sdl_Economic_variability_scatter <- ggplot(data = filter(sdl_Economic_spells, 
+                                                              Data == "Stochastic" & 
+                                                                names_CSIRO_climate_scenario == "Historical climate" & 
+                                                                licvolfactor == 1.0 & 
+                                                                Mark == "Mk4a")) + 
   geom_jitter(aes(y = economic_benefit, x = measure, colour = measure, shape = Data),
               height = 0) + 
   geom_violin(aes(y = economic_benefit, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_Economic_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_Economic_spells, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a" & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_hydro)+
   scale_shape_manual(values = shapes_data)
 
 #target hydro and Economic
-sdl_target_spells$measure <- sdl_target_spells$target
-sdl_target_spells$measure_achieved <- sdl_target_spells$ewr_achieved
-sdl_target_spells$Theme <- "Target"
-sdl_hydrology_spells$Theme <- "Water allocation"
-sdl_hydrology_spells$replicate <- as.character(sdl_hydrology_spells$replicate)
-sdl_Economic_spells$measure_achieved <- sdl_Economic_spells$economic_benefit
-sdl_Economic_spells$Theme <- "Economics"
-sdl_Economic_spells$replicate <- as.character(sdl_Economic_spells$replicate)
+sdl_target_baseline$measure <- sdl_target_baseline$target
+sdl_target_baseline$measure_achieved <- sdl_target_baseline$ewr_achieved
+sdl_target_baseline$relative_measure_achieved <- sdl_target_baseline$relative_ewr_achieved
+sdl_target_baseline$Theme <- "Target"
 
-sdl_spells <- bind_rows(sdl_target_spells, sdl_hydrology_spells, sdl_Economic_spells)
+sdl_hydrology_baseline$Theme <- "Water allocation"
+sdl_hydrology_baseline$replicate <- as.character(sdl_hydrology_baseline$replicate)
 
-plot_sdl_variability_scatter <- ggplot(data = filter(sdl_spells, Data == "Stochastic" & names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Mk4a")) + 
+sdl_Economic_baseline$measure_achieved <- sdl_Economic_baseline$economic_benefit
+sdl_Economic_baseline$relative_measure_achieved <- sdl_Economic_baseline$relative_economic_benefit
+sdl_Economic_baseline$Theme <- "Economics"
+sdl_Economic_baseline$replicate <- as.character(sdl_Economic_baseline$replicate)
+
+sdl_baseline <- bind_rows(sdl_target_baseline, sdl_hydrology_baseline, sdl_Economic_baseline)
+
+plot_sdl_variability_scatter <- ggplot(data = filter(sdl_baseline, 
+                                                     Data == "Stochastic" & 
+                                                       names_CSIRO_climate_scenario == "Historical climate" & 
+                                                       licvolfactor == 1.0 & 
+                                                       Mark == "Mk4a")) + 
   geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data),
               height = 0) + 
   geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_baseline, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a" & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_theme)+
@@ -1445,129 +1188,228 @@ ggsave(plot = plot_sdl_variability_scatter, filename = file.path(comp_results, p
 
 ```
 
-## 4) Variability - Adjusted stochastic + historic data - no climate change
+## 4) Variability - RELATIVE - no climate change
 
 ```{r}
-
-#Relative:
-sdl_target_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_target_baseline',
-                                    max_handling = "remove")
-
-sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_baseline',
-                                    max_handling = "remove")
-
-
-plot_sdl_EWR_variability_sh <- ggplot() + 
-  geom_jitter(data = sdl_EWR_spells_adjusted, aes(y = adj_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
+#EWR
+Scatterplot_sdl_EWR_baseline <- sdl_ewr_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() +
+  geom_jitter(aes(y = relative_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
               height = 0) + 
-  geom_violin(data = sdl_EWR_spells_adjusted, aes(y = adj_ewr_achieved, x = ewr_code),  colour = "black", fill = NA) + 
-  geom_point(data = filter(sdl_EWR_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
-              aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
+  geom_violin( aes(y = relative_ewr_achieved, x = ewr_code),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_ewr_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate"), 
+              aes(y = relative_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_EWR)+
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))
+  scale_shape_manual(values = shapes_data)
 
-#TARGET
-plot_sdl_target_variability_sh <- ggplot() +  
-  geom_jitter(data = sdl_target_spells_adjusted, aes(y = adj_ewr_achieved, x = env_group, colour = env_group, shape = Data),
+#target
+Scatterplot_sdl_target_baseline <- sdl_target_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() +
+  geom_jitter(aes(y = relative_ewr_achieved, x = target, colour = target, shape = Data),
               height = 0) + 
-  geom_violin(data = sdl_target_spells_adjusted, aes(y = adj_ewr_achieved, x = env_group),  colour = "black", fill = NA) + 
-  geom_point(data = filter(sdl_target_spells_MK4, Evapotranspiration == 1.00 & Rainfall== 1.0 & licvolfactor == 1.0), 
-              aes(y = ewr_achieved, x = env_group, colour = env_group, shape = Data),fill = "black", size = 3) + 
-  #geom_boxplot(colour = "black") +
+  geom_violin( aes(y = relative_ewr_achieved, x = target),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_target_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate"), 
+              aes(y = relative_ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
-  scale_colour_manual(values = pal_envgroup)+
-  #scale_linetype_manual(values = linetype_data)+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)
+
+#hydrology
+Scatterplot_sdl_hydrology_baseline <- sdl_hydrology_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() +
+  geom_jitter(aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_measure_achieved, x = measure),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_hydrology_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate"), 
+              aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)
+
+#Economic
+Scatterplot_sdl_Economic_baseline <- sdl_Economic_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate")|>
+  ggplot() +
+  geom_jitter(aes(y = relative_economic_benefit, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_economic_benefit, x = measure),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_Economic_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0 & 
+           names_CSIRO_climate_scenario == "Historical climate"), 
+              aes(y = relative_economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)
+
+#TARGET HYDRO ECONOMIC
+Scatterplot_sdl_baseline <- ggplot(data = filter(sdl_baseline, 
+                                                     Data == "Stochastic" & 
+                                                       names_CSIRO_climate_scenario == "Historical climate" & 
+                                                       licvolfactor == 1.0 & 
+                                                       Mark == "Mk4a")) + 
+  geom_jitter(aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin(aes(y = relative_measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_baseline, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a" & 
+                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
   scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))
+  facet_grid(~Theme, scales = 'free', space = 'free')
+  #ggforce::facet_row(vars(Theme), scales = 'free', space = 'free')
 
+Scatterplot_sdl_EWR_baseline
+Scatterplot_sdl_target_baseline
+Scatterplot_sdl_hydrology_baseline
+Scatterplot_sdl_Economic_baseline
+Scatterplot_sdl_baseline
 
-plot_sdl_variability_sh_adjusted <- plot_sdl_EWR_variability_sh + plot_sdl_target_variability_sh + plot_layout(ncol = 1)
-plot_sdl_variability_sh
-
-ggsave(plot = plot_sdl_variability_sh_adjusted, filename = file.path(comp_results, paste0("plot_sdl_variability_adjusted_stoch_and_historic",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 10)
 ```
 
-## 5) Climate change - stochastic + historic data - with climate change (violin plot version)
+## 5) Climate change - with climate change
 
 ```{r}
-plot_sdl_EWR_variability_scatter <- ggplot(data = sdl_EWR_spells) + 
+plot_sdl_EWR_climates_scatter <- sdl_ewr_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() + 
   geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
               height = 0) + 
   geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_ewr_baseline, 
+                           Data == "Historic" & 
+                             Mark == "Mk4a" & 
+                             licvolfactor == 1.0), 
+             aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))
+  coord_cartesian(ylim = c(0,1))+
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
 #TARGET
-plot_sdl_target_variability_scatter <- ggplot(data = sdl_target_spells) + 
+plot_sdl_target_climates_scatter <- sdl_target_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() + 
   geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data),
               height = 0) + 
   geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_target_baseline, 
+                           Mark == "Mk4a" & 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0), 
+             aes(y = ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))
+  coord_cartesian(ylim = c(0,1))+
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
 #Hydrology
-plot_sdl_Hydrology_variability_scatter <- ggplot(data = filter(sdl_hydrology_spells, Data == "Stochastic"  & licvolfactor == 1.0 & Mark == "Mk4a")) + 
+plot_sdl_Hydrology_climates_scatter <- sdl_hydrology_baseline |>
+  filter(Data == "Stochastic" & 
+           licvolfactor == 1.0 & 
+           Mark == "Mk4a")|> 
+  ggplot()+
   geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data),
               height = 0) + 
   geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_hydrology_spells, Data == "Historic" & licvolfactor == 1.0), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_hydrology_baseline, 
+                           Data == "Historic" & 
+                             Mark == "Mk4a" & 
+                             licvolfactor == 1.0 ), 
+             aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_hydro)+
   scale_shape_manual(values = shapes_data)+
-  facet_wrap(~names_CSIRO_climate_scenario)
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
 #Economic
-plot_sdl_Economic_variability_scatter <- ggplot(data = filter(sdl_Economic_spells, Data == "Stochastic" & names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Mk4a")) + 
-  geom_jitter(aes(y = economic_benefit, x = measure, colour = measure, shape = Data),
-              height = 0) + 
+plot_sdl_Economic_climates_scatter <- ggplot(data = filter(sdl_Economic_baseline, 
+                                                              Data == "Stochastic" & 
+                                                                licvolfactor == 1.0 & 
+                                                                Mark == "Mk4a")) + 
+  geom_jitter(aes(y = economic_benefit, x = measure, colour = measure, shape = Data), height = 0) + 
   geom_violin(aes(y = economic_benefit, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_Economic_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_Economic_baseline, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a"), 
+             aes(y = economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_hydro)+
-  scale_shape_manual(values = shapes_data)
+  scale_shape_manual(values = shapes_data)+
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
 #target hydro and Economic
-sdl_target_spells$measure <- sdl_target_spells$target
-sdl_target_spells$measure_achieved <- sdl_target_spells$ewr_achieved
-sdl_target_spells$Theme <- "Target"
+sdl_target_baseline$measure <- sdl_target_baseline$target
+sdl_target_baseline$measure_achieved <- sdl_target_baseline$ewr_achieved
+sdl_target_baseline$Theme <- "Target"
 sdl_hydrology_spells$Theme <- "Water allocation"
 sdl_hydrology_spells$replicate <- as.character(sdl_hydrology_spells$replicate)
 sdl_Economic_spells$measure_achieved <- sdl_Economic_spells$economic_benefit
 sdl_Economic_spells$Theme <- "Economics"
 sdl_Economic_spells$replicate <- as.character(sdl_Economic_spells$replicate)
 
-sdl_spells <- bind_rows(sdl_target_spells, sdl_hydrology_spells, sdl_Economic_spells)
+sdl_spells <- bind_rows(sdl_target_baseline, sdl_hydrology_spells, sdl_Economic_spells)
 
-plot_sdl_variability_scatter <- ggplot(data = filter(sdl_spells, Data == "Stochastic" & names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Mk4a")) + 
+plot_sdl_climates_scatter <- ggplot(data = filter(sdl_spells, 
+                                                     Data == "Stochastic" &
+                                                       licvolfactor == 1.0 & 
+                                                       Mark == "Mk4a")) + 
   geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data),
               height = 0) + 
   geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_spells, Data == "Historic" & licvolfactor == 1.0 & names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  geom_point(data = filter(sdl_spells, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a" ), 
+             aes(y = measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_theme)+
@@ -1575,125 +1417,138 @@ plot_sdl_variability_scatter <- ggplot(data = filter(sdl_spells, Data == "Stocha
   ggforce::facet_row(vars(Theme), scales = 'free', space = 'free')
 
 
-plot_sdl_EWR_variability_scatter
-plot_sdl_target_variability_scatter
-plot_sdl_Hydrology_variability_scatter
-plot_sdl_Economic_variability_scatter
+plot_sdl_EWR_climates_scatter
+plot_sdl_target_climates_scatter
+plot_sdl_Hydrology_climates_scatter
+plot_sdl_Economic_climates_scatter
 
-plot_sdl_variability_scatter
+plot_sdl_climates_scatter
 
-ggsave(plot = plot_sdl_EWR_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave(plot = plot_sdl_EWR_climates_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 
-ggsave(plot = plot_sdl_target_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave(plot = plot_sdl_target_climates_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 
-ggsave(plot = plot_sdl_Hydrology_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave(plot = plot_sdl_Hydrology_climates_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 
-ggsave(plot = plot_sdl_Economic_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave(plot = plot_sdl_Economic_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 
-ggsave(plot = plot_sdl_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdlc_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave(plot = plot_sdl_variability_scatter, filename = file.path(comp_results, paste0("scatterplot_sdl_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+
 ```
 
+## 5) Climate change - RELATIVE
 
 ```{r}
-sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_spells',
-                                    max_handling = "remove")
-
-sdl_target_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_target_spells',
-                                    max_handling = "remove")
-
-plot_sdl_EWR_variability_sh_climatechange <- ggplot() + 
-  geom_violin(data = sdl_EWR_spells, aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
-              colour = "grey") + 
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
-              aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data, fill = names_CSIRO_climate_scenario), 
-             size = 3) + 
+#EWR
+Scatterplot_sdl_EWR_climates_baseline <- sdl_ewr_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() +
+  geom_jitter(aes(y = relative_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_ewr_achieved, x = ewr_code),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_ewr_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0), 
+              aes(y = relative_ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
   scale_colour_manual(values = pal_EWR)+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  #scale_linetype_manual(values = linetype_data)+
   scale_shape_manual(values = shapes_data)+
-  #theme(legend.box = "horizontal")+
-  guides(fill=guide_legend(override.aes=list(shape=21)),
-         colour=guide_legend(override.aes=list(shape=21)))+
-  coord_cartesian(ylim = c(0,1))
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
-#TARGET
-plot_sdl_target_variability_sh_climatechange <- ggplot() +  
-  geom_violin(data = sdl_target_spells, aes(y = ewr_achieved, x = env_group, group = env_group),
-              colour = "grey") + 
-  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
-              aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data, fill = names_CSIRO_climate_scenario),
-             size = 3) + 
-  #geom_boxplot() +
-  theme_werp_toolkit()+
-  scale_colour_manual(values = pal_envgroup)+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  #scale_linetype_manual(values = linetype_data)+
-  scale_shape_manual(values = shapes_data)+
-  #theme(legend.box = "horizontal")+
-  guides(fill=guide_legend(override.aes=list(shape=21)),
-         colour=guide_legend(override.aes=list(shape=21)))+
-  coord_cartesian(ylim = c(0,1))
-
-
-plot_sdl_variability_sh_climatechange <- plot_sdl_EWR_variability_sh_climatechange + plot_sdl_target_variability_sh_climatechange + plot_layout(ncol = 1, guides = "collect")
-plot_sdl_variability_sh_climatechange
-
-
-plot_sdl_EWR_relativechange_climate <- ggplot() + 
-  geom_point(data = filter(sdl_EWR_spells_MK4_rel_historic, licvolfactor == 1.0), 
-              aes(y = rel_ewr_achieved, x = ewr_code, group = ewr_code, shape = Data, fill = names_CSIRO_climate_scenario), 
-             size = 3) + 
-  scale_colour_manual(values = pal_EWR)+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  #scale_linetype_manual(values = linetype_data)+
-  scale_shape_manual(values = shapes_data)+
+#target
+Scatterplot_sdl_target_climates_baseline <- sdl_target_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() +
+  geom_jitter(aes(y = relative_ewr_achieved, x = target, colour = target, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_ewr_achieved, x = target),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_target_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0), 
+              aes(y = relative_ewr_achieved, x = target, colour = target, shape = Data),fill = "black", size = 3) + 
   theme_werp_toolkit()+
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-  #theme(legend.box = "horizontal")+
-  guides(fill=guide_legend(override.aes=list(shape=21)),
-         colour=guide_legend(override.aes=list(shape=21)),
-         alpha=guide_legend(override.aes=list(shape=21)))#+
-  #facet_wrap(~names_CSIRO_climate_scenario)
-
-#TARGET
-plot_sdl_target_relativechange_climate <- ggplot(data = filter(sdl_target_spells_MK4_rel_historic, licvolfactor == 1.0),
-                      aes(y = rel_ewr_achieved, x = env_group, shape = Data, fill = names_CSIRO_climate_scenario)) +  
-  geom_point(position=position_dodge(width=0.5), size = 3) + 
-  #geom_boxplot() +
-  theme_werp_toolkit()+
-  #scale_colour_manual(values = pal_envgroup)+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  #scale_linetype_manual(values = linetype_data)+
+  scale_colour_manual(values = pal_theme)+
   scale_shape_manual(values = shapes_data)+
-  #theme(legend.box = "horizontal")+
-  guides(fill=guide_legend(override.aes=list(shape=21)),
-         alpha=guide_legend(override.aes=list(shape=21)))#+
-  #facet_wrap(~names_CSIRO_climate_scenario)
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
-plot_sdl_EWR_relativechange_climate + plot_sdl_target_relativechange_climate + plot_layout(ncol = 1, guides = "collect")
+#hydrology
+Scatterplot_sdl_hydrology_climates_baseline <- sdl_hydrology_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() +
+  geom_jitter(aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_measure_achieved, x = measure),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_hydrology_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0), 
+              aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)+
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
-ggsave(plot = plot_sdl_EWR_relativechange_climate, filename = file.path(comp_results, paste0("plot_sdl_EWR_relativechange",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 8)
+#Economic
+Scatterplot_sdl_Economic_climates_baseline <- sdl_Economic_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0)|>
+  ggplot() +
+  geom_jitter(aes(y = relative_economic_benefit, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin( aes(y = relative_economic_benefit, x = measure),  colour = "black", fill = NA) + 
+  geom_point(data = filter(sdl_Economic_baseline, 
+           Data == "Historic" & 
+           Mark == "Mk4a" & 
+           licvolfactor == 1.0), 
+              aes(y = relative_economic_benefit, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)+
+  facet_wrap(~ names_CSIRO_climate_scenario)
 
-ggsave(plot = plot_sdl_target_relativechange_climate, filename = file.path(comp_results, paste0("plot_sdl_target_relativechange",Sys.Date(),".tiff")), device = "tiff", width = 6, height = 5)
+#TARGET HYDRO ECONOMIC
+Scatterplot_sdl_climates_baseline <- ggplot(data = filter(sdl_baseline, 
+                                                     Data == "Stochastic" &
+                                                       licvolfactor == 1.0 & 
+                                                       Mark == "Mk4a")) + 
+  geom_jitter(aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),
+              height = 0) + 
+  geom_violin(aes(y = relative_measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_baseline, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Mk4a"), 
+             aes(y = relative_measure_achieved, x = measure, colour = measure, shape = Data),fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_colour_manual(values = pal_theme)+
+  scale_shape_manual(values = shapes_data)+
+  facet_grid(~Theme, scales = 'free', space = 'free')
+  #ggforce::facet_row(vars(Theme), scales = 'free', space = 'free')
 
-plot_sdl_relativechange_climate <- plot_sdl_EWR_variability_sh_climatechange + 
-plot_sdl_EWR_relativechange_climate + plot_sdl_target_variability_sh_climatechange + plot_sdl_target_relativechange_climate + plot_layout(ncol = 2, guides = "collect")
+Scatterplot_sdl_EWR_climates_baseline
+Scatterplot_sdl_target_climates_baseline
+Scatterplot_sdl_hydrology_climates_baseline
+Scatterplot_sdl_Economic_climates_baseline
+Scatterplot_sdl_climates_baseline
 
-ggsave(plot = plot_sdl_relativechange_climate, filename = file.path(comp_results, paste0("plot_sdl_4panels",Sys.Date(),".tiff")), device = "tiff", width = 10, height = 10)
+
+
+
+
 
 ```
 
@@ -1702,33 +1557,13 @@ ggsave(plot = plot_sdl_relativechange_climate, filename = file.path(comp_results
 
 ```{r}
 
-sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = "all",#'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_spells')
-
-sdl_EWR_spells <- filter(sdl_EWR_spells, !grepl("MAX", scenario))
-
-sdl_target_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = "all",#'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_target_spells')
-
-sdl_target_spells <- filter(sdl_target_spells, !grepl("MAX", scenario))
-
 plot_sdl_EWR_variability_sh_adaptation <- ggplot() + 
-  geom_violin(data = filter(sdl_EWR_spells, Data == "Stochastic"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
+  geom_violin(data = filter(sdl_ewr_baseline, Data == "Stochastic"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code),
               colour = "grey") + 
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_ewr_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario), 
              size = 3) + 
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_ewr_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data), 
              size = 3) + 
   scale_colour_manual(values = pal_EWR)+
@@ -1744,12 +1579,12 @@ plot_sdl_EWR_variability_sh_adaptation <- ggplot() +
 
 #TARGET
 plot_sdl_target_variability_sh_adaptation <- ggplot() +  
-  geom_violin(data = filter(sdl_target_spells, Data == "Stochastic"), aes(y = ewr_achieved, x = env_group, group = env_group),
+  geom_violin(data = filter(sdl_target_baseline, Data == "Stochastic"), aes(y = ewr_achieved, x = env_group, group = env_group),
               colour = "grey") + 
-  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_target_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario),
              size = 3) + 
-  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_target_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data),
              size = 3) +
   #geom_boxplot() +
@@ -1769,7 +1604,7 @@ ggsave(plot = plot_sdl_target_variability_sh_adaptation, filename = file.path(co
 
 
 plot_sdl_EWR_relativechange_adaptation <- ggplot() + 
-  geom_point(data = filter(sdl_EWR_spells_MK4_rel_historic), 
+  geom_point(data = filter(sdl_ewr_baseline), 
               aes(y = rel_ewr_achieved, x = ewr_code, group = ewr_code, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario), 
              size = 3) + 
   scale_colour_manual(values = pal_EWR)+
@@ -1784,7 +1619,7 @@ plot_sdl_EWR_relativechange_adaptation <- ggplot() +
   facet_wrap(~names_CSIRO_climate_scenario, nrow = 1)
 
 #TARGET
-plot_sdl_target_relativechange_adaptation <- ggplot(data = filter(sdl_target_spells_MK4_rel_historic), aes(y = rel_ewr_achieved, x = env_group,  alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario)) +  
+plot_sdl_target_relativechange_adaptation <- ggplot(data = filter(sdl_target_baseline), aes(y = rel_ewr_achieved, x = env_group,  alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario)) +  
   geom_point(position=position_dodge(width=0.5), size = 3) + 
   #geom_boxplot() +
   theme_werp_toolkit()+
@@ -1814,31 +1649,14 @@ ggsave(plot = plot_sdl_target_both_relativechange_adaptation, filename = file.pa
 ## 6) eWater management (Mks)
 
 ```{r}
-sdl_EWR_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = "all",#'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_spells',
-                                    max_handling = "remove")
-
-sdl_target_spells <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = "all",#'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = "all",#'r1_0_e1_0',
-                                    aggname = 'sdl_target_spells',
-                                    max_handling = "remove")
 
 plot_sdl_EWR_variability_sh_management <- ggplot() + 
-  geom_violin(data = filter(sdl_EWR_spells, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code, scale = "width"),
+  geom_violin(data = filter(sdl_ewr_baseline, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = ewr_code, group = ewr_code, scale = "width"),
               colour = "grey") + 
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_ewr_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, alpha = Mark, shape = Data, fill = names_CSIRO_climate_scenario), 
              size = 3) + 
-  geom_point(data = filter(sdl_EWR_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_ewr_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = ewr_code, group = ewr_code, shape = Data), 
              size = 3) + 
   scale_colour_manual(values = pal_EWR)+
@@ -1854,12 +1672,12 @@ plot_sdl_EWR_variability_sh_management <- ggplot() +
 
 #TARGET
 plot_sdl_target_variability_sh_management <- ggplot() +  
-  geom_violin(data = filter(sdl_target_spells, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = env_group, group = env_group),
+  geom_violin(data = filter(sdl_target_baseline, Data == "Stochastic" & Mark == "Mk4a"), aes(y = ewr_achieved, x = env_group, group = env_group),
               colour = "grey") + 
-  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_target_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, alpha = Mark, shape = Data, fill = names_CSIRO_climate_scenario),
              size = 3) + 
-  geom_point(data = filter(sdl_target_spells, Data == "Historic"), 
+  geom_point(data = filter(sdl_target_baseline, Data == "Historic"), 
               aes(y = ewr_achieved, x = env_group, group = env_group, shape = Data),
              size = 3) +
   #geom_boxplot() +
@@ -1879,7 +1697,7 @@ ggsave(plot = plot_sdl_target_variability_sh_management, filename = file.path(co
 
 
 plot_sdl_EWR_relativechange_management <- ggplot() + 
-  geom_point(data = filter(sdl_EWR_spells_MK4_rel_historic), 
+  geom_point(data = filter(sdl_ewr_baseline), 
               aes(y = rel_ewr_achieved, x = ewr_code, group = ewr_code, alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario), 
              size = 3) + 
   scale_colour_manual(values = pal_EWR)+
@@ -1894,7 +1712,7 @@ plot_sdl_EWR_relativechange_management <- ggplot() +
   facet_wrap(~names_CSIRO_climate_scenario, nrow = 1)
 
 #TARGET
-plot_sdl_target_relativechange_management <- ggplot(data = filter(sdl_target_spells_MK4_rel_historic), aes(y = rel_ewr_achieved, x = env_group,  alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario)) +  
+plot_sdl_target_relativechange_management <- ggplot(data = filter(sdl_target_baseline), aes(y = rel_ewr_achieved, x = env_group,  alpha = licvolfactor, shape = Data, fill = names_CSIRO_climate_scenario)) +  
   geom_point(position=position_dodge(width=0.5), size = 3) + 
   #geom_boxplot() +
   theme_werp_toolkit()+
