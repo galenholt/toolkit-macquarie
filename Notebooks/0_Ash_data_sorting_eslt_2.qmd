@@ -65,9 +65,9 @@ unzip(path_to_eslt_zip, files = hydro_paths, exdir = file.path(qaelpath, 'Toolki
 unzip(path_to_eslt_zip, files = csv_paths, exdir = file.path(qaelpath, 'Toolkit', 'eslt-data-2', 'hydrographs'))
 ```
 
-## ESLT data 2 
+## ESLT data 2
 
-## Extract variables 
+## Extract variables
 
 ```{r}
 read_plus <- function(flnm) {

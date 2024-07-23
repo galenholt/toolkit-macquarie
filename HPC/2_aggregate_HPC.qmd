@@ -24,7 +24,7 @@ if (Sys.info()['user'] == 'hol436') {
                                    job.name = 'macagg')),
             multicore))
 } else {
-  plan(sequential)
+  plan(multisession)
 }
 ```
 
@@ -132,6 +132,7 @@ objective_list <- list(objective_mapping)
 furrr isn't playing nicely with passing in sf by name, so eating a bit of overhead and passing the objects themselves. Doesn't seem to hurt too much.
 
 ## Timeseries
+
 The 'timeseries' runs are simpler.
 
 ### EWRs-PU-SDL
@@ -279,16 +280,45 @@ dirloop <- function(aggsequence, funsequence, aggCols, aggname, inner_subdirs) {
 
 ```{r}
 system.time(aggloop <- furrr::future_pmap(futurelist, dirloop))
+
 ```
+
+9600 seconds locally, 600 on Petrichor (with 30 cores x 4 workers)
 
 And a test
 
 ```{r}
-# test_sdl_ewr_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEt, 'achievement_aggregated.rds'))
-# test_sdl_target_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTt, 'achievement_aggregated.rds'))
-# test_sdl_ewr_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEs, 'achievement_aggregated.rds'))
-# test_sdl_target_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTs, 'achievement_aggregated.rds'))
-# 
-# all(retained_sTs %in% names(test_sdl_target_spells))
-# all(retained_sEs %in% names(test_sdl_ewr_spells))
+test_sdl_ewr_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEt, 'achievement_aggregated.rds'))
+test_sdl_target_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTt, 'achievement_aggregated.rds'))
+test_sdl_ewr_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEs, 'achievement_aggregated.rds'))
+test_sdl_target_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTs, 'achievement_aggregated.rds'))
+
+all(retained_sEt %in% names(test_sdl_ewr_ts))
+all(retained_sTt %in% names(test_sdl_target_ts))
+
+all(retained_sTs %in% names(test_sdl_target_spells))
+all(retained_sEs %in% names(test_sdl_ewr_spells))
+```
+
+Some tests that all files are there.
+
+```{r}
+
+expected_files <- purrr::map(inner_subdirs, \(x) file.path(x, file.path(names_seqs, 'achievement_aggregated.rds'))) |> 
+  unlist()
+
+found_files <- list.files(file.path(project_dir, 'aggregated'), 
+                          recursive = TRUE, 
+                          pattern = 'achievement_aggregated.rds')
+
+all_found <- all(expected_files %in% found_files)
+```
+
+```{r}
+if (all_found) {
+  rlang::inform("All files created")
+} else {
+  rlang::inform(c("Expected files missing",
+                  glue::glue("{expected_files[which(!expected_files %in% found_files)]}")))
+}
 ```
