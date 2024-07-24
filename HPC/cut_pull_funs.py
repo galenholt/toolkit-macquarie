@@ -65,6 +65,7 @@ def cut_all_ncdf(inparent, outparent, hews = ['*'], clims = ['*'], newname = 'cu
     if single_dir:
         juststruct = [item.replace(os.sep, '_') for item in juststruct]
     newpaths = [os.path.join(outparent, subpath) for subpath in juststruct]
+    newpaths = [filepath.replace('.', '_') for filepath in newpaths]
     for directory in newpaths:
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -99,6 +100,7 @@ def copyextra(inparent, outparent, hews = ['*'], clims = ['*'], single_dir = Fal
     if single_dir:
         juststruct = [item.replace(os.sep, '_') for item in juststruct]
     newpaths = [os.path.join(outparent, subpath) for subpath in juststruct]
+    newpaths = [filepath.replace('.', '_') for filepath in newpaths]
     outfiles = [os.path.join(pathit, item) for pathit in newpaths for item in extrafiles]
     for directory in newpaths:
         if not os.path.exists(directory):
