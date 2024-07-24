@@ -33,7 +33,7 @@ To run this on the hpc, purl it with
 ```{r}
 #| eval: false
 
-infile <- 'HPC/2_aggregate_HPC.qmd'
+infile <- 'HPC/2_aggregate_EWRtarget.qmd'
 
 rfile <- stringr::str_replace(infile, '.qmd', '.R')
 
@@ -80,13 +80,14 @@ I keep doing things very similar to this to deal with the nested dirs. Should ma
 # Get all the EWR dir paths should I save this like i did with the gauges? 
 # Wouldn't locally, but it's really slow on petrichor.
 
-if (!file.exists('HPC/inner_dirs.rds')) {
+if (!file.exists('HPC/inner_dirs_ewrtarget.rds')) {
     inner_dirs <- list.dirs(
   ewr_results, recursive = TRUE
   )
-    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs.rds')
+    inner_dirs <- inner_dirs[grepl('exp11', inner_dirs)] 
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_ewrtarget.rds')
 } else {
-    inner_dirs = readRDS('HPC/inner_dirs.rds')
+    inner_dirs = readRDS('HPC/inner_dirs_ewrtarget.rds')
 }
 
 

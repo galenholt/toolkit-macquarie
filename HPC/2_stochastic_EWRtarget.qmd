@@ -16,19 +16,51 @@ source('R/paths.R')
 source('R/agg_variables.R')
 ```
 
+To run this on the hpc, purl it with
+
+```{r}
+#| eval: false
+
+infile <- 'HPC/2_stochastic_EWRtarget.qmd'
+
+rfile <- stringr::str_replace(infile, '.qmd', '.R')
+
+knitr::purl(input = infile, output = rfile)
+
+```
+
+Set up parallel structure. i don't actually need the workers, I don't think, but I'll keep one to get the cores. 
+
+```{r}
+if (Sys.info()['user'] == 'hol436') {
+  plan(list(tweak(batchtools_slurm,
+                  workers = 1, # I assume it'll grab 4, since that's the length of the futurelist vectors
+                  template = "HPC/batchtools.slurm.tmpl",
+                  resources = list(time = 15, # Can cut way down probably. 
+                                   ntasks.per.node = 30, 
+                                   mem.per.cpu = '4GB', # I think 'mem' alone is for the whole node, so this is safer
+                                   job.name = 'macagg')),
+            multicore))
+} else {
+  plan(multisession)
+}
+```
+
+
 # Read in desired
 
 ```{r}
 # Get all the EWR dir paths should I save this like i did with the gauges? 
 # Wouldn't locally, but it's really slow on petrichor.
 
-if (!file.exists('HPC/inner_dirs_agg.rds')) {
+if (!file.exists('HPC/inner_dirs_agg_ewrtarget.rds')) {
     inner_dirs <- list.dirs(
   agg_dir, recursive = TRUE
   )
-    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg.rds')
+      inner_dirs <- inner_dirs[grepl('exp11', inner_dirs)] 
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg_ewrtarget.rds')
 } else {
-    inner_dirs = readRDS('HPC/inner_dirs_agg.rds')
+    inner_dirs = readRDS('HPC/inner_dirs_agg_ewrtarget.rds')
 }
 
 

@@ -1,0 +1,34 @@
+
+# Moved the below to its own file so the functions are more useful.
+exec(open('HPC/cut_pull_funs.py').read())
+# # script to only pull over what we actually need.
+
+# The paths
+# basefrom = r'\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\sho108\werp\results\result_jul2024'
+# baseto= r'\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut'
+# If we're calling from petrichor, we can use 
+# '/datasets/work/ev-ca-macq/' as the prefix
+basefrom = '/datasets/work/ev-ca-macq/work/sho108/werp/results/result_jul2024'
+baseto = '/datasets/work/ev-ca-macq/work/hol436/macq_cut'
+
+# Set some common regex patterns
+# no_mgmt = ['licvolfactor_1_0']
+# with_mgmt = ['licvolfactor_0_5', 'licvolfactor_0_7', 'licvolfactor_0_9', 'licvolfactor_1_0', 'licvolfactor_1_1', 'licvolfactor_1_3', 'licvolfactor_1_5']
+# Naming convention changed
+climpattern = ['r0.8_e1.0', 'r0.8_e1.07', 'r1.0_e1.0', 'r1.0_e1.07', 'r1.2_e1.0', 'r1.2_e1.07']
+
+end_mgmt = ['licvolfactor_0.5', 'licvolfactor_1.0', 'licvolfactor_1.5']
+# We could do a big complex thing over the full directory, but since we want different bits from different marks, it'll be cleaner and save time to do the marks separately (and the historic/stochastic)
+
+extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv']
+
+import time
+# Done as a new set of marks
+# and only fo historical
+t = time.time()
+cut_marks(basefrom, baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.3', hs = ['historical'], hews = end_mgmt, clims = climpattern, extrafiles = extrafiles)
+
+cut_marks(basefrom, baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.5', hs = ['historical'], hews = end_mgmt, clims = climpattern, extrafiles = extrafiles)
+
+cut_marks(basefrom, baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.7', hs = ['historical'], hews = end_mgmt, clims = climpattern, extrafiles = extrafiles)
+time.time()-t
