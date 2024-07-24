@@ -4,6 +4,18 @@ format: html
 editor: visual
 ---
 
+```{r setup}
+#| include: false
+#| warning: false
+#| message: false
+
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file(),
+                     cache.lazy = FALSE,
+                     warning = FALSE, 
+                     message = FALSE)
+
+```
+
 ## Data
 
 Data from Ash on his blob. https://sho108storage.blob.core.windows.net/werp-deliverables/
@@ -17,42 +29,7 @@ They're on the QAEL werp drive so we don't all have to have them locally. Very a
 ```{r}
 #| include: false
 
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
-
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-
-# Outer directory for project data
-project_dir = file.path(qaelpath, 'Toolkit', 'macq-data-no_climate_change')
-
-# Hydrographs (expected to exist already; created here with Ash_data_sorting.qmd)
-hydro_dir = file.path(qaelpath, 'Toolkit/AshData/r1.0_e1.0')
-
-# Generated data
-# EWR outputs (will be created here in controller, read from here in aggregator)
-ewr_results <- file.path(project_dir, 'module_output', 'EWR')
-
-# outputs of aggregator. There may be multiple modules
-agg_results <- file.path(project_dir, 'aggregator_output')
-
-comp_results <- file.path(project_dir, 'comparer_output') 
-
-
-data_path <- file.path(qaelpath, "Toolkit", "macquarie", "macq_cut")
-
-
-hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Hydrology")
-
+source('R/paths.R')
 
 ```
 
@@ -84,6 +61,7 @@ hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "H
 ```{r}
 #1.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_reliability.csv", full.names=TRUE)
+Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -122,6 +100,7 @@ Merged_balance_temp <- NULL
 ```{r}
 #2.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_resilience.csv", full.names=TRUE)
+Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -157,6 +136,7 @@ Merged_balance_temp <- NULL
 ```{r}
 #3.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "hs_delivered_to_ordered_ratio_reliability.csv", full.names=TRUE)
+Files_balance <- Files_balance[!grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -193,6 +173,7 @@ Merged_balance_temp <- NULL
 ```{r}
 #4.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "hs_delivered_to_ordered_ratio_resilience.csv", full.names=TRUE)
+Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -239,8 +220,7 @@ GS_resilience <- read.csv(file.path(hydro_results, "allocation_resilience_merged
   dplyr::filter(threshold == 80)|>
   dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
-#HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))|>
-HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))|>
+HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))|>
   dplyr::mutate(measure = "HS_reliability",
                 measure_achieved = hs_delivered_to_ordered_ratio,
                 threshold = threshold*100)|>
@@ -254,9 +234,9 @@ HS_resilience <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_rati
   dplyr::filter(threshold == 80)|>
   dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
-Merged_hydrology_summary <- bind_rows(GS_reliability, GS_resilience, HS_reliability, HS_resilience)
+Merged_hydrology_summary <- dplyr::bind_rows(GS_reliability, GS_resilience, HS_reliability, HS_resilience)
 
-write.csv(Merged_hydrology_summary, file = file.path(project_dir, 'module_output', 'Hydrology', "Hydrology_summary.csv"))
+write.csv(Merged_hydrology_summary, file = file.path(hydro_results, "Hydrology_summary.csv"))
 
 ```
 
@@ -269,7 +249,7 @@ Merged_hydrology_summary <- read.csv(file.path(hydro_results, "Hydrology_summary
 Merged_hydrology_vulnerability <- Merged_hydrology_summary |>
   dplyr::group_by(Data, Mk, licvolfactor, climate, measure)|>
   dplyr::summarise(
-    variance_measure_achieved = Variance(measure_achieved),
+    variance_measure_achieved = werptoolkitr::Variance(measure_achieved),
     measure_achieved = mean(measure_achieved))
 
 write.csv(Merged_hydrology_vulnerability, file.path(hydro_results, "sdl_hydrology_vulnerability.csv"))
