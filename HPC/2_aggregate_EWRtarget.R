@@ -1,19 +1,11 @@
----
-title: "Aggregation on HPC"
-format: html
-editor: visual
----
-
-```{r}
+## -----------------------------------------------------------------------------
 library(werptoolkitr)
 library(sf)
 library(future.batchtools)
 library(furrr)
-```
 
-Set up parallel structure
 
-```{r}
+## -----------------------------------------------------------------------------
 if (Sys.info()['user'] == 'hol436') {
   plan(list(tweak(batchtools_slurm,
                   # workers = 4, # I assume it'll grab 4, since that's the length of the futurelist vectors
@@ -26,24 +18,20 @@ if (Sys.info()['user'] == 'hol436') {
 } else {
   plan(multisession)
 }
-```
 
-To run this on the hpc, purl it with
 
-```{r}
+## -----------------------------------------------------------------------------
 #| eval: false
 
-infile <- 'HPC/2_aggregate_HPC.qmd'
+## infile <- 'HPC/2_aggregate_EWRtarget.qmd'
+## 
+## rfile <- stringr::str_replace(infile, '.qmd', '.R')
+## 
+## knitr::purl(input = infile, output = rfile)
+## 
 
-rfile <- stringr::str_replace(infile, '.qmd', '.R')
 
-knitr::purl(input = infile, output = rfile)
-
-```
-
-## Paths
-
-```{r}
+## -----------------------------------------------------------------------------
 #| include: false
 
 if (Sys.info()['user'] == 'galen') {
@@ -62,9 +50,9 @@ if (Sys.info()['user'] == 'galen') {
 
 # python can't use the tildes, so have to expand
 qaelpath <- path.expand(qaelpath)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 if (Sys.info()['user'] == 'hol436') {
   project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
 } else {
@@ -72,21 +60,20 @@ if (Sys.info()['user'] == 'hol436') {
 }
 
 ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
-```
 
-I keep doing things very similar to this to deal with the nested dirs. Should make it a function, but it's not quite stable yet.
 
-```{r}
+## -----------------------------------------------------------------------------
 # Get all the EWR dir paths should I save this like i did with the gauges? 
 # Wouldn't locally, but it's really slow on petrichor.
 
-if (!file.exists('HPC/inner_dirs.rds')) {
+if (!file.exists('HPC/inner_dirs_ewrtarget.rds')) {
     inner_dirs <- list.dirs(
   ewr_results, recursive = TRUE
   )
-    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs.rds')
+    inner_dirs <- inner_dirs[grepl('exp11', inner_dirs)] 
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_ewrtarget.rds')
 } else {
-    inner_dirs = readRDS('HPC/inner_dirs.rds')
+    inner_dirs = readRDS('HPC/inner_dirs_ewrtarget.rds')
 }
 
 
@@ -96,18 +83,14 @@ inner_parents <- inner_dirs[inner_climdirs]
 # Then we want to make the outputs work, so put them in subdirs with the same structure
 inner_subdirs <- gsub(ewr_results, '', inner_parents)
 inner_subdirs <- gsub('^/', '', inner_subdirs)
-```
 
-Prevent issues with PU overlaps
 
-```{r}
+## -----------------------------------------------------------------------------
 sdl_clip <- sdl_units |> 
   dplyr::filter(SWSDLName == 'Macquarie–Castlereagh')
-```
 
-Set up the new causal links
 
-```{r}
+## -----------------------------------------------------------------------------
 objective_mapping <- readr::read_csv(file.path(project_dir, 'EWR_to_Target_mapping.csv')) |> 
   dplyr::select(planning_unit_name, gauge, ewr_code, ewr_code_timing, env_group = target) |> 
   dplyr::mutate(ewr_code_timing = ifelse(is.na(ewr_code_timing), '', ewr_code_timing)) |> 
@@ -125,19 +108,9 @@ objective_mapping <- readr::read_csv(file.path(project_dir, 'EWR_to_Target_mappi
 
 # a few functions work better with a list of dfs than a bare df.
 objective_list <- list(objective_mapping)
-```
 
-# Set up sequencing etc
 
-furrr isn't playing nicely with passing in sf by name, so eating a bit of overhead and passing the objects themselves. Doesn't seem to hurt too much.
-
-## Timeseries
-
-The 'timeseries' runs are simpler.
-
-### EWRs-PU-SDL
-
-```{r}
+## -----------------------------------------------------------------------------
 agg_sEt <- list(ewr_code = c("ewr_code_timing", "ewr_code"),
                 planning_units = planning_units, 
                 sdl_units = sdl_clip)
@@ -151,11 +124,9 @@ retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_co
 cols_sEt <- 'ewr_achieved'
 
 name_sEt <- 'sdl_ewr_timeseries'
-```
 
-### target timeseries
 
-```{r}
+## -----------------------------------------------------------------------------
 agg_sTt <- list(ewr_code = c("ewr_code_timing", "ewr_code"),
                 target = c('ewr_code', 'target'),
                 planning_units = planning_units, 
@@ -171,17 +142,9 @@ retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target
 cols_sTt <- 'ewr_achieved'
 
 name_sTt <- 'sdl_target_timeseries'
-```
 
-## 'Spells'?
 
-I think these are the same as above, but we don't retain time and we calculate some other summary variables?
-
-### sdl-ewr-spells
-
-There's some annoying factorial aggregation here, but it's actually reasonably short to write, so I'll just do it.
-
-```{r}
+## -----------------------------------------------------------------------------
 agg_sEs <- list(all_time = 'all_time',
                 ewr_code = c("ewr_code_timing", "ewr_code"),
                 planning_units = planning_units, 
@@ -199,13 +162,9 @@ retained_sEs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_co
 cols_sEs <- c('ewr_achieved', 'event_years')
 
 name_sEs <- 'sdl_ewr_spells'
-```
 
-### sdl-target-spells
 
-There's some annoying factorial aggregation here, but it's actually reasonably short to write, so I'll just do it.
-
-```{r}
+## -----------------------------------------------------------------------------
 agg_sTs <- list(all_time = 'all_time',
                 ewr_code = c("ewr_code_timing", "ewr_code"),
                 target = c('ewr_code', 'target'),
@@ -225,11 +184,9 @@ retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target
 cols_sTs <- c('ewr_achieved', 'event_years')
 
 name_sTs <- 'sdl_target_spells'
-```
 
-## Set up the outer loop lists
 
-```{r}
+## -----------------------------------------------------------------------------
 agg_seqs <- list(agg_sEt, agg_sTt, agg_sEs, agg_sTs)
 fun_seqs <- list(fun_sEt, fun_sTt, fun_sEs, fun_sTs)
 cols_seqs <- list(cols_sEt, cols_sTt, cols_sEs, cols_sTs)
@@ -241,11 +198,9 @@ futurelist <- list(aggsequence = agg_seqs,
                    aggname = names_seqs,
                    # kind of goofy, but makes the pmap soother.
                    inner_subdirs = list(inner_subdirs, inner_subdirs, inner_subdirs, inner_subdirs))
-```
 
-Nesting furrrs is always tricky, so I'll make a couple helper wrappers.
 
-```{r}
+## -----------------------------------------------------------------------------
 # we need to set up an inner function that loops over the inner_subdirs
 
 # I'll set up a single dir function too.
@@ -276,18 +231,14 @@ dirloop <- function(aggsequence, funsequence, aggCols, aggname, inner_subdirs) {
   
 }
 
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 system.time(aggloop <- furrr::future_pmap(futurelist, dirloop))
 
-```
 
-9600 seconds locally, 600 on Petrichor (with 30 cores x 4 workers)
 
-And a test
-
-```{r}
+## -----------------------------------------------------------------------------
 test_sdl_ewr_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEt, 'achievement_aggregated.rds'))
 test_sdl_target_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTt, 'achievement_aggregated.rds'))
 test_sdl_ewr_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEs, 'achievement_aggregated.rds'))
@@ -298,11 +249,9 @@ all(retained_sTt %in% names(test_sdl_target_ts))
 
 all(retained_sTs %in% names(test_sdl_target_spells))
 all(retained_sEs %in% names(test_sdl_ewr_spells))
-```
 
-Some tests that all files are there.
 
-```{r}
+## -----------------------------------------------------------------------------
 
 expected_files <- purrr::map(inner_subdirs, \(x) file.path(x, file.path(names_seqs, 'achievement_aggregated.rds'))) |> 
   unlist()
@@ -312,13 +261,13 @@ found_files <- list.files(file.path(project_dir, 'aggregated'),
                           pattern = 'achievement_aggregated.rds')
 
 all_found <- all(expected_files %in% found_files)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 if (all_found) {
   rlang::inform("All files created")
 } else {
   rlang::inform(c("Expected files missing",
                   glue::glue("{expected_files[which(!expected_files %in% found_files)]}")))
 }
-```
+

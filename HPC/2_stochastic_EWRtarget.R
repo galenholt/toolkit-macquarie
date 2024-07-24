@@ -1,34 +1,54 @@
----
-title: "Stochastic stats"
-format: html
----
-
-```{r}
+## -----------------------------------------------------------------------------
 library(werptoolkitr)
 library(sf)
 library(future.batchtools)
 library(furrr)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 source('R/read_in_aggs.R')
 source('R/paths.R')
 source('R/agg_variables.R')
-```
 
-# Read in desired
 
-```{r}
+## -----------------------------------------------------------------------------
+#| eval: false
+
+## infile <- 'HPC/2_stochastic_EWRtarget.qmd'
+## 
+## rfile <- stringr::str_replace(infile, '.qmd', '.R')
+## 
+## knitr::purl(input = infile, output = rfile)
+## 
+
+
+## -----------------------------------------------------------------------------
+if (Sys.info()['user'] == 'hol436') {
+  plan(list(tweak(batchtools_slurm,
+                  workers = 1, # I assume it'll grab 4, since that's the length of the futurelist vectors
+                  template = "HPC/batchtools.slurm.tmpl",
+                  resources = list(time = 15, # Can cut way down probably. 
+                                   ntasks.per.node = 30, 
+                                   mem.per.cpu = '4GB', # I think 'mem' alone is for the whole node, so this is safer
+                                   job.name = 'macagg')),
+            multicore))
+} else {
+  plan(multisession)
+}
+
+
+## -----------------------------------------------------------------------------
 # Get all the EWR dir paths should I save this like i did with the gauges? 
 # Wouldn't locally, but it's really slow on petrichor.
 
-if (!file.exists('HPC/inner_dirs_agg.rds')) {
+if (!file.exists('HPC/inner_dirs_agg_ewrtarget.rds')) {
     inner_dirs <- list.dirs(
   agg_dir, recursive = TRUE
   )
-    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg.rds')
+      inner_dirs <- inner_dirs[grepl('exp11', inner_dirs)] 
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg_ewrtarget.rds')
 } else {
-    inner_dirs = readRDS('HPC/inner_dirs_agg.rds')
+    inner_dirs = readRDS('HPC/inner_dirs_agg_ewrtarget.rds')
 }
 
 
@@ -38,12 +58,9 @@ inner_parents <- inner_dirs[inner_climdirs]
 # Then we want to make the outputs work, so put them in subdirs with the same structure
 inner_subdirs <- gsub(agg_dir, '', inner_parents)
 inner_subdirs <- gsub('^/', '', inner_subdirs)
-```
 
 
-I think what we'll often do is historical and stoch for each set as here:
-
-```{r}
+## -----------------------------------------------------------------------------
 # looplists for the aggregations
 spellframes <- list('sdl_ewr_spells', 'sdl_target_spells')
 retainedframes <- list(retained_sEs, retained_sTs)
@@ -56,9 +73,9 @@ dimgroups <- c('ewr_code', 'target', 'date', 'polyID', 'SWSDLID', 'SWSDLName', '
 
 groups <- c(param_groups, dimgroups)
 
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 # # These are matched indices from 1:2
 # aggin <- spellframes[[typeit]]
 # retained_in <- retainedframes[[typeit]]
@@ -71,15 +88,9 @@ looplist <- list(aggin = spellframes,
 
 
 
-```
 
 
-
-Anywya, that should modify to work
-
-Write the function to furrr over. I think maybe don't even bother with the nestedness? Or maybe?
-
-```{r}
+## -----------------------------------------------------------------------------
 calc_vulnerability <- function(subdir, aggin, retained_in, retained_vuln) {
   onespells <- read_in_aggs(project_dir = project_dir,
                             data_path = file.path(subdir, aggin),
@@ -120,9 +131,9 @@ dirloop <- function(aggin, retained_in, retained_vuln, inner_subdirs) {
                                             retained_in, retained_vuln))
   
 }
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 # If I run this locally, I don't want to parallel over this outer layer
 # and kind of don't on the HPC either.
 if (Sys.info()['user'] == 'hol436') {
@@ -131,5 +142,4 @@ if (Sys.info()['user'] == 'hol436') {
   system.time(aggloop <- purrr::pmap(looplist, dirloop))
 }
 
-```
 

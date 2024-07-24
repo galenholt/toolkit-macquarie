@@ -1,0 +1,31 @@
+---
+title: "Processing workflow"
+format: html
+editor: visual
+---
+
+1. Pull netcdfs to Galen's bowen.
+    - use ncdf_pull_script.py to cut the netcdfs to what we need and pull them and the extra files over
+    - ncdf_pull_EWRtarget.py for the new ones, inlcuding fixing names
+
+2. Run the EWR tool over that
+    - Use run_macq_stoch.r and run_macq_hist.
+    - run_macq_EWRtarget for the new ones (just uses a limited set of directories)
+    - sbatch HPC/any_R.sh 'HPC/run-macq_stoch.r'
+
+3. Aggregate to timeseries and spells
+    - Use 2_aggregate_HPC.qmd (well, purl to R first)
+    - sbatch HPC/any_R.sh 'HPC/2_aggregate_HPC.R'
+
+4. Get the vulnerabilities (stats over stochs)
+    - Use 2_stochastic_stats.qmd (well, purl to R first if on HPC)
+    - Only 30 seconds locally though
+5. Get the baselines (compare each file to its relevant historical licol and climate)
+    - use 2_baseline_to_historic.qmd (typically locally)
+
+Move petrichor-processed files from Bowen to local with lines in HPC/robocopy scripts, primarily the one that only copies changed files:
+
+This can't happen from Petrichor, needs to happen from teh citrix login.
+```
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3
+```
