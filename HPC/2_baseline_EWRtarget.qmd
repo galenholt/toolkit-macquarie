@@ -53,7 +53,6 @@ inner_subdirs <- gsub(agg_dir, '', inner_parents)
 inner_subdirs <- gsub('^/', '', inner_subdirs)
 ```
 
-
 ```{r}
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
 param_groups <- c('Data', 'Mk', 'licvolfactor', 'Rainfall', 'Evapotranspiration', 'aggregation', 'replicate')
@@ -144,6 +143,3 @@ looplist <- list(aggpath = rep(inner_subdirs, length(aggnames)),
 system.time(aggloop <- furrr::future_pmap(looplist, baseline_one))
 
 ```
-
-
-

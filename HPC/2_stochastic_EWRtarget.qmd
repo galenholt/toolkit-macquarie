@@ -32,18 +32,19 @@ knitr::purl(input = infile, output = rfile)
 Set up parallel structure. i don't actually need the workers, I don't think, but I'll keep one to get the cores. 
 
 ```{r}
-if (Sys.info()['user'] == 'hol436') {
-  plan(list(tweak(batchtools_slurm,
-                  workers = 1, # I assume it'll grab 4, since that's the length of the futurelist vectors
-                  template = "HPC/batchtools.slurm.tmpl",
-                  resources = list(time = 15, # Can cut way down probably. 
-                                   ntasks.per.node = 30, 
-                                   mem.per.cpu = '4GB', # I think 'mem' alone is for the whole node, so this is safer
-                                   job.name = 'macagg')),
-            multicore))
-} else {
-  plan(multisession)
-}
+# furrr is losing globals, and it's fast enough to just ignore.
+# if (Sys.info()['user'] == 'hol436') {
+#   plan(list(tweak(batchtools_slurm,
+#                   workers = 1, # I assume it'll grab 4, since that's the length of the futurelist vectors
+#                   template = "HPC/batchtools.slurm.tmpl",
+#                   resources = list(time = 15, # Can cut way down probably. 
+#                                    ntasks.per.node = 30, 
+#                                    mem.per.cpu = '4GB', # I think 'mem' alone is for the whole node, so this is safer
+#                                    job.name = 'macagg')),
+#             multicore))
+# } else {
+#   plan(multisession)
+# }
 ```
 
 
@@ -157,11 +158,12 @@ dirloop <- function(aggin, retained_in, retained_vuln, inner_subdirs) {
 ```{r}
 # If I run this locally, I don't want to parallel over this outer layer
 # and kind of don't on the HPC either.
-if (Sys.info()['user'] == 'hol436') {
-  system.time(aggloop <- furrr::future_pmap(looplist, dirloop))
-} else {
+# actually, furrr is stuffing up globals somehow, and it's fast enough without it.
+# if (Sys.info()['user'] == 'hol436') {
+#   system.time(aggloop <- furrr::future_pmap(looplist, dirloop))
+# } else {
   system.time(aggloop <- purrr::pmap(looplist, dirloop))
-}
+# }
 
 ```
 
