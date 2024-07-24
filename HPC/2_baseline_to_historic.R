@@ -1,47 +1,32 @@
----
-title: "2_baseline comparisons"
-format: html
-editor: visual
----
-
-We want to baseline the two 'spells' aggregations (sdl_ewr_spells and sdl_target_spells) to the historical licvol1, r1e1 climate, *within each mark*.
-
-```{r}
+## -----------------------------------------------------------------------------
 library(werptoolkitr)
 library(sf)
 library(future.batchtools)
 library(furrr)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 # aggregation read-in funciton
 source('R/read_in_aggs.R')
-```
 
-## Paths
 
-```{r}
+## -----------------------------------------------------------------------------
 # tired of writing the whole thing out
 source('R/paths.R')
 source('R/agg_variables.R')
-```
 
-How do I want to set this up? I could try reading in everything in the mark and baselining in one go, but not sure i have the memory for 4a? OR, I could loop through each innermost folder and grab the historical for that mark and do them one at a time. I think I'll do the one at a time, because that retains the same structure as everything else.
 
-Get the directories. We'll loop over each one, reading in each file and the matching baseline file.
-
-```{r}
+## -----------------------------------------------------------------------------
 # Get all the EWR dir paths should I save this like i did with the gauges? 
 # Wouldn't locally, but it's really slow on petrichor.
 
-if (!file.exists('HPC/inner_dirs_agg_ewrtarget.rds')) {
+if (!file.exists('HPC/inner_dirs_agg.rds')) {
     inner_dirs <- list.dirs(
   agg_dir, recursive = TRUE
   )
-      inner_dirs <- inner_dirs[grepl('exp11', inner_dirs)] 
-    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg_ewrtarget.rds')
+    saveRDS(object = inner_dirs, file = 'HPC/inner_dirs_agg.rds')
 } else {
-    inner_dirs = readRDS('HPC/inner_dirs_agg_ewrtarget.rds')
+    inner_dirs = readRDS('HPC/inner_dirs_agg.rds')
 }
 
 
@@ -51,26 +36,22 @@ inner_parents <- inner_dirs[inner_climdirs]
 # Then we want to make the outputs work, so put them in subdirs with the same structure
 inner_subdirs <- gsub(agg_dir, '', inner_parents)
 inner_subdirs <- gsub('^/', '', inner_subdirs)
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 # Group by everythign except the data and the replicate. Have to drop 'scenario' too, because it's unique
 param_groups <- c('Data', 'Mk', 'licvolfactor', 'Rainfall', 'Evapotranspiration', 'aggregation', 'replicate')
 dimgroups <- c('ewr_code', 'target', 'date', 'polyID', 'SWSDLID', 'SWSDLName', 'StateID', 'geometry')
 
 groups <- c(param_groups, dimgroups)
-```
 
-## set up the baselining
 
-Set up to loop
-
-```{r}
+## -----------------------------------------------------------------------------
 aggnames <- c('sdl_ewr_spells', 'sdl_target_spells')
 
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 baseline_one <- function(aggpath, aggname) {
   
   # add the _target or _ewr type
@@ -133,13 +114,13 @@ baseline_one <- function(aggpath, aggname) {
   return(NULL)
   
 }
-```
 
-```{r}
+
+## -----------------------------------------------------------------------------
 # parallel loop over inner_subdirs
 looplist <- list(aggpath = rep(inner_subdirs, length(aggnames)),
                  aggname = rep(aggnames, each = length(inner_subdirs)))
 
 system.time(aggloop <- furrr::future_pmap(looplist, baseline_one))
 
-```
+

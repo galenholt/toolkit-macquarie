@@ -14,14 +14,18 @@ editor: visual
     - sbatch HPC/any_R.sh 'HPC/run-macq_stoch.r'
 
 3. Aggregate to timeseries and spells
-    - Use 2_aggregate_HPC.qmd (well, purl to R first)
-    - sbatch HPC/any_R.sh 'HPC/2_aggregate_HPC.R'
+    - Use 2_aggregate_HPC.qmd (now no need to purl R first, it happens automatically)
+    - sbatch HPC/any_R.sh 'HPC/2_aggregate_HPC.qmd'
 
 4. Get the vulnerabilities (stats over stochs)
-    - Use 2_stochastic_stats.qmd (well, purl to R first if on HPC)
-    - Only 30 seconds locally though
+    - Use 2_stochastic_stats.qmd
+    - quick, (30 seconds), so turn time down. 
+    - sbatch --time="00:05:00" HPC/any_R.sh 'HPC/2_stochastic_stats.qmd'
+
 5. Get the baselines (compare each file to its relevant historical licol and climate)
-    - use 2_baseline_to_historic.qmd (typically locally)
+    - use 2_baseline_to_historic.qmd
+    - Also quick
+    - sbatch --time="00:05:00" HPC/any_R.sh 'HPC/2_baseline_to_historic.qmd'
 
 Move petrichor-processed files from Bowen to local with lines in HPC/robocopy scripts, primarily the one that only copies changed files:
 
@@ -29,3 +33,6 @@ This can't happen from Petrichor, needs to happen from teh citrix login.
 ```
 robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3
 ```
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module_output" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module_output" /s /XO /R:3
+
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\aggregated" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3
