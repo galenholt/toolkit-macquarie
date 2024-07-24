@@ -194,6 +194,11 @@ gauge_EWR_timing_spells <- EWR_timing_timeseries |>
   reframe(ewr_achieved = unique(ewr_achieved),  #this is right - saves making 2 separate dfs for ewr_achieved and interevent
           Maximum_interevent_duration = max(event_group_n))
 
+gets <- EWR_timing_timeseries |> 
+  group_by(scenario, Rainfall, Evapotranspiration, licvolfactor, Mk, Data,  ewr_code, ewr_code_timing, gauge, planning_unit_name) |> 
+  summarise(maxInter = maxInterevent(event_years)) |> 
+  ungroup()
+
 # obbective mapping: 
 #-----------------------------------
 # These grow because there's >1 'target' per Ewr_code_timing
