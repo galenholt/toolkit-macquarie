@@ -31,11 +31,9 @@ library(ggplot2)
 library(patchwork)
 library(tidyr)
 library(ggridges)
-#library(future.batchtools)
-library(furrr)
 ```
 
-```{r} 
+```{r}
 #| label: Functions
 #| include: false
 #| warning: false
@@ -101,6 +99,7 @@ rm(sdl_hydro_spells)
 ```
 
 ## Palettes
+
 will need to change some palettes
 
 shapes: triangles = stochastic; circles = historic data
@@ -290,14 +289,20 @@ Map_Macquarie <- ggplot(data = sdl_units,  aes(geometry = geometry)) +
 
 Map_Macquarie
 
-ggsave(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = "tiff",
-       width = 8, height = 5)
+# ggsave(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = "tiff",
+#        width = 8, height = 5)
+
+# example that will save as png and svg if we want.
+ggsave_multi(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "svg"),
+       width = 16, height = 12, units = 'cm')
 ```
 
 ## 1) Vulnerability plot
+
 quadrant lines = the means for stochastic sequences under the historic climate.
 
 ### 1A) Vulnerability - no climate change
+
 (top left)
 
 no fill
@@ -442,6 +447,7 @@ plot_sdl_economic_vulnerability_H_noclimate <- ggplot(data = filter(sdl_economic
 ```
 
 ### 1B) Vulnerability - no climate change - with ewater adaptation (HEW licvol)
+
 (top right)
 
 fill: light = licvol factor 0.5; dark = licvol factor 1.5; linked in order by the lines
@@ -599,6 +605,7 @@ plot_sdl_economic_vulnerability_H_licvol <- ggplot(data = filter(sdl_economic_vu
 ```
 
 ### 1C) Vulnerability - no climate change - with ewater management (marks)
+
 (bottom left)
 
 fill: light = Mk4; dark = Mk5; linked in order by the lines (Mk4, Mk4a, Mk5a, MK5)
@@ -752,9 +759,10 @@ plot_sdl_hydro_vulnerability_H_mks <- ggplot(data = filter(sdl_hydro_vulnerabili
 ```
 
 ### 1D) Vulnerability - With climate change (no adaptation or management)
+
 (bottom right)
 
-fill: light = "Just wet"; dark = "hot and dry"; linked in order by the lines ("Just Wet", "Hot and Wet","Historical climate","Just Hot","Just Dry","Hot and Dry") 
+fill: light = "Just wet"; dark = "hot and dry"; linked in order by the lines ("Just Wet", "Hot and Wet","Historical climate","Just Hot","Just Dry","Hot and Dry")
 
 NEED to reverse order of the factor, but only for these figs. not sure how right now.
 
@@ -944,7 +952,7 @@ plot_spacer() + plot_sdl_economic_vulnerability_S_climate +
   coord_cartesian(xlim = c(90000,130000),ylim = c(2500000, 5000000)) &
   guides(alpha = "none", shape = "none", colour = guide_legend(""), fill = guide_legend(""))
 
-ggsave(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
 
 ggsave(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_target_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
 
@@ -1016,10 +1024,9 @@ print("Fig 1. Vulnerabiliy in economic benefits - Historic")
 
 ```
 
+## 2) Temporal variability
 
-## 2) Temporal variability 
-stochastic error band with historic data - no climate change
-We dont have time series for Water allocation data (or at least Deakin don't)
+stochastic error band with historic data - no climate change We dont have time series for Water allocation data (or at least Deakin don't)
 
 ```{r}
 #| label: Figure 2 - Temporal variability 
@@ -1098,6 +1105,7 @@ print("Fig 2. Temporal variability in economic benefits")
 ```
 
 ## NULL DATA
+
 Null models = all non-events evenly dispersed in the time series or all at one end
 
 ```{r}
@@ -1127,6 +1135,7 @@ null_data <- bind_rows(null_data, null_data1)
 ```
 
 ## 3) Spells plots - no climate change
+
 i dont think we can calculate interevent periods for economic or water allocation data
 
 not sure what is going on with the CFs
@@ -1196,15 +1205,17 @@ print("Fig 3. Spells plot for  target groups")
 ```
 
 ## Figs 4 - 7
+
 Violins = stochastic variability
 
 Circle points = historic data (with ewater adaptation and management for figs 6 and 7)
 
-Normal and relative versions 
+Normal and relative versions
 
 have left triangle points on for only climate variability
 
 ## 4) Climate variability
+
 historic CFs are now in the cloud of stochastic points; but small fresh 2 is at the very top.
 
 ```{r}
@@ -1618,7 +1629,7 @@ ggsave(plot = scatterplot_sdl_Economic_climates, filename = file.path(comp_resul
 
 ```
 
-## 5) RELATIVE Climate change 
+## 5) RELATIVE Climate change
 
 ```{r}
 #| label: Figure 5 - RELATIVE Climate change 
@@ -1726,7 +1737,6 @@ ggsave(plot = scatterplot_sdl_Economic_climates_baseline, filename = file.path(c
 
 
 ```
-
 
 ## 6) ewater adaptation (licvol)
 
@@ -1947,7 +1957,6 @@ ggsave(plot = scatterplot_sdl_hydro_climates_licvol_baseline, filename = file.pa
 
 ggsave(plot = scatterplot_sdl_Economic_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_licvol_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
 ```
-
 
 ## 7) eWater management (Mks)
 
@@ -2233,6 +2242,7 @@ scatterplot_sdl_Economic_climate_variability_2
 ```
 
 ##Figure 5 - Climates
+
 ```{r}
 #| label: Figure 5 - Climates panels
 #| echo: false
@@ -2283,6 +2293,7 @@ scatterplot_sdl_Economic_climates_2
 ```
 
 ##Figure 6 - ewater adaptation (licvol)
+
 ```{r}
 #| label: Figure 6 - ewater adaptation panels
 #| echo: false
@@ -2330,7 +2341,8 @@ scatterplot_sdl_EWR_climates_licvol_2
 
 ```
 
-##Figure 7 - eWater management (Mks)
+## Figure 7 - eWater management (Mks)
+
 ```{r}
 #| label: Figure 7 - eWater management panels
 #| echo: false
@@ -2367,30 +2379,195 @@ ggsave(plot = scatterplot_sdl_hydro_climates_mks_2, filename = file.path(comp_re
 
 ```
 
-## 8) Targeted EWR management 
+## 8) Targeted EWR management
+
+I very well may be duplicating work above, but will be easier to think through if I just build this I think. The targeted approach does do something; the green, blue, and red do not fall on teh purple points @fig-experiment.
 
 ```{r}
-#| label: Figure 8 - Targeted EWR management 
+#| label: targeted-data-in 
 #| echo: false
 #| warning: false
 #| message: false
 
+mk4a_targeting <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR_mkiv',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_3',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_5',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_7'),
+                                    licvol = c('licvolfactor_0_5',
+                                               'licvolfactor_1_0',
+                                               'licvolfactor_1_5'),
+                                    climate = 'all',
+                                    aggname = 'sdl_ewr_spells',
+                                    max_handling = "remove")
 
+# This should be done with all the other factor naming
+# and I don't actually know what the numbers mean, so I'm not making them numeric, but we should
+mk4a_targeting <- mk4a_targeting |> 
+  dplyr::mutate(
+    experiment = case_when(Mk == 'MACQ_CC_EFR_mkiv' ~ 'Orig',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ '0.3',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_5' ~ '0.5',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_7' ~ '0.7')
+    )
+```
 
+```{r}
+#| label: fig-experiment
+#| fig-cap: Does targeting flows towards EWRs work? Purple is the original Mk4a runs (with distribution), other coloured points are the 'experiments'. So if the red, green, or blue points are off the purple point, they differ from the original and targeting is doing something.
+exp_11_plot <- ggplot(dplyr::filter(mk4a_targeting, Data == 'Historic'),
+             mapping = aes(x = ewr_code, y = ewr_achieved, 
+                           color = experiment, shape = Data)) +
+    geom_violin(data = dplyr::filter(mk4a_targeting, Data == 'Stochastic'),
+              scale = 'width') +
+  geom_point() +
+  facet_grid(names_CSIRO_climate_scenario ~ licvolfactor) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+exp_11_plot
+
+ggsave_multi(plot = exp_11_plot, 
+             filename = file.path(comp_results, "exp_11_plot"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
+```
+
+## another look at things
+
+I was expecting this plot, but didn't see it and I'm curious about it. I made 4; ewrs and targets with the effect of licvolfactor @fig-licvolewr-diffs-variance and @fig-licvoltarget-diffs-variance, and Mark @fig-markewr-diffs-variance and @fig-marktarget-diffs-variance.
+
+```{r}
+#| label: read-in-stoch-summaries
+#| include: false
+variance_climmark <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR',
+                                             'MACQ_CC_EFR_mkiv',
+                                             'MACQ_CC_EFR_mkv',
+                                             'MACQ_CC_EFR_mkva'),
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = 'all',
+                                    aggname = 'sdl_ewr_vulnerability',
+                                    max_handling = "remove")
+
+variance_licclim <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = 'all',
+                                    climate = 'all',
+                                    aggname = 'sdl_ewr_vulnerability',
+                                    max_handling = "remove")
+
+variance_climmark_target <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR',
+                                             'MACQ_CC_EFR_mkiv',
+                                             'MACQ_CC_EFR_mkv',
+                                             'MACQ_CC_EFR_mkva'),
+                                    licvol = c('licvolfactor_1_0'),
+                                    climate = 'all',
+                                    aggname = 'sdl_target_vulnerability',
+                                    max_handling = "remove")
+
+variance_licclim_target <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = 'MACQ_CC_EFR_mkiv',
+                                    licvol = 'all',
+                                    climate = 'all',
+                                    aggname = 'sdl_target_vulnerability',
+                                    max_handling = "remove")
 
 ```
 
+```{r}
+#| label: fig-markewr-diffs-variance
+#| fig-cap: How much does mark matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for licvolfactor = 1.
 
+mark_ewr_variance <- ggplot(filter(variance_climmark, Data == 'Stochastic'), 
+       aes(x = ewr_code, y = ewr_achieved,
+           color = Mark,
+           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
+           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+  geom_point(position = position_dodge(width = 1)) +
+  geom_linerange(position = position_dodge(width = 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+ggsave_multi(plot = mark_ewr_variance, 
+             filename = file.path(comp_results, "mark_ewr_variance"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
 
+mark_ewr_variance
+```
 
+```{r}
+#| label: fig-licvolewr-diffs-variance
+#| fig-cap: How much does licvolfactor matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for Mark 4a.
 
+licvol_ewr_variance <- ggplot(filter(variance_licclim, Data == 'Stochastic'), 
+       aes(x = ewr_code, y = ewr_achieved,
+           color = as.character(licvolfactor),
+           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
+           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+  geom_point(position = position_dodge(width = 1)) +
+  geom_linerange(position = position_dodge(width = 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+ggsave_multi(plot = licvol_ewr_variance, 
+             filename = file.path(comp_results, "licvol_ewr_variance"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
 
+licvol_ewr_variance
+```
 
+```{r}
+#| label: fig-marktarget-diffs-variance
+#| fig-cap: How much does mark matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for licvolfactor = 1.
+mark_target_variance <- ggplot(filter(variance_climmark_target, 
+                                      Data == 'Stochastic'), 
+       aes(x = names_CSIRO_climate_scenario, y = ewr_achieved,
+           color = Mark,
+           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
+           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+  geom_point(position = position_dodge(width = 1)) +
+  geom_linerange(position = position_dodge(width = 1)) +
+  facet_wrap(~target) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+ggsave_multi(plot = mark_target_variance, 
+             filename = file.path(comp_results, "mark_target_variance"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
 
+mark_target_variance
+```
 
+```{r}
+#| label: fig-licvoltarget-diffs-variance
+#| fig-cap: How much does licvolfactor matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for Mark 4a.
+licvol_target_variance <- ggplot(filter(variance_licclim_target, Data == 'Stochastic'), 
+       aes(x = names_CSIRO_climate_scenario, y = ewr_achieved,
+           color = as.character(licvolfactor),
+           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
+           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+  geom_point(position = position_dodge(width = 1)) +
+  geom_linerange(position = position_dodge(width = 1)) +
+  facet_wrap(~target) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+ggsave_multi(plot = licvol_target_variance, 
+             filename = file.path(comp_results, "licvol_target_variance"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
 
-
+licvol_target_variance
+```
