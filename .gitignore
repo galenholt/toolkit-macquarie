@@ -27,3 +27,7 @@ renv.lock
 
 # some files created with purl
 HPC/2_aggregate_HPC.R
+
+/.quarto/
+
+*.docx
