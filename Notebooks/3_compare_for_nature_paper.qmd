@@ -2,6 +2,7 @@
 title: "Comparer"
 format: docx
 editor: visual
+echo: FALSE
 execute: 
   cache: FALSE
 ---
@@ -42,6 +43,21 @@ source('R/paths.R')
 source('R/read_in_aggs.R')
 source('R/agg_variables.R')
 
+```
+
+```{r}
+#| label: Function stolen from my scatch site
+#| include: false
+ggsave_multi <- function(filename, plot = last_plot(), device, ...) {
+
+  extnames <- lapply(device, \(x) paste0(filename, '.', x))
+  lapply(extnames, \(x) ggsave(
+    filename = x, plot = plot,
+    ...
+  ))
+  # similar to the ggsave return
+  return(invisible(unlist(extnames)))
+}
 ```
 
 ## Data
@@ -289,7 +305,7 @@ Map_Macquarie <- ggplot(data = sdl_units,  aes(geometry = geometry)) +
 
 Map_Macquarie
 
-# ggsave(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = "tiff",
+# ggsave_multi(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = c('png', 'svg'),
 #        width = 8, height = 5)
 
 # example that will save as png and svg if we want.
@@ -952,13 +968,13 @@ plot_spacer() + plot_sdl_economic_vulnerability_S_climate +
   coord_cartesian(xlim = c(90000,130000),ylim = c(2500000, 5000000)) &
   guides(alpha = "none", shape = "none", colour = guide_legend(""), fill = guide_legend(""))
 
-ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_target_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_target_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_WaterAllocation_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_WaterAllocation_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_WaterAllocation_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_WaterAllocation_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_Economic_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_Economic_Stochastic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_Economic_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_Economic_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
 VulnerabilityPlot_EWR_Stochastic
 print("Fig 1. Vulnerabiliy in EWRs - Stochastic")
@@ -1005,13 +1021,13 @@ plot_spacer() + plot_sdl_economic_vulnerability_H_climate +
   coord_cartesian(xlim = c(90000,130000))& 
   guides(alpha = "none", shape = "none", colour = guide_legend(""), fill = guide_legend(""))
 
-ggsave(plot = VulnerabilityPlot_EWR_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Historic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_EWR_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Historic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_target_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_target_Historic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_target_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_target_Historic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_WaterAllocation_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_WaterAllocation_Historic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_WaterAllocation_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_WaterAllocation_Historic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
-ggsave(plot = VulnerabilityPlot_Economic_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_Economic_Historic",Sys.Date(),".tiff")), device = "tiff", width = 7, height = 5)
+ggsave_multi(plot = VulnerabilityPlot_Economic_Historic, filename = file.path(comp_results, paste0("VulnerabilityPlot_Economic_Historic",Sys.Date())), device = c('png', 'svg'), width = 7, height = 5)
 
 VulnerabilityPlot_EWR_Historic
 print("Fig 1. Vulnerabiliy in EWRs - Historic")
@@ -1090,11 +1106,11 @@ plot_sdl_Economic_temporal_variability <- sdl_Economic_timeseries|>
   scale_linetype_manual(values = linetype_data)+
   facet_wrap(~measure)
 
-ggsave(plot = plot_sdl_EWR_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_EWR_temporal_variability_stochasticErrorBand_historic",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 6)
+ggsave_multi(plot = plot_sdl_EWR_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_EWR_temporal_variability_stochasticErrorBand_historic",Sys.Date())), device = c('png', 'svg'), width = 8, height = 6)
 
-ggsave(plot = plot_sdl_target_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_target_temporal_variability_stochasticErrorBand_historic",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
+ggsave_multi(plot = plot_sdl_target_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_target_temporal_variability_stochasticErrorBand_historic",Sys.Date())), device = c('png', 'svg'), width = 8, height = 4)
 
-ggsave(plot = plot_sdl_Economic_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_Economic_temporal_variability",Sys.Date(),".tiff")), device = "tiff", width = 4, height = 2)
+ggsave_multi(plot = plot_sdl_Economic_temporal_variability, filename = file.path(comp_results, paste0("CDF", "plot_sdl_Economic_temporal_variability",Sys.Date())), device = c('png', 'svg'), width = 4, height = 2)
 
 plot_sdl_EWR_temporal_variability
 print("Fig 2. Temporal variability in EWRs")
@@ -1194,8 +1210,8 @@ Spellsplot_sdl_target <- sdl_target_baseline |>
   scale_shape_manual(values = shapes_data)+
   guides(shape = "none")
 
-ggsave(plot = Spellsplot_sdl_EWR, filename = file.path(comp_results, paste0("Spellsplot_sdl_EWR",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
-ggsave(plot = Spellsplot_sdl_target, filename = file.path(comp_results, paste0("Spellsplot_sdl_target",Sys.Date(),".tiff")), device = "tiff", width = 8, height = 4)
+ggsave_multi(plot = Spellsplot_sdl_EWR, filename = file.path(comp_results, paste0("Spellsplot_sdl_EWR",Sys.Date())), device = c('png', 'svg'), width = 8, height = 4)
+ggsave_multi(plot = Spellsplot_sdl_target, filename = file.path(comp_results, paste0("Spellsplot_sdl_target",Sys.Date())), device = c('png', 'svg'), width = 8, height = 4)
 
 Spellsplot_sdl_EWR
 print("Fig 3. Spells plot for EWRs")
@@ -1361,15 +1377,15 @@ print("Fig 4. Climate variability on economic benefits")
 scatterplot_sdl_climate_variability
 print("Fig 4. Climate variability on target groups, water allocation and economic benefits")
 
-ggsave(plot = scatterplot_sdl_EWR_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdlc_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdlc_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -1507,15 +1523,15 @@ print("Fig 4. Climate variability on economic benefits relative to historical cl
 scatterplot_sdl_climate_variability_baseline
 print("Fig 4. Climate variability on target groups, water allocation and economic benefits relative to historical climate")
 
-ggsave(plot = scatterplot_sdl_EWR_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate_variability_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate_variability_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate_variability_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate_variability_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate_variability_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate_variability_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate_variability_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate_variability_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_climate_variability_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_climate_variability_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_climate_variability_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -1619,13 +1635,13 @@ print("Fig 5. Climate change on water allocation")
 scatterplot_sdl_Economic_climates
 print("Fig 5. Climate change on economic benefits")
 
-ggsave(plot = scatterplot_sdl_EWR_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -1727,13 +1743,13 @@ scatterplot_sdl_Economic_climates_baseline
 print("Fig 5. Climate change on economic benefits relative to historical climate")
 
 
-ggsave(plot = scatterplot_sdl_EWR_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 
 ```
@@ -1841,13 +1857,13 @@ scatterplot_sdl_Economic_climates_licvol
 print("Fig 6. Climate change and ewater adaptation on economic benefits")
 
 
-ggsave(plot = scatterplot_sdl_EWR_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -1949,13 +1965,13 @@ print("Fig 6. Climate change and ewater adaptation on water allocation relative 
 scatterplot_sdl_Economic_climates_licvol_baseline
 print("Fig 6. Climate change and ewater adaptation on economic benefits relative to historical climate")
 
-ggsave(plot = scatterplot_sdl_EWR_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_licvol_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_licvol_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_licvol_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_licvol_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_licvol_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates_licvol_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_licvol_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 ```
 
 ## 7) eWater management (Mks)
@@ -2074,13 +2090,13 @@ print("Fig 7. Climate change and ewater management on water allocation")
 # scatterplot_sdl_Economic_climates_mks
 # print("Fig 7. Climate change and ewater management on economic benefits")
 
-ggsave(plot = scatterplot_sdl_EWR_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-# ggsave(plot = scatterplot_sdl_Economic_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+# ggsave_multi(plot = scatterplot_sdl_Economic_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -2181,13 +2197,13 @@ print("Fig 7. Climate change and ewater management on water allocation relative 
 # scatterplot_sdl_Economic_climates_mks_baseline
 # print("Fig 7. Climate change and ewater management on economic benefits relative to historical climate")
 
-ggsave(plot = scatterplot_sdl_EWR_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-# ggsave(plot = scatterplot_sdl_Economic_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_mks_baseline",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+# ggsave_multi(plot = scatterplot_sdl_Economic_climates_mks_baseline, filename = file.path(comp_results, paste0("scatterplot_sdl_Economic_climates_mks_baseline",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
 
@@ -2226,13 +2242,13 @@ scatterplot_sdl_Economic_climate_variability_baseline +
   guides(shape = "none", colour = guide_legend(""), fill = guide_legend(""))&
   theme(axis.title.x = element_blank())
 
-ggsave(plot = scatterplot_sdl_EWR_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_EWR_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_target_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_hydro_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_hydro_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
-ggsave(plot = scatterplot_sdl_Economic_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climate_variability",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_Economic_climate_variability_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 scatterplot_sdl_EWR_climate_variability_2
 scatterplot_sdl_target_climate_variability_2
@@ -2278,13 +2294,13 @@ scatterplot_sdl_Economic_climates_baseline +
   theme(axis.title.x = element_blank())&
   facet_wrap(~ names_CSIRO_climate_scenario, ncol = 1)
 
-ggsave(plot = scatterplot_sdl_EWR_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_target_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_target_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_Economic_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climates",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climates",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
 scatterplot_sdl_EWR_climates_2
 scatterplot_sdl_target_climates_2
@@ -2329,13 +2345,13 @@ scatterplot_sdl_Economic_climates_licvol_baseline +
   theme(axis.title.x = element_blank())&
   facet_wrap(~ names_CSIRO_climate_scenario, ncol = 1)
 
-ggsave(plot = scatterplot_sdl_EWR_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_target_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_target_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_Economic_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climates_licvol",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_Economic_climates_licvol_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_Economic_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
 scatterplot_sdl_EWR_climates_licvol_2
 
@@ -2371,11 +2387,11 @@ scatterplot_sdl_hydro_climates_mks_baseline +
   theme(axis.title.x = element_blank())&
   facet_wrap(~ names_CSIRO_climate_scenario, ncol = 1)
 
-ggsave(plot = scatterplot_sdl_EWR_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_EWR_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_target_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_target_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_target_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
-ggsave(plot = scatterplot_sdl_hydro_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates_mks",Sys.Date(),".tiff")), device = "tiff",  width = 8, height = 12)
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks_2, filename = file.path(comp_results, paste0("PANELscatterplot_sdl_WaterAllocation_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
 
 ```
 
@@ -2571,3 +2587,4 @@ ggsave_multi(plot = licvol_target_variance,
 
 licvol_target_variance
 ```
+
