@@ -61,7 +61,7 @@ source('R/paths.R')
 ```{r}
 #1.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_reliability.csv", full.names=TRUE)
-Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
+Files_balance <- Files_balance[!grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -76,7 +76,7 @@ for (i in 2:length(Files_balance)) {
   Merged_balance_temp <- do.call(rbind,
           lapply(Files_balance[i], read_plus))
   
-Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+Merged_balance_init <- dplyr::bind_rows(Merged_balance_init, Merged_balance_temp)
   
 }
 
@@ -100,7 +100,7 @@ Merged_balance_temp <- NULL
 ```{r}
 #2.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "allocation_resilience.csv", full.names=TRUE)
-Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
+Files_balance <- Files_balance[!grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>
@@ -115,7 +115,7 @@ for (i in 2:length(Files_balance)) {
   Merged_balance_temp <- do.call(rbind,
           lapply(Files_balance[i], read_plus))
   
-Merged_balance_init <- rbind(Merged_balance_init, Merged_balance_temp)
+Merged_balance_init <- bind_rows(Merged_balance_init, Merged_balance_temp)
   
 }
 
@@ -173,7 +173,7 @@ Merged_balance_temp <- NULL
 ```{r}
 #4.
 Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "hs_delivered_to_ordered_ratio_resilience.csv", full.names=TRUE)
-Files_balance <- Files_balance[grepl('exp11', Files_balance)] 
+Files_balance <- Files_balance[!grepl('exp11', Files_balance)] 
 
 read_plus <- function(flnm) {
     readr::read_csv(flnm) |>

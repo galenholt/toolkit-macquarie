@@ -256,13 +256,16 @@ clean_factors <- function(oneagg) {
           Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
           Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",
           Mk == "MACQ_CC_EFR" ~ "Mk4",
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ 'Mk4a_0.3',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_5' ~ 'Mk4a_0.5',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_7' ~ 'Mk4a_0.7',
           Mk == NA ~ NA,
           .default = Mk
         )
       )
 
     oneagg$Mark <-
-      factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5"))
+      factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5", "Mk4a_0.3", "Mk4a_0.5", "Mk4a_0.7"))
   }
 
   if ("Data" %in% colnames(oneagg)) {
