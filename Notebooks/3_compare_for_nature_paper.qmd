@@ -2478,7 +2478,8 @@ ggsave_multi(plot = exp_11_plot,
 exp_11_plot_target <- ggplot(dplyr::filter(mk4a_experiments_targets, Data == 'Historic'),
              mapping = aes(x = target, y = ewr_achieved, 
                            color = experiment, shape = Data)) +
-    geom_violin(data = dplyr::filter(mk4a_experiments, Data == 'Stochastic'),
+    geom_violin(data = dplyr::filter(mk4a_experiments_targets, 
+                                     Data == 'Stochastic'),
               scale = 'width') +
   geom_point() +
   facet_grid(names_CSIRO_climate_scenario ~ licvolfactor) +
@@ -2629,3 +2630,4 @@ ggsave_multi(plot = licvol_target_variance,
 
 licvol_target_variance
 ```
+
