@@ -14,17 +14,26 @@ baseto = '/datasets/work/ev-ca-macq/work/hol436/macq_cut'
 # Set some common regex patterns
 no_mgmt = ['licvolfactor_1_0']
 with_mgmt = ['licvolfactor_0_5', 'licvolfactor_0_7', 'licvolfactor_0_9', 'licvolfactor_1_0', 'licvolfactor_1_1', 'licvolfactor_1_3', 'licvolfactor_1_5']
+end_mgmt = ['licvolfactor_0.5', 'licvolfactor_1.0', 'licvolfactor_1.5']
+
 climpattern = ['r0_8_e1_0', 'r0_8_e1_07', 'r1_0_e1_0', 'r1_0_e1_07', 'r1_2_e1_0', 'r1_2_e1_07']
+climpattern_new = ['r0.8_e1.0', 'r0.8_e1.07', 'r1.0_e1.0', 'r1.0_e1.07', 'r1.2_e1.0', 'r1.2_e1.07']
+
 
 # We could do a big complex thing over the full directory, but since we want different bits from different marks, it'll be cleaner and save time to do the marks separately (and the historic/stochastic)
 
-extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv']
+extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv', 'hs_delivered_to_ordered_ratio_monthly.csv', 'allocations_yearly.nc']
 
+# Test 
+# cut_marks(basefrom, baseto, hews = no_mgmt, mark = 'MACQ_CC_EFR', clims = ['r0_8_e1_0'], extrafiles = extrafiles, cutncs = False)
 # DON'T JUST DO EVERYTHING; there are WAY more scenarios than we want.
-copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles)
-copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR_mkiv', hews = with_mgmt, clims = climpattern, extrafiles = extrafiles)
-copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR_mkv', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles)
-copyextra(inparent = basefrom, outparent = baseto, mark = 'MACQ_CC_EFR_mkva', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkiv', hews = with_mgmt, clims = climpattern, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkv', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkva', hews = no_mgmt, clims = climpattern, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.3', hs = ['historical'], hews = end_mgmt, clims = climpattern_new, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.5', hs = ['historical'], hews = end_mgmt, clims = climpattern_new, extrafiles = extrafiles, cutncs = False)
+cut_marks(fromparent = basefrom, toparent = baseto, mark = 'MACQ_CC_EFR_mkv_exp11_eventcoef0.7', hs = ['historical'], hews = end_mgmt, clims = climpattern_new, extrafiles = extrafiles, cutncs = False)
 
 
 

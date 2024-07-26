@@ -124,11 +124,12 @@ dirloop <- function(aggin, retained_in, retained_vuln, inner_subdirs) {
 
 ```{r}
 # If I run this locally, I don't want to parallel over this outer layer
-if (Sys.info()['user'] == 'hol436') {
-  system.time(aggloop <- furrr::future_pmap(looplist, dirloop))
-} else {
+# and kind of don't on the HPC either.
+# if (Sys.info()['user'] == 'hol436') {
+#   system.time(aggloop <- furrr::future_pmap(looplist, dirloop))
+# } else {
   system.time(aggloop <- purrr::pmap(looplist, dirloop))
-}
+# }
 
 ```
 
