@@ -2397,7 +2397,7 @@ ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks_2, filename = file.path(c
 
 ## 8) Targeted EWR management
 
-I very well may be duplicating work above, but will be easier to think through if I just build this I think. The targeted approach does do something; the green, blue, and red do not fall on teh purple points @fig-experiment.
+I very well may be duplicating work above, but will be easier to think through if I just build this I think. The targeted approach does do something; the green, blue, and red do not fall on teh purple points @fig-experiment and @fig-experiment-targets.
 
 ```{r}
 #| label: targeted-data-in 
@@ -2405,7 +2405,7 @@ I very well may be duplicating work above, but will be easier to think through i
 #| warning: false
 #| message: false
 
-mk4a_targeting <- read_in_aggs(project_dir = project_dir,
+mk4a_experiments <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
                                     info_list = aggregation_info,
                                     mark = c('MACQ_CC_EFR_mkiv',
@@ -2419,9 +2419,31 @@ mk4a_targeting <- read_in_aggs(project_dir = project_dir,
                                     aggname = 'sdl_ewr_spells',
                                     max_handling = "remove")
 
+mk4a_experiments_targets <- read_in_aggs(project_dir = project_dir,
+                                    data_type = c('stochastic', 'historical'),
+                                    info_list = aggregation_info,
+                                    mark = c('MACQ_CC_EFR_mkiv',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_3',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_5',
+                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_7'),
+                                    licvol = c('licvolfactor_0_5',
+                                               'licvolfactor_1_0',
+                                               'licvolfactor_1_5'),
+                                    climate = 'all',
+                                    aggname = 'sdl_target_spells',
+                                    max_handling = "remove")
+
 # This should be done with all the other factor naming
 # and I don't actually know what the numbers mean, so I'm not making them numeric, but we should
-mk4a_targeting <- mk4a_targeting |> 
+mk4a_experiments <- mk4a_experiments |> 
+  dplyr::mutate(
+    experiment = case_when(Mk == 'MACQ_CC_EFR_mkiv' ~ 'Orig',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ '0.3',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_5' ~ '0.5',
+                           Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_7' ~ '0.7')
+    )
+
+mk4a_experiments_targets <- mk4a_experiments_targets |> 
   dplyr::mutate(
     experiment = case_when(Mk == 'MACQ_CC_EFR_mkiv' ~ 'Orig',
                            Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ '0.3',
@@ -2433,10 +2455,10 @@ mk4a_targeting <- mk4a_targeting |>
 ```{r}
 #| label: fig-experiment
 #| fig-cap: Does targeting flows towards EWRs work? Purple is the original Mk4a runs (with distribution), other coloured points are the 'experiments'. So if the red, green, or blue points are off the purple point, they differ from the original and targeting is doing something.
-exp_11_plot <- ggplot(dplyr::filter(mk4a_targeting, Data == 'Historic'),
+exp_11_plot <- ggplot(dplyr::filter(mk4a_experiments, Data == 'Historic'),
              mapping = aes(x = ewr_code, y = ewr_achieved, 
                            color = experiment, shape = Data)) +
-    geom_violin(data = dplyr::filter(mk4a_targeting, Data == 'Stochastic'),
+    geom_violin(data = dplyr::filter(mk4a_experiments, Data == 'Stochastic'),
               scale = 'width') +
   geom_point() +
   facet_grid(names_CSIRO_climate_scenario ~ licvolfactor) +
@@ -2446,6 +2468,26 @@ exp_11_plot
 
 ggsave_multi(plot = exp_11_plot, 
              filename = file.path(comp_results, "exp_11_plot"),
+             device = c("png", "svg"),
+       width = 24, height = 16, units = 'cm')
+```
+
+```{r}
+#| label: fig-experiment-targets
+#| fig-cap: Does targeting flows towards EWRs work? Purple is the original Mk4a runs (with distribution), other coloured points are the 'experiments'. So if the red, green, or blue points are off the purple point, they differ from the original and targeting is doing something.
+exp_11_plot_target <- ggplot(dplyr::filter(mk4a_experiments_targets, Data == 'Historic'),
+             mapping = aes(x = target, y = ewr_achieved, 
+                           color = experiment, shape = Data)) +
+    geom_violin(data = dplyr::filter(mk4a_experiments, Data == 'Stochastic'),
+              scale = 'width') +
+  geom_point() +
+  facet_grid(names_CSIRO_climate_scenario ~ licvolfactor) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+exp_11_plot_target
+
+ggsave_multi(plot = exp_11_plot_target, 
+             filename = file.path(comp_results, "exp_11_plot_target"),
              device = c("png", "svg"),
        width = 24, height = 16, units = 'cm')
 ```
@@ -2587,4 +2629,3 @@ ggsave_multi(plot = licvol_target_variance,
 
 licvol_target_variance
 ```
-
