@@ -40,18 +40,7 @@ source('R/paths.R')
 # 2. allocation_resilience.csv
 # 3. hs_delivered_to_ordered_ratio_reliability.csv
 # 4. hs_delivered_to_ordered_ratio_resilience.csv
-
-
-
-
-# # get the right scenario name and summarise to mean
-# Merged_balance <- Merged_balance_init |>
-#   tidyr::separate(filename, sep = "r1.0_e1.0/", remove = FALSE, into = c(NA,"scenario"))|>
-#   tidyr::separate(scenario, sep = "/balance.csv", remove = FALSE, into = c("scenario"))|>
-#   #dplyr::mutate(scenario = stringr::str_replace_all(scenario, "/", "_"))|>
-#   #dplyr::mutate(scenario = paste(scenario,"Straight Node (Gauge)", sep = ""))|>
-#   dplyr::group_by(scenario)|>
-#   dplyr::summarise_at(dplyr::vars(Tributary:`End sys`), mean, na.rm = TRUE)
+# 5. days_burrendong_lt_dead_storage.csv
 
 
 ```
@@ -204,6 +193,48 @@ Merged_balance_init <- NULL
 Merged_balance_temp <- NULL
 ```
 
+## days_burrendong_lt_dead_storage.csv
+
+```{r}
+#1.
+Files_balance <- list.files(path = list.dirs(path = data_path), pattern = "days_burrendong_lt_dead_storage.csv", full.names=TRUE)
+Files_balance <- Files_balance[!grepl('exp11', Files_balance)] 
+
+read_plus <- function(flnm) {
+    readr::read_csv(flnm) |>
+    dplyr::mutate(filename = flnm)
+}
+
+Merged_balance_init <- do.call(rbind,
+          lapply(Files_balance[1], read_plus))
+Merged_balance_init <- Merged_balance_init[-1:-2,]
+
+
+#balance data
+for (i in 2:length(Files_balance)) {
+  Merged_balance_temp <- do.call(rbind,
+          lapply(Files_balance[i], read_plus))
+  Merged_balance_temp <- Merged_balance_temp[-1:-2,]
+  
+Merged_balance_init <- dplyr::bind_rows(Merged_balance_init, Merged_balance_temp)
+  
+}
+
+#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/macq_cut/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
+
+# # get the right scenario name 
+Merged_balance <- Merged_balance_init |>
+  tidyr::separate(filename, sep = "/", remove = FALSE, 
+                  into = c(NA, NA, NA, NA, NA, NA, NA, NA, "Data", "Mk", "licvolfactor", "climate","replicate", "measure"))
+
+
+write.csv(Merged_balance, file.path(hydro_results, "days_burrendong_lt_dead_storage_merged.csv")) #453mB
+
+Merged_balance <- NULL
+Merged_balance_init <- NULL
+Merged_balance_temp <- NULL
+```
+
 ## Temporary aggregator
 
 ```{r}
@@ -220,12 +251,13 @@ GS_resilience <- read.csv(file.path(hydro_results, "allocation_resilience_merged
   dplyr::filter(threshold == 80)|>
   dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
-HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))|>
-  dplyr::mutate(measure = "HS_reliability",
-                measure_achieved = hs_delivered_to_ordered_ratio,
-                threshold = threshold*100)|>
-  dplyr::filter(threshold == 80)|>
-  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
+# Going to use number of days in dead storage as another metric that will be less ambiguous
+# HS_reliability <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_reliability_merged.csv"))|>
+#   dplyr::mutate(measure = "HS_reliability",
+#                 measure_achieved = hs_delivered_to_ordered_ratio,
+#                 threshold = threshold*100)|>
+#   dplyr::filter(threshold == 80)|>
+#   dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
 HS_resilience <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_ratio_resilience_merged.csv"))|>
   dplyr::mutate(measure = "HS_resilience",
@@ -234,7 +266,14 @@ HS_resilience <- read.csv(file.path(hydro_results, "hs_delivered_to_ordered_rati
   dplyr::filter(threshold == 80)|>
   dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
 
-Merged_hydrology_summary <- dplyr::bind_rows(GS_reliability, GS_resilience, HS_reliability, HS_resilience)
+days_burrendong_lt_dead_storage <- read.csv(file.path(hydro_results, "days_burrendong_lt_dead_storage_merged.csv"))|>
+  dplyr::mutate(measure = "days_burrendong_lt_dead_storage") |>
+  dplyr::group_by(filename, Data, Mk, licvolfactor, climate, replicate, measure) |>
+  dplyr::summarise(measure_achieved = mean(Current.volume))|>
+  dplyr::select(filename, Data, Mk, licvolfactor, climate, replicate, measure, measure_achieved)
+
+Merged_hydrology_summary <- dplyr::bind_rows(GS_reliability, GS_resilience, #HS_reliability, 
+                                             HS_resilience, days_burrendong_lt_dead_storage)
 
 write.csv(Merged_hydrology_summary, file = file.path(hydro_results, "Hydrology_summary.csv"))
 
