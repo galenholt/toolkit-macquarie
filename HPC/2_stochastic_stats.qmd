@@ -75,7 +75,7 @@ looplist <- list(aggin = spellframes,
 
 
 
-Anywya, that should modify to work
+Anyway, that should modify to work
 
 Write the function to furrr over. I think maybe don't even bother with the nestedness? Or maybe?
 
@@ -85,7 +85,8 @@ calc_vulnerability <- function(subdir, aggin, retained_in, retained_vuln) {
                             data_path = file.path(subdir, aggin),
                             lastagg = 'sdl_units',
                             retain_cols = retained_in,
-                            max_handling = 'remove')
+                            max_handling = 'remove',
+                            factorise = FALSE)
   
   vulnerability <- onespells |> 
     general_aggregate(groupers = groups, 

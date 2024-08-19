@@ -13,7 +13,8 @@
 #' @param rename_names should match retain_cols
 #' @param bind_dfs bind_rows the dfs or return a list of dfs
 #' @param max_handling one of 'remove', 'keep1', or 'keep_all' for how to handle the MAX scneario in each dataframe
-#'
+#' @param factorise logical, do all the changing of names and values to plot pretty. Default TRUE, but FALSE allows leaving the data relatively unchanged for repeated aggregation steps.
+#' 
 #' @return
 #' @export
 #'
@@ -30,7 +31,8 @@ read_in_aggs <- function(project_dir,
                          aggname = 'all',
                          rename_names = NULL,
                          bind_dfs = TRUE,
-                         max_handling = NULL) {
+                         max_handling = NULL,
+                         factorise = TRUE) {
 
 
   if (!is.null(info_list)) {
@@ -68,7 +70,8 @@ read_in_aggs <- function(project_dir,
                                                     lastagg = lastagg,
                                                     retain_cols = retain_cols,
                                                     rename_names = rename_names,
-                                                    subdir = y))
+                                                    subdir = y, 
+                                                    factorise = factorise))
 
   if (max_handling == 'remove') {
     maxremove <- 1:length(clean_aggs)
@@ -125,7 +128,7 @@ select_sequence <- function(aggdata, lastagg, retain_cols) {
 }
 
 
-clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, subdir) {
+clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, subdir, factorise = TRUE) {
 
 
   oneagg <- select_sequence(aggdata = oneagg, lastagg, retain_cols)
@@ -173,7 +176,9 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
     dplyr::filter(!is.na(polyID)) |>
     dplyr::relocate(geometry, .after = last_col())
 
-  oneagg <- clean_factors(oneagg)
+  if (factorise) {    
+    oneagg <- clean_factors(oneagg)
+  }
 
   return(oneagg)
 }

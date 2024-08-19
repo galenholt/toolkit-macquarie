@@ -96,7 +96,7 @@ ewr2target <- objective_mapping |>
   dplyr::mutate(ewr_code_timing = ifelse(is.na(ewr_code_timing), '', ewr_code_timing)) |> 
   dplyr::mutate(ewr_code_timing = paste0(ewr_code, '_', ewr_code_timing)|>
                   gsub('_$', '', x = _)) |> 
-  dplyr::mutate(Target = dplyr::case_when(      
+  dplyr::mutate(target = dplyr::case_when(      
     env_group == "NF" ~ "Native fish",
     env_group == "NV" ~ "Native vegetation" ,
     env_group == "OS" ~ "Other species",   
@@ -119,7 +119,7 @@ ewr2obj <- objective_mapping |>
 # then to Target
 obj2target <- ewr2obj |> 
   dplyr::select(-ewr_code, -ewr_code_timing) |> 
-  dplyr::mutate(Target = dplyr::case_when(grepl('^NF', env_obj) ~ "Native fish",
+  dplyr::mutate(target = dplyr::case_when(grepl('^NF', env_obj) ~ "Native fish",
                                    grepl('^NV', env_obj) ~ "Native vegetation",
                                    grepl('^OS', env_obj) ~ "Other species",
                                    grepl('^EF', env_obj) ~ "Priority ecosystem function",
@@ -130,9 +130,9 @@ obj2target <- ewr2obj |>
 
 # A very Macquarie-particular change
 ewr2target <- ewr2target |> 
-  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+  dplyr::mutate(target = stringr::str_replace(target, 'Other species', 'Flow-dependent frogs'))
 obj2target <- obj2target |> 
-  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+  dplyr::mutate(target = stringr::str_replace(target, 'Other species', 'Flow-dependent frogs'))
 
 
 # a few functions work better with a list of dfs than a bare df.
@@ -171,7 +171,7 @@ name_sEt <- 'sdl_ewr_timeseries'
 ```{r}
 agg_sTt <- list(ewr_code = c("ewr_code_timing", "ewr_code"),
                 env_obj = c('ewr_code', 'env_obj'),
-                target = c('ewr_code', 'target'),
+                target = c('env_obj', 'target'),
                 planning_units = planning_units, 
                 sdl_units = sdl_clip)
 
@@ -224,7 +224,7 @@ There's some annoying factorial aggregation here, but it's actually reasonably s
 agg_sTs <- list(all_time = 'all_time',
                 ewr_code = c("ewr_code_timing", "ewr_code"),
                 env_obj = c('ewr_code', 'env_obj'),
-                target = c('ewr_code', 'target'),
+                target = c('env_obj', 'target'),
                 planning_units = planning_units, 
                 sdl_units = sdl_clip)
 
