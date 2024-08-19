@@ -26,6 +26,8 @@ if (Sys.info()['user'] == 'hol436') {
 
 data_path <- file.path(qaelpath, "Toolkit", "macquarie", "macq_cut")
 
+ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
+
 agg_dir <- file.path(project_dir, 'aggregated')
 hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Hydrology")
 Economic_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Economic")
