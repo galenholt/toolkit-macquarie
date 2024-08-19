@@ -44,34 +44,9 @@ knitr::purl(input = infile, output = rfile)
 ## Paths
 
 ```{r}
-#| include: false
-
-if (Sys.info()['user'] == 'galen') {
-  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'Georgiad') {
-  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'georgiad') {
-  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
-} else if (Sys.info()['user'] == 'Admin') {
-  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'hol436') {
-  qaelpath <- '' 
-} else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
-}
-
-# python can't use the tildes, so have to expand
-qaelpath <- path.expand(qaelpath)
-```
-
-```{r}
-if (Sys.info()['user'] == 'hol436') {
-  project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
-} else {
-  project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
-}
-
-ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
+# tired of writing the whole thing out
+source('R/paths.R')
+source('R/agg_variables.R')
 ```
 
 I keep doing things very similar to this to deal with the nested dirs. Should make it a function, but it's not quite stable yet.
@@ -109,11 +84,19 @@ Set up the new causal links
 
 ```{r}
 objective_mapping <- readr::read_csv(file.path(project_dir, 'EWR_to_Target_mapping.csv')) |> 
-  dplyr::select(planning_unit_name, gauge, ewr_code, ewr_code_timing, env_group = target) |> 
+  # dplyr::filter(state == 'NSW') |> 
+  dplyr::filter(grepl('Macq', l_t_w_p_short_name)) |> 
+  dplyr::select(planning_unit_name, gauge, ewr_code, ewr_code_timing, 
+                eco_objective_code, env_group = target)
+
+# This is what we used originally
+ewr2target <- objective_mapping |> 
+  dplyr::select(-eco_objective_code) |> 
+  dplyr::distinct() |> 
   dplyr::mutate(ewr_code_timing = ifelse(is.na(ewr_code_timing), '', ewr_code_timing)) |> 
   dplyr::mutate(ewr_code_timing = paste0(ewr_code, '_', ewr_code_timing)|>
                   gsub('_$', '', x = _)) |> 
-  dplyr::mutate(target = dplyr::case_when(      
+  dplyr::mutate(Target = dplyr::case_when(      
     env_group == "NF" ~ "Native fish",
     env_group == "NV" ~ "Native vegetation" ,
     env_group == "OS" ~ "Other species",   
@@ -123,8 +106,38 @@ objective_mapping <- readr::read_csv(file.path(project_dir, 'EWR_to_Target_mappi
   )
   )
 
+# go to env_obj
+ewr2obj <- objective_mapping |> 
+  dplyr::select(-env_group) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(eco_objective_code = stringr::str_remove_all(eco_objective_code, "\xa0"),
+                eco_objective_code = stringr::str_replace_all(eco_objective_code, "-", "_")) |> 
+  dplyr::mutate(env_obj = strsplit(eco_objective_code, split = '_')) |>
+  tidyr::unnest_longer(col = env_obj) |>
+  dplyr::select(-eco_objective_code)
+
+# then to Target
+obj2target <- ewr2obj |> 
+  dplyr::select(-ewr_code, -ewr_code_timing) |> 
+  dplyr::mutate(Target = dplyr::case_when(grepl('^NF', env_obj) ~ "Native fish",
+                                   grepl('^NV', env_obj) ~ "Native vegetation",
+                                   grepl('^OS', env_obj) ~ "Other species",
+                                   grepl('^EF', env_obj) ~ "Priority ecosystem function",
+                                   grepl('^WB', env_obj) ~ "Waterbird",
+                                   .default = NA)) |> 
+  dplyr::distinct()
+
+
+# A very Macquarie-particular change
+ewr2target <- ewr2target |> 
+  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+obj2target <- obj2target |> 
+  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+
+
 # a few functions work better with a list of dfs than a bare df.
-objective_list <- list(objective_mapping)
+
+objective_steps <- list(ewr2obj = ewr2obj, obj2target = obj2target)
 ```
 
 # Set up sequencing etc
@@ -157,6 +170,7 @@ name_sEt <- 'sdl_ewr_timeseries'
 
 ```{r}
 agg_sTt <- list(ewr_code = c("ewr_code_timing", "ewr_code"),
+                env_obj = c('ewr_code', 'env_obj'),
                 target = c('ewr_code', 'target'),
                 planning_units = planning_units, 
                 sdl_units = sdl_clip)
@@ -164,9 +178,10 @@ agg_sTt <- list(ewr_code = c("ewr_code_timing", "ewr_code"),
 fun_sTt <- list(c('ArithmeticMean'),
                 c('ArithmeticMean'),
                 c('ArithmeticMean'),
+                c('ArithmeticMean'),
                 c('ArithmeticMean'))
 
-retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
 
 cols_sTt <- 'ewr_achieved'
 
@@ -208,6 +223,7 @@ There's some annoying factorial aggregation here, but it's actually reasonably s
 ```{r}
 agg_sTs <- list(all_time = 'all_time',
                 ewr_code = c("ewr_code_timing", "ewr_code"),
+                env_obj = c('ewr_code', 'env_obj'),
                 target = c('ewr_code', 'target'),
                 planning_units = planning_units, 
                 sdl_units = sdl_clip)
@@ -216,11 +232,12 @@ fun_sTs <- list(c('ArithmeticMean', 'maxInterevent'),
                 c('ArithmeticMean', 'Max'),
                 c('ArithmeticMean', 'Max'),
                 c('ArithmeticMean', 'Max'),
+                c('ArithmeticMean', 'Max'),
                 c('ArithmeticMean', 'Max'))
 
-retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_target_Max_env_obj_Max_ewr_code_Max_all_time_maxInterevent_event_years')
 
 cols_sTs <- c('ewr_achieved', 'event_years')
 
@@ -239,7 +256,7 @@ futurelist <- list(aggsequence = agg_seqs,
                    funsequence = fun_seqs,
                    aggCols = cols_seqs,
                    aggname = names_seqs,
-                   # kind of goofy, but makes the pmap soother.
+                   # kind of goofy, but makes the pmap smoother.
                    inner_subdirs = list(inner_subdirs, inner_subdirs, inner_subdirs, inner_subdirs))
 ```
 
@@ -254,7 +271,7 @@ onedir <- function(subdir, aggsequence, funsequence, aggCols, aggname) {
     datpath = file.path(ewr_results, subdir),
     type = "achievement",
     geopath = bom_basin_gauges,
-    causalpath = objective_list,
+    causalpath = objective_steps,
     groupers = "scenario",
     aggCols = aggCols,
     aggsequence = aggsequence, # generalise to furr over all agg paths

@@ -173,88 +173,7 @@ clean_aggregated <- function(oneagg, lastagg, retain_cols, rename_names = NULL, 
     dplyr::filter(!is.na(polyID)) |>
     dplyr::relocate(geometry, .after = last_col())
 
-  oneagg <- oneagg |>
-    dplyr::mutate(Mark = dplyr::case_when(Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
-                                          Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
-                                          Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",
-                                          Mk == "MACQ_CC_EFR" ~ "Mk4",
-                                          Mk == NA ~ NA,
-                                          .default = Mk))
-
-   oneagg$Mark <- factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5"))
-
-
-  oneagg <- oneagg |>
-    dplyr::mutate(Data = dplyr::case_when(Data == "historical" ~ "Historic",
-                                          Data == "stochastic" ~ "Stochastic",
-                                          .default = Data))
-
-  oneagg <- oneagg |>
-    dplyr::mutate(names_CSIRO_climate_scenario = dplyr::case_when(Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
-                                                                  Evapotranspiration == 1.07 & Rainfall == 0.8  ~ "Hot and Dry",
-                                                                  Evapotranspiration == 1.07 & Rainfall == 1  ~ "Just Hot",
-                                                                  Evapotranspiration == 1.07 & Rainfall == 1.2  ~ "Hot and Wet",
-                                                                  Evapotranspiration == 1 & Rainfall == 0.8  ~ "Just Dry",
-                                                                  Evapotranspiration == 1 & Rainfall == 1.2  ~ "Just Wet"))
-
-  oneagg$names_CSIRO_climate_scenario <- factor(oneagg$names_CSIRO_climate_scenario,
-                                                levels = c("Just Wet", "Historical climate", "Hot and Wet", "Just Hot", "Just Dry", "Hot and Dry"))
-
-  #EWR scale data
-  if("ewr_code" %in% colnames(oneagg)) {
-  oneagg$ewr_code <- factor(oneagg$ewr_code, levels = c("CF", "VF", "BF1", "BF2", "SF1", "SF2", "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
-
-  oneagg <- oneagg |>
-    dplyr::mutate(ewr_group = dplyr::case_when(ewr_code == "CF" ~ "CF",
-                                               ewr_code == "VF" ~ "VF",
-                                               ewr_code == "BF1" ~ "BF",
-                                               ewr_code == "BF2" ~ "BF",
-                                               ewr_code == "SF1" ~ "SF",
-                                               ewr_code == "SF2" ~ "SF",
-                                               ewr_code == "SF3" ~ "SF",
-                                               ewr_code == "LF1" ~ "LF",
-                                               ewr_code == "LF2" ~ "LF",
-                                               ewr_code == "OB-WL" ~ "OB",
-                                               ewr_code == "OB-WM" ~ "OB",
-                                               ewr_code == "OB-WS1" ~ "OB",
-                                               ewr_code == "OB-WS2" ~ "OB",
-                                               ewr_code == "OB-WS3" ~ "OB",
-                                               ewr_code == "OB-WS4" ~ "OB",
-                                               .default = ewr_code))
-
-  oneagg$ewr_group <- factor(oneagg$ewr_group, levels = c("CF", "VF", "BF", "SF", "LF", "OB"))
-
-  oneagg <- oneagg |>
-    dplyr::mutate(ewr_group_name = dplyr::case_when(ewr_group == "CF" ~ "Cease to flow",
-                                                    ewr_group == "VF" ~ "Very low flow",
-                                                    ewr_group == "BF" ~ "Base flow",
-                                                    ewr_group == "SF" ~ "Small fresh",
-                                                    ewr_group == "LF" ~ "Large fresh",
-                                               ewr_group == "OB" ~ "Overbank",
-                                               .default = ewr_group))
-
-  oneagg$ewr_group_name <- factor(oneagg$ewr_group_name, levels = c("Cease to flow", "Very low flow", "Base flow", "Small fresh", "Large fresh", "Overbank"))
-
-  }
-
-  #Target scale data
-  if("target" %in% colnames(oneagg)) {
-  oneagg <- oneagg |>
-    dplyr::mutate(env_group  = dplyr::case_when(target == "Native fish" ~ "NF",
-                                                target == "Native vegetation" ~ "NV",
-                                                target == "Other species" ~ "OS",
-                                                target == "Priority ecosystem function" ~ "EF" ,
-                                                target == "Waterbird" ~ "WB",
-                                                target == NA ~ NA,
-                                            .default = target))
-  oneagg <- oneagg |>
-    dplyr::mutate(target  = dplyr::case_when(target == "Waterbird" ~ "Waterbirds",
-                                                target == NA ~ NA,
-                                                .default = target))
-  }
-
-
-
+  oneagg <- clean_factors(oneagg)
 
   return(oneagg)
 }
@@ -326,4 +245,207 @@ get_scenariodir <- function(project_dir,
   data_path <- purrr::map2(data_path, aggname_list, file.path) |> unlist()
 
   return(data_path)
+}
+
+clean_factors <- function(oneagg) {
+  if ("Mk" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        Mark = dplyr::case_when(
+          Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
+          Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
+          Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",
+          Mk == "MACQ_CC_EFR" ~ "Mk4",
+          Mk == NA ~ NA,
+          .default = Mk
+        )
+      )
+
+    oneagg$Mark <-
+      factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5"))
+  }
+
+  if ("Data" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        Data = dplyr::case_when(
+          Data == "historical" ~ "Historic",
+          Data == "stochastic" ~ "Stochastic",
+          .default = Data
+        )
+      )
+  }
+
+  if ("licvolfactor" %in% colnames(oneagg)) {
+    if (class(oneagg$licvolfactor) == "character") {
+      oneagg <- oneagg |>
+
+        tidyr::separate(licvolfactor, sep = "factor_", remove = TRUE, into = c(NA, "licvolfactor")) |>
+        dplyr::mutate(licvolfactor = as.numeric(gsub(x = licvolfactor, pattern = "_", replacement = ".")))
+          }
+    }
+
+  if ("climate" %in% colnames(oneagg)) {
+    if (!"Evapotranspiration" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        Evapotranspiration = dplyr::case_when(
+          climate == "r1_0_e1_0" ~ 1.0,
+          climate == "r0_8_e1_07" ~ 1.07,
+          climate == "r1_0_e1_07" ~ 1.07,
+          climate == "r1_2_e1_07" ~ 1.07,
+          climate == "r0_8_e1_0" ~ 1.0,
+          climate == "r1_2_e1_0" ~ 1.0
+        )
+      )
+
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        Rainfall = dplyr::case_when(
+          climate == "r1_0_e1_0" ~ 1.0,
+          climate == "r0_8_e1_07" ~ 0.8,
+          climate == "r1_0_e1_07" ~ 1.0,
+          climate == "r1_2_e1_07" ~ 1.2,
+          climate == "r0_8_e1_0" ~ 0.8,
+          climate == "r1_2_e1_0" ~ 1.2
+        )
+      )
+
+  }}
+
+  if ("Evapotranspiration" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        names_CSIRO_climate_scenario = dplyr::case_when(
+          Evapotranspiration == 1 & Rainfall == 1 ~ "Historical climate",
+          Evapotranspiration == 1.07 &
+            Rainfall == 0.8  ~ "Hot and Dry",
+          Evapotranspiration == 1.07 &
+            Rainfall == 1  ~ "Just Hot",
+          Evapotranspiration == 1.07 &
+            Rainfall == 1.2  ~ "Hot and Wet",
+          Evapotranspiration == 1 &
+            Rainfall == 0.8  ~ "Just Dry",
+          Evapotranspiration == 1 &
+            Rainfall == 1.2  ~ "Just Wet"
+        )
+      )
+
+    oneagg$names_CSIRO_climate_scenario <-
+      factor(
+        oneagg$names_CSIRO_climate_scenario,
+        levels = c(
+          "Just Wet",
+          "Hot and Wet",
+          "Historical climate",
+          "Just Hot",
+          "Just Dry",
+          "Hot and Dry"
+        )
+      )
+  }
+
+  #EWR scale data
+  if ("ewr_code" %in% colnames(oneagg)) {
+    oneagg$ewr_code <-
+      factor(
+        oneagg$ewr_code,
+        levels = c(
+          "CF",
+          "VF",
+          "BF1",
+          "BF2",
+          "SF1",
+          "SF2",
+          "SF3",
+          "LF1",
+          "LF2",
+          "OB-WL",
+          "OB-WM",
+          "OB-WS1",
+          "OB-WS2",
+          "OB-WS3",
+          "OB-WS4"
+        )
+      )
+
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        ewr_group = dplyr::case_when(
+          ewr_code == "CF" ~ "CF",
+          ewr_code == "VF" ~ "VF",
+          ewr_code == "BF1" ~ "BF",
+          ewr_code == "BF2" ~ "BF",
+          ewr_code == "SF1" ~ "SF",
+          ewr_code == "SF2" ~ "SF",
+          ewr_code == "SF3" ~ "SF",
+          ewr_code == "LF1" ~ "LF",
+          ewr_code == "LF2" ~ "LF",
+          ewr_code == "OB-WL" ~ "OB",
+          ewr_code == "OB-WM" ~ "OB",
+          ewr_code == "OB-WS1" ~ "OB",
+          ewr_code == "OB-WS2" ~ "OB",
+          ewr_code == "OB-WS3" ~ "OB",
+          ewr_code == "OB-WS4" ~ "OB",
+          .default = ewr_code
+        )
+      )
+
+    oneagg$ewr_group <-
+      factor(oneagg$ewr_group,
+             levels = c("CF", "VF", "BF", "SF", "LF", "OB"))
+
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        ewr_group_name = dplyr::case_when(
+          ewr_group == "CF" ~ "Cease to flow",
+          ewr_group == "VF" ~ "Very low flow",
+          ewr_group == "BF" ~ "Base flow",
+          ewr_group == "SF" ~ "Small fresh",
+          ewr_group == "LF" ~ "Large fresh",
+          ewr_group == "OB" ~ "Overbank",
+          .default = ewr_group
+        )
+      )
+
+    oneagg$ewr_group_name <-
+      factor(
+        oneagg$ewr_group_name,
+        levels = c(
+          "Cease to flow",
+          "Very low flow",
+          "Base flow",
+          "Small fresh",
+          "Large fresh",
+          "Overbank"
+        )
+      )
+
+  }
+
+  #Target scale data
+  if ("target" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        env_group  = dplyr::case_when(
+          target == "Native fish" ~ "NF",
+          target == "Native vegetation" ~ "NV",
+          target == "Other species" ~ "OS",
+          target == "Priority ecosystem function" ~ "EF" ,
+          target == "Waterbird" ~ "WB",
+          target == NA ~ NA,
+          .default = target
+        )
+      )
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        target  = dplyr::case_when(
+          target == "Waterbird" ~ "Waterbirds",
+          target == NA ~ NA,
+          .default = target
+        )
+      )
+  }
+
+  return(oneagg)
 }
