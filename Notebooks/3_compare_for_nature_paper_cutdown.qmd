@@ -25,7 +25,8 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file(),
 #| warning: false
 #| message: false
 
-library(werptoolkitr)
+devtools::load_all(path = file.path("~/Georgia/WERP_toolkit"))
+#library(werptoolkitr)
 library(dplyr)
 library(sf)
 library(ggplot2)
@@ -149,7 +150,7 @@ sdl_hydro_vulnerability <- sdl_hydro_baseline |>
     measure_achieved = werptoolkitr::ArithmeticMean(measure_achieved))
 
 rm(sdl_Economic_spells)
-rm(sdl_hydro_spells)
+#rm(sdl_hydro_spells)
 
 #TWO
 sdl_two_baseline <- bind_rows(sdl_hydro_baseline, sdl_Economic_baseline)
@@ -230,27 +231,27 @@ pal_envgroup <- purrr::imap_chr(pal_env,
                                 \(x,y) make_pal(levels = y, palette = x)) |> 
   werptoolkitr:::as_colors()
 
-pal_Target <-  stats::setNames(c("#1B1B1BFF", "#A1D8B6FF", "#005D67FF", "#67223FFF", "#023FA5FF", "#EA4C3BFF", 
+pal_Target <-  stats::setNames(c("#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
                                  "#4873B8", "#B7A447", "#FDC010"), 
-            c('Priority ecosystem function', 'Native fish', 'Native vegetation', 'Other species', 'Waterbirds', 
+            c('Priority ecosystem functions', 'Native fish', 'Native vegetation', 'Flow-dependent frogs', 'Waterbirds', 
                "End of system flows", "Water allocation", "Agricultural benefits"))
 class(pal_Target) <- 'colors'
 
-pal_EWR <- stats::setNames(c("#555555FF", '#7B3014FF', "#9E3D22FF", '#C35322FF', '#E77129FF', '#F59843FF',
-                                            '#FCAD52FF', '#FFC07CFF', '#FFEDDAFF', '#D6E8F3FF', '#A3CCE5FF', '#7DAED1FF',
-                                            '#6094BFFF', '#4677A5FF', '#2B5C8AFF'), 
-                                          c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
-                                            "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
-                                            "OB-WS2", "OB-WS3", "OB-WS4"))
+pal_EWR <- stats::setNames(c("#FA5F16", '#7B3014FF', "#B83923", '#DB8062', 
+                             '#C0AED9FF', '#8C37E5FF', '#AE56DEFF', "#7640A9FF", '#622E82FF', 
+                             '#4092E1FF', '#4873B8', '#211DF0FF', '#6094BFFF', '#4677A5FF', '#00298CFF'), 
+                                          c("CF", "VF", "BF1", "BF2", 
+                                            "SF1", "SF2", "SF3", "LF1", "LF2", 
+                                            "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
 class(pal_EWR) <- 'colors'
 
 pal_hydro <- stats::setNames(c("#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
                              c("General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
 class(pal_hydro) <- 'colors'
 
-pal_theme <- stats::setNames(c("#1B1B1BFF", "#A1D8B6FF", "#005D67FF", "#67223FFF", "#023FA5FF", "#EA4C3BFF", 
+pal_theme <- stats::setNames(c("#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
                                  "#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
-                             c('Priority ecosystem function', 'Native fish','Native vegetation', 'Other species', 'Waterbirds', "End of system flows", 
+                             c('Priority ecosystem functions', 'Native fish','Native vegetation', 'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
                               "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
 class(pal_theme) <- 'colors'
 
@@ -280,7 +281,14 @@ names(linetype_data2) <- c("Stochastic", "Historic")
 
 # SHOW FISH
 size_target <- c(3,4,3,3,3)
-names(size_target)  <- c('Priority ecosystem function', 'Native fish', 'Native vegetation', 'Other species', 'Waterbirds')
+names(size_target)  <- c('Priority ecosystem functions', 'Native fish', 'Native vegetation', 'Flow-dependent frogs', 'Waterbirds')
+
+shapes_theme <-  c(21, 22, 23, 24, 25,
+                        21, 
+                        21, 22, 23, 24, 25)
+
+names(shapes_theme) <- c('Priority ecosystem functions', 'Native fish','Native vegetation', 'Flow-dependent frogs', 'Waterbirds', "End of system flows", "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit")
+
 
 #PALETTE OPTIONS:
 pal_licvolfactor <- stats::setNames(
@@ -341,9 +349,9 @@ pal_theme2 <- stats::setNames(c("#AAAAAA", '#AAAAAA', "#AAAAAA", '#AAAAAA', '#AA
                              c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
                                             "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
                                             "OB-WS2", "OB-WS3", "OB-WS4",
-                               'Priority ecosystem function', 'Native fish',
+                               'Priority ecosystem functions', 'Native fish',
                                'Native vegetation', 
-                               'Other species', 'Waterbirds', "End of system flows", 
+                               'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
                               "Something", "Water allocation", "Agricultural benefits", 
                               "General security reliability","General security resilience", "Delivery ability", "High security resilience", 
                               "Agricultural benefit"))
@@ -352,14 +360,14 @@ class(pal_theme2) <- 'colors'
 pal_theme <- stats::setNames(c("#555555FF", '#7B3014FF', "#9E3D22FF", '#C35322FF', '#E77129FF', '#F59843FF',
                                             '#FCAD52FF', '#FFC07CFF', '#FFEDDAFF', '#D6E8F3FF', '#A3CCE5FF', '#7DAED1FF',
                                             '#6094BFFF', '#4677A5FF', '#2B5C8AFF',
-                               "#1B1B1BFF", "#A1D8B6FF", "#005D67FF", "#67223FFF", "#023FA5FF", "#EA4C3BFF", 
+                               "#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
                                  "#4873B8", "#B7A447", "#FDC010AA", "#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
                              c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
                                             "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
                                             "OB-WS2", "OB-WS3", "OB-WS4",
-                               'Priority ecosystem function', 'Native fish',
+                               'Priority ecosystem functions', 'Native fish',
                                'Native vegetation', 
-                               'Other species', 'Waterbirds', "End of system flows", 
+                               'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
                               "Something", "Water allocation", "Agricultural benefits", "General security reliability", 
                "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
 class(pal_theme) <- 'colors'
@@ -399,48 +407,50 @@ Map_Macquarie <- ggplot(data = sdl_units,  aes(geometry = geometry)) +
   geom_sf(fill = "white")+
   geom_sf(data = filter(gauges_df, gauge %in% gauges_to_plot),  aes(geometry = geometry), colour = "#fcaa20")+
   geom_sf(data = filter(sdl_units, SWSDLName == SWSDLName_subset),  aes(geometry = geometry), fill = "#fcaa20", colour = "#fcaa20", alpha = 0.1)+ 
-  geom_sf_text(data = filter(sdl_units, SWSDLName == SWSDLName_subset), aes(label = SWSDLName), colour = "#fcaa20") +
-  theme(legend.position = "none")+
+  geom_sf_text(data = filter(sdl_units, SWSDLName == SWSDLName_subset), label = "Macquarie", colour = "#fcaa20") +
+  theme(legend.position = "none",
+        axis.text = element_blank())+
   theme_werp_toolkit(legend.position = "none")
 
-Map_Macquarie
+inset_map <- ggplot(ozmaps::ozmap_country) +
+  geom_sf(fill = 'grey20') +              
+  geom_sf(data = basin, fill = "white") +
+  theme_werp_toolkit(axis.ticks = element_blank(), 
+                         axis.text=element_blank())+
+  coord_sf(xlim = c(110, 155), ylim = c(-45,-8), expand = FALSE) 
+inset_map
+
+# Why on earth does this print a dataframe of the corners?
+overview_map <- Map_Macquarie +
+  patchwork::inset_element(inset_map,  left = 0.0001, bottom = 0.7,
+                                      right = 0.35, top = 0.99)
+
+overview_map
 
 # ggsave_multi(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date(), ".tiff")), device = c('png', 'svg'),
 #        width = 8, height = 5)
 
 # example that will save as png and svg if we want.
-ggsave_multi(plot = Map_Macquarie, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "svg"),
+ggsave_multi(plot = overview_map, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "svg"),
        width = 16, height = 12, units = 'cm')
+
 ```
+
+#EWR TABLE
+```{r}
+ewr_table_421019 <- ewr_table |> 
+  filter(Gauge %in% 421019)
+
+#write.csv(ewr_table_421019, file.path(comp_results, paste0("ewr_table_421019_", Sys.Date(), ".csv")))
+
+```
+
 
 ## 1) Vulnerability plot
 
 quadrant lines = the means for stochastic sequences under all climates.
 
 ```{r}
-
-mean_EWR_Stoch_ach <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
-mean_EWR_Stoch_var <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
-mean_target_Stoch_ach <-  mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
-mean_target_Stoch_var <- mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
-mean_hydro_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
-  mean_hydro_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
-  mean_economic_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
-  mean_economic_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
-```
-
-
-### 1A) Vulnerability - no climate change
-
-(top left)
-
-no fill
-
-```{r}
-#| label: 1A) Vulnerability 
-#| echo: false
-#| warning: false
-#| message: false
 
 sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
                                     data_type = c('stochastic', 'historical'),
@@ -459,50 +469,85 @@ sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
                                     climate = 'r1_0_e1_0',
                                     aggname = 'sdl_target_vulnerability',
                                     max_handling = "remove")
+
+mean_EWR_Stoch_ach <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
+mean_EWR_Stoch_var <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
+mean_target_Stoch_ach <-  mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
+mean_target_Stoch_var <- mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
+mean_hydro_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
+  mean_hydro_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
+  mean_economic_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
+  mean_economic_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
+
+
+```
+
+### 1A) Vulnerability - no climate change
+
+(top left)
+
+no fill
+
+```{r}
+#| label: 1A) Vulnerability 
+#| echo: false
+#| warning: false
+#| message: false
+
 #EWR
 plot_sdl_EWR_vulnerability_S_noclimate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-  geom_point(size = 3.5) +
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
+  geom_point(size = 3.5, fill = "white") +
   ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")), aes(label = ewr_code), size = 3, segment.size =0.25) +
   theme_werp_toolkit()+
   theme(legend.position = "none")+
-  geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 21, size = 4)))+
+    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.022, label = "ai) Historical scenario ", hjust = 0, size = 3)
 
 #TARGET
 plot_sdl_target_vulnerability_S_noclimate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-  geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 5) +
-    geom_point(size = 3.5) +
-    ggrepel::geom_text_repel(data = filter(distinct(sdl_target_vulnerability, target, .keep_all = TRUE), names_CSIRO_climate_scenario %in% c("Historical climate") & Data == "Stochastic"), aes(label = target), colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+    annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
+  geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 5, fill = "white") +
+    geom_point(size = 3.5, fill = "white") +
+    ggrepel::geom_text_repel(data = filter(distinct(sdl_target_vulnerability, target, .keep_all = TRUE), names_CSIRO_climate_scenario %in% c("Historical climate") & Data == "Stochastic"), aes(label = target), colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
   theme(legend.position = "none")+
-  geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
-    geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
+  #   geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
   scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data2) +
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 21, size = 4)))+
+    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.0035, label = "ai) Historical scenario ", hjust = 0, size = 3)
 
 #TWO:
 plot_sdl_two_vulnerability_S_noclimate <- ggplot(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(y = variance_measure_achieved, x = measure_achieved, colour = measure, shape = Data)) + 
-  geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.6), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+    annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#e7ffff") +
+  geom_point(size = 3.5, fill = "white") +
+  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
   #theme(legend.position = "none")+
-  geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
-  geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
-  geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
+  # geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
+  # geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
+  # geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
   scale_colour_manual(values = pal_theme) +
   scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 21, size = 4)))+
+    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.055, label = "bi) Historical scenario ", hjust = 0, size = 3)
@@ -548,37 +593,46 @@ licvolfactor_ends <- c(0.5, 1.0, 1.5)
 
 #EWR
 plot_sdl_EWR_vulnerability_S_licvol <- ggplot(data = filter(sdl_EWR_vulnerability, licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+    annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
   geom_line(data = filter(sdl_EWR_vulnerability))+
   geom_point(aes(fill = licvol_factor), size = 3.5) +
   geom_point(size = 3.5) +
   ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & licvolfactor == 1.5), aes(label = ewr_code), size = 3, segment.size =0.25) +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
-  geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
-    geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
+  #   geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
   scale_fill_manual(values = pal_licvolfactor)+
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data2)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.022, label = "aiii) Relative env. water volume scenarios", hjust = 0, size = 3)
 
 #Target
 plot_sdl_target_vulnerability_S_licvol <- ggplot(data = filter(sdl_target_vulnerability, licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
+      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
   geom_line()+
     geom_point(data = filter(sdl_target_vulnerability, target == "Native fish", licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 3.5) +
   geom_point(aes(fill = licvol_factor), size = 3.5) +
   geom_point(size = 3.5) +
-    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")& licvolfactor == 1.5), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")& licvolfactor == 1.5), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
-  geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
-    geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
+  theme(legend.box = "horizontal",
+        legend.spacing.y = unit(1.0, 'cm'))+
+  # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
+  #   geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
   scale_fill_manual(values = pal_licvolfactor)+
   scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data2) +
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.0035, label = "aiii) Relative env. water volume scenarios", hjust = 0, size = 3)
@@ -598,7 +652,7 @@ plot_sdl_target_vulnerability_S_licvol <- ggplot(data = filter(sdl_target_vulner
 #   scale_fill_manual(values = pal_licvolfactor)+
 #   scale_colour_manual(values = pal_theme)+
 #   scale_shape_manual(values = shapes_data2) +
-#     guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+#     guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
 #   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
 #   labs(x = "Outcome achievement", y = "Variance in achievement")+
 #   annotate(geom = "text", x = 0, y = 0.055, label = "OMIT) Relative environmental water volume scenarios", hjust = 0, size = 3)
@@ -644,37 +698,45 @@ sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
 
 #EWR
 plot_sdl_EWR_vulnerability_S_mks <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
+    annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
   geom_line()+
   geom_point(aes(fill = Mark), size = 3.5) +
   geom_point(size = 3.5) +
   ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = ewr_code), size = 3, segment.size =0.25) +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
-  geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
-    geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
+  #   geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
   scale_fill_manual(values = pal_mark)+
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data2)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.022, label = "aiv) Delivery strategy scenarios", hjust = 0, size = 3)
 
 #TARGET
 plot_sdl_target_vulnerability_S_mks <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
+      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
   geom_line()+
     geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 5) +
   geom_point(aes(fill = Mark), size = 3.5) +
   geom_point(size = 3.5) +
-    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
-  geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
+  # geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
   scale_fill_manual(values = pal_mark)+
   scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data2) +
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.0035, label = "aiv) Delivery strategy scenarios", hjust = 0, size = 3)
@@ -694,7 +756,7 @@ plot_sdl_target_vulnerability_S_mks <- ggplot(data = filter(sdl_target_vulnerabi
 #   scale_fill_manual(values = pal_mark)+
 #   scale_colour_manual(values = pal_theme) +
 #   scale_shape_manual(values = shapes_data2)+
-#     guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+#     guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
 #   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
 #   labs(x = "Outcome achievement", y = "Variance in achievement")+
 #   annotate(geom = "text", x = 0, y = 0.055, label = "OMIT) Delivery strategy scenarios", hjust = 0, size = 3)
@@ -739,9 +801,13 @@ sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
                                     max_handling = "remove")
 
 #EWR
-plot_sdl_EWR_vulnerability_S_climate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-  geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
+plot_sdl_EWR_vulnerability_S_climate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +   
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
+  # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
+  # geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
   geom_line()+
   geom_point(aes(fill = names_CSIRO_climate_scenario2), size = 3.5) +
   geom_point(size = 3.5) +
@@ -751,46 +817,54 @@ plot_sdl_EWR_vulnerability_S_climate <- ggplot(data = filter(sdl_EWR_vulnerabili
   scale_fill_manual(values = pal_CSIRO_climate_scenario)+
   scale_colour_manual(values = pal_EWR)+
   scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii) Climate scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.022, label = "aii) Climate scenarios", hjust = 0, size = 3)
 
 #TARGET
 plot_sdl_target_vulnerability_S_climate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-  geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
+      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
+  # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
+  # geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
   geom_line(aes( colour = target))+
-  geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, shape = Data), size = 5) +
+  geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, shape = Data), size = 5, fill = "white") +
   geom_point(data = filter(sdl_target_vulnerability), aes(fill = names_CSIRO_climate_scenario2), size = 3.5)+ 
-  ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.0029, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal")+
   scale_fill_manual(values = pal_CSIRO_climate_scenario)+
   scale_colour_manual(values = pal_Target)+
   scale_shape_manual(values = shapes_data2) +
   scale_size_manual(values = size_target)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.0035, label = "aii) Climate scenarios", hjust = 0, size = 3)
 
 #TWO:
 plot_sdl_two_vulnerability_S_climate <- ggplot(data = filter(sdl_two_vulnerability, licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(y = variance_measure_achieved, x = measure_achieved, colour = measure, shape = Data)) +
-  geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
-  geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
-  geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
-  geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
+      annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#d7dafd")  + 
+    annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var , fill= "#ffffff") +    
+    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
+    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#e7ffff") +
+  # geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
+  # geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
+  # geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
+  # geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
   geom_line()+
   geom_point(aes(fill = names_CSIRO_climate_scenario2), size = 3.5) +
   geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Hot and Dry" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Hot and Dry" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
   theme_werp_toolkit()+
   theme(legend.box = "horizontal", legend.position = 'bottom')+
   scale_fill_manual(values = pal_CSIRO_climate_scenario)+
   scale_colour_manual(values = pal_theme) +
   scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 21, size = 4), ncol = 1, title.position="top", title.hjust = 0.5))+
+    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
   coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
   labs(x = "Outcome achievement", y = "Variance in achievement")+
   annotate(geom = "text", x = 0, y = 0.055, label = "bii) Climate scenarios", hjust = 0, size = 3)
@@ -823,15 +897,16 @@ VulnerabilityPlot_target_Stochastic <- plot_sdl_target_vulnerability_S_noclimate
   plot_sdl_target_vulnerability_S_mks +  
   plot_sdl_two_vulnerability_S_noclimate+
   plot_sdl_two_vulnerability_S_climate +
-  plot_layout(ncol = 2, axes = "collect", guides = "collect") & theme(legend.position = 'bottom')
+  plot_layout(ncol = 2, axes = "collect", guides = "collect") & theme(legend.position = 'bottom') &
+  theme(legend.spacing.y = unit(0, 'cm'))
 
 VulnerabilityPlot_EWR_Stochastic
 VulnerabilityPlot_target_Stochastic
 
 
-ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 8, height = 8)
+ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date())), device = c('png', 'pdf'), width = 8, height = 8)
 
-ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_targetTWO_Stochastic",Sys.Date())), device = c('png', 'svg'), width = 8, height = 12)
+ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_targetTWO_Stochastic",Sys.Date())), device = c('png', 'pdf'), width = 8, height = 12)
 
 
 ```
@@ -865,7 +940,7 @@ VulnerabilityPlot_target_Stochastic
 #| message: false
 #| fig-cap: Fig 1. Vulnerabiliy in economic benefits and water allocation relilience and reliabitity - Stochastic
 
-VulnerabilityPlot_two_Stochastic
+#VulnerabilityPlot_two_Stochastic
 
 ```
 
@@ -1536,4 +1611,27 @@ ggsave_multi(plot = licvol_target_variance,
 
 licvol_target_variance
 ```
+
+## OTHER
+
+```{r}
+
+# The majority of agricultural benefits are associated with high-value crops irrigated using high-security water licences, which are always delivered when dam levels exceed the level of the off-take. These benefits should remain viable, with high-security water being deliverable x%    of the time even under extreme climate change.
+
+days_burrendong_lt_dead_storage <- read.csv(file.path(hydro_results, "days_burrendong_lt_dead_storage_merged.csv"))|>
+  dplyr::mutate(measure = "days_burrendong_lt_dead_storage")
+days_burrendong_lt_dead_storage <- clean_factors(days_burrendong_lt_dead_storage)
+
+temp <- days_burrendong_lt_dead_storage |>
+  filter(measure == "Delivery ability")|>
+  filter(names_CSIRO_climate_scenario2 == "Hot and Dry")|>
+  filter(Data == "Historic")|>
+  mutate(n_0 = ifelse(Current.volume == 0, 0, 1),
+         percent_days = (Current.volume/366)*100)|>
+  reframe(mean_percent_days = 100-mean(percent_days))
+
+
+
+```
+
 

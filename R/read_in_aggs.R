@@ -482,9 +482,11 @@ clean_factors <- function(oneagg) {
       dplyr::mutate(
         target  = dplyr::case_when(
           target == "Waterbird" ~ "Waterbirds",
+          target == "Other species" ~ "Flow-dependent frogs",
+          target == "Priority ecosystem function" ~ "Priority ecosystem functions",
           target == NA ~ NA,
-          .default = target
-        )
+          .default = target),
+        target = factor(target, levels = c("Native fish", "Native vegetation", "Flow-dependent frogs", "Priority ecosystem functions", "Waterbirds"))
       )
   }
 
