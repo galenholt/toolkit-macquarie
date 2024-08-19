@@ -1,0 +1,200 @@
+---
+title: "Making causal networks"
+format: html
+editor: visual
+---
+
+```{r}
+library(werptoolkitr)
+library(dplyr)
+library(ggplot2)
+library(sf)
+```
+
+## Paths
+
+```{r}
+#| include: false
+
+if (Sys.info()['user'] == 'galen') {
+  qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'Georgiad') {
+  qaelpath <- '~/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'georgiad') {
+  qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
+} else if (Sys.info()['user'] == 'Admin') {
+  qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
+} else if (Sys.info()['user'] == 'hol436') {
+  qaelpath <- '' 
+} else {
+  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+}
+
+# python can't use the tildes, so have to expand
+qaelpath <- path.expand(qaelpath)
+```
+
+```{r}
+if (Sys.info()['user'] == 'hol436') {
+  project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
+} else {
+  project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
+}
+
+ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
+```
+
+Prevent issues with PU overlaps
+
+```{r}
+sdl_clip <- sdl_units |> 
+  dplyr::filter(SWSDLName == 'Macquarie–Castlereagh')
+```
+
+Set up the new causal links
+
+```{r}
+objective_mapping <- readr::read_csv(file.path(project_dir, 'EWR_to_Target_mapping.csv')) |> 
+  # dplyr::filter(state == 'NSW') |> 
+  dplyr::filter(grepl('Macq', l_t_w_p_short_name)) |> 
+  dplyr::select(planning_unit_name, gauge, ewr_code, ewr_code_timing, 
+                eco_objective_code, env_group = target)
+
+# This is what we used originally
+ewr2target <- objective_mapping |> 
+  dplyr::select(-eco_objective_code) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(ewr_code_timing = ifelse(is.na(ewr_code_timing), '', ewr_code_timing)) |> 
+  dplyr::mutate(ewr_code_timing = paste0(ewr_code, '_', ewr_code_timing)|>
+                  gsub('_$', '', x = _)) |> 
+  dplyr::mutate(Target = dplyr::case_when(      
+    env_group == "NF" ~ "Native fish",
+    env_group == "NV" ~ "Native vegetation" ,
+    env_group == "OS" ~ "Other species",   
+    env_group == "EF" ~ "Priority ecosystem function", 
+    env_group == "WB" ~ "Waterbird",
+    is.na(env_group) ~ NA
+  )
+  )
+
+# go to env_obj
+ewr2obj <- objective_mapping |> 
+  dplyr::select(-env_group) |> 
+  dplyr::distinct() |> 
+  dplyr::mutate(eco_objective_code = stringr::str_remove_all(eco_objective_code, "\xa0"),
+                eco_objective_code = stringr::str_replace_all(eco_objective_code, "-", "_")) |> 
+  dplyr::mutate(env_obj = strsplit(eco_objective_code, split = '_')) |>
+  tidyr::unnest_longer(col = env_obj) |>
+  dplyr::select(-eco_objective_code)
+
+# then to Target
+obj2target <- ewr2obj |> 
+  dplyr::select(-ewr_code, -ewr_code_timing) |> 
+  dplyr::mutate(Target = dplyr::case_when(grepl('^NF', env_obj) ~ "Native fish",
+                                   grepl('^NV', env_obj) ~ "Native vegetation",
+                                   grepl('^OS', env_obj) ~ "Other species",
+                                   grepl('^EF', env_obj) ~ "Priority ecosystem function",
+                                   grepl('^WB', env_obj) ~ "Waterbird",
+                                   .default = NA)) |> 
+  dplyr::distinct()
+
+
+# A very Macquarie-particular change
+ewr2target <- ewr2target |> 
+  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+obj2target <- obj2target |> 
+  dplyr::mutate(Target = stringr::str_replace(Target, 'Other species', 'Flow-dependent frogs'))
+
+
+# a few functions work better with a list of dfs than a bare df.
+objective_list <- list(ewr2target = ewr2target)
+
+objective_steps <- list(ewr2obj = ewr2obj, obj2target = obj2target)
+```
+
+```{r}
+cudge <- "421019"
+  
+mostds <- '421012' # 'lower macquarie river'
+
+marshes <- c('421022', '421090')
+
+```
+
+```{r}
+
+# Ignore the timing to code step
+themeseqET <- list(Target = c('ewr_code', 'Target'))
+
+themeseqEET <- list(env_obj = c('ewr_code', 'env_obj'),
+                    Target = c('env_obj', 'Target'))
+```
+
+```{r}
+
+# From ewr to target directly, cudegegong
+edgesET_orig <- make_edges(dflist = objective_list,
+                      fromtos = themeseqET,
+                      gaugefilter = cudge) 
+nodesET_orig <- make_nodes(edgesET_orig)
+
+# From ewr to env_obj to Target, cudgegong
+edgesEET_orig <- make_edges(dflist = objective_steps,
+                      fromtos = themeseqEET,
+                      gaugefilter = cudge) 
+nodesEET_orig <- make_nodes(edgesEET_orig)
+
+# From ewr to Target, most ds
+edgesET_ds <- make_edges(dflist = objective_list,
+                      fromtos = themeseqET,
+                      gaugefilter = mostds) 
+nodesET_ds <- make_nodes(edgesET_ds)
+
+edgesEET_ds <- make_edges(dflist = objective_steps,
+                      fromtos = themeseqEET,
+                      gaugefilter = mostds) 
+nodesEET_ds <- make_nodes(edgesEET_ds)
+
+
+```
+
+```{r}
+make_causal_plot(nodes = nodesET_orig,
+                 edges = edgesET_orig,
+                 edge_pal = 'black',
+                 node_pal = list(fromtype = 'scico::bamako'),
+                 save = TRUE,
+                 savedir = file.path(project_dir, 'comparer_output', 'causal_networks'),
+                 savename = "cudgegong_no_obj")
+```
+
+```{r}
+make_causal_plot(nodes = nodesEET_orig,
+                 edges = edgesEET_orig,
+                 edge_pal = 'black',
+                 node_pal = list(fromtype = 'scico::bamako'),
+                 save = TRUE,
+                 savedir = file.path(project_dir, 'comparer_output', 'causal_networks'),
+                 savename = "cudgegong_obj")
+```
+
+```{r}
+make_causal_plot(nodes = nodesET_ds,
+                 edges = edgesET_ds,
+                 edge_pal = 'black',
+                 node_pal = list(fromtype = 'scico::bamako'),
+                 save = TRUE,
+                 savedir = file.path(project_dir, 'comparer_output', 'causal_networks'),
+                 savename = "lowermac_no_obj")
+```
+
+
+```{r}
+make_causal_plot(nodes = nodesEET_ds,
+                 edges = edgesEET_ds,
+                 edge_pal = 'black',
+                 node_pal = list(fromtype = 'scico::bamako'),
+                 save = TRUE,
+                 savedir = file.path(project_dir, 'comparer_output', 'causal_networks'),
+                 savename = "lowermac_obj")
+```

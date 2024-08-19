@@ -2631,3 +2631,21 @@ ggsave_multi(plot = licvol_target_variance,
 licvol_target_variance
 ```
 
+I need to get the EWRs for methods, feel free to move elsewhere
+
+```{r}
+incoming_ewrs <- get_ewr_output(file.path(project_dir, 'module_output',
+                                          'EWR', 'macq_cut', 'historical', 
+                                          'MACQ_CC_EFR', 'licvolfactor_1_0',
+                                          'r1_0_e1_0', '0_cutflows'),
+                                add_max = FALSE)
+
+incoming_ewrs <- mutate(incoming_ewrs, 
+                        uniquecol = paste0(gauge, planning_unit_name, ewr_code),
+                        uniquecol_t = paste0(gauge, planning_unit_name, ewr_code_timing))
+```
+
+```{r}
+length(unique(incoming_ewrs$uniquecol))
+length(unique(incoming_ewrs$uniquecol_t))
+```
