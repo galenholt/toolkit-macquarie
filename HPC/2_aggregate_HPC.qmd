@@ -110,7 +110,10 @@ ewr2target <- objective_mapping |>
 ewr2obj <- objective_mapping |> 
   dplyr::select(-env_group) |> 
   dplyr::distinct() |> 
-  dplyr::mutate(eco_objective_code = stringr::str_remove_all(eco_objective_code, "\xa0"),
+  dplyr::mutate(ewr_code_timing = ifelse(is.na(ewr_code_timing), '', ewr_code_timing)) |> 
+  dplyr::mutate(ewr_code_timing = paste0(ewr_code, '_', ewr_code_timing)|>
+                  gsub('_$', '', x = _)) |>
+  dplyr::mutate(eco_objective_code = stringr::str_remove_all(eco_objective_code, "/xa0"),
                 eco_objective_code = stringr::str_replace_all(eco_objective_code, "-", "_")) |> 
   dplyr::mutate(env_obj = strsplit(eco_objective_code, split = '_')) |>
   tidyr::unnest_longer(col = env_obj) |>
@@ -136,7 +139,7 @@ obj2target <- obj2target |>
 
 
 # a few functions work better with a list of dfs than a bare df.
-
+objective_list <- list(ewr2target)
 objective_steps <- list(ewr2obj = ewr2obj, obj2target = obj2target)
 ```
 
@@ -288,7 +291,7 @@ onedir <- function(subdir, aggsequence, funsequence, aggCols, aggname) {
 }
 
 dirloop <- function(aggsequence, funsequence, aggCols, aggname, inner_subdirs) {
-  furrr::future_map(inner_subdirs, \(x) onedir(x, aggsequence, funsequence, 
+  furrr::future_map(inner_subdirs, /(x) onedir(x, aggsequence, funsequence, 
                                                aggCols, aggname))
   
 }
@@ -321,7 +324,7 @@ Some tests that all files are there.
 
 ```{r}
 
-expected_files <- purrr::map(inner_subdirs, \(x) file.path(x, file.path(names_seqs, 'achievement_aggregated.rds'))) |> 
+expected_files <- purrr::map(inner_subdirs, /(x) file.path(x, file.path(names_seqs, 'achievement_aggregated.rds'))) |> 
   unlist()
 
 found_files <- list.files(file.path(project_dir, 'aggregated'), 
@@ -338,4 +341,57 @@ if (all_found) {
   rlang::inform(c("Expected files missing",
                   glue::glue("{expected_files[which(!expected_files %in% found_files)]}")))
 }
+```
+
+# Testing
+
+```{r}
+# readRDS('C:/Users/galen/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/aggregated/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/sdl_ewr_spells/achievement_aggregated.rds')
+```
+
+```{r}
+# readRDS('C:/Users/galen/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/aggregated_NOENVOBJ/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/sdl_ewr_spells/achievement_aggregated.rds')
+```
+
+```{r}
+# oneagg <- read_and_agg(
+#     datpath = file.path(ewr_results, inner_subdirs[1]),
+#     type = "achievement",
+#     geopath = bom_basin_gauges,
+#     causalpath = objective_steps,
+#     groupers = "scenario",
+#     aggCols = cols_sEs,
+#     aggsequence = agg_sEs, # generalise to furr over all agg paths
+#     funsequence = fun_sEs, # generalise to furr of all agg paths
+#     keepAllPolys = FALSE,
+#     auto_ewr_PU = TRUE,
+#     saveintermediate = FALSE,
+#     returnList = TRUE,
+#     savepath = NULL) # generalise
+```
+
+```{r}
+# oneaggT <- read_and_agg(
+#     datpath = file.path(ewr_results, inner_subdirs[1]),
+#     type = "achievement",
+#     geopath = bom_basin_gauges,
+#     causalpath = objective_steps,
+#     groupers = "scenario",
+#     aggCols = cols_sTs,
+#     aggsequence = agg_sTs, # generalise to furr over all agg paths
+#     funsequence = fun_sTs, # generalise to furr of all agg paths
+#     keepAllPolys = FALSE,
+#     auto_ewr_PU = TRUE,
+#     saveintermediate = FALSE,
+#     returnList = TRUE,
+#     savepath = NULL) # generalise
+```
+
+```{r}
+  # onespells <- read_in_aggs(project_dir = project_dir,
+  #                           data_path = file.path(inner_subdirs[1], 'sdl_ewr_spells'),
+  #                           lastagg = 'sdl_units',
+  #                           retain_cols = retained_sEs,
+  #                           max_handling = 'remove',
+  #                           factorise = FALSE)
 ```
