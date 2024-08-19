@@ -4,7 +4,7 @@ retained_sEt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_ewr_co
 rename_sEt <- 'ewr_achieved'
 
 # sdl_target_timeseries
-retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
+retained_sTt <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_ewr_achieved')
 
 rename_sTt <- 'ewr_achieved'
 
@@ -18,9 +18,9 @@ rename_sEs <- c('ewr_achieved',
                 'max_interevent')
 
 # sdl_target_spells
-retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                  'sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+retained_sTs <- c('sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                  'sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                  'sdl_units_Max_planning_units_Max_target_Max_env_obj_Max_ewr_code_Max_all_time_maxInterevent_event_years')
 
 rename_sTs <- c('ewr_achieved',
                 'mean_max_interevent',
@@ -42,12 +42,12 @@ rename_vE <- c('ewr_achieved',
                'variance_max_interevent')
 
 # sdl_target_vulnerability
-retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                 'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+retained_vT <- c('replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                 'replicates_ArithmeticMean_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
                  'replicates_Max_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years',
-                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
-                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
-                 'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_ewr_code_Max_all_time_maxInterevent_event_years')
+                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_ArithmeticMean_ewr_achieved',
+                 'replicates_Variance_sdl_units_ArithmeticMean_planning_units_ArithmeticMean_target_ArithmeticMean_env_obj_ArithmeticMean_ewr_code_ArithmeticMean_all_time_maxInterevent_event_years',
+                 'replicates_Variance_sdl_units_Max_planning_units_Max_target_Max_env_obj_Max_ewr_code_Max_all_time_maxInterevent_event_years')
 
 rename_vT <- c('ewr_achieved',
                'mean_max_interevent',
