@@ -18,7 +18,7 @@ climpattern = ['r0_8_e1_0', 'r0_8_e1_07', 'r1_0_e1_0', 'r1_0_e1_07', 'r1_2_e1_0'
 
 # We could do a big complex thing over the full directory, but since we want different bits from different marks, it'll be cleaner and save time to do the marks separately (and the historic/stochastic)
 
-extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv']
+extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv', 'hs_delivered_to_ordered_ratio_monthly.csv', 'allocations_yearly.nc', 'days_burrendong_lt_dead_storage.csv']
 
 import time
 # Mk4 (Only licvolfactor_1_0), so 6 climate * 76 stochastics = 456

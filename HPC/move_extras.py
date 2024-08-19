@@ -22,8 +22,9 @@ climpattern_new = ['r0.8_e1.0', 'r0.8_e1.07', 'r1.0_e1.0', 'r1.0_e1.07', 'r1.2_e
 
 # We could do a big complex thing over the full directory, but since we want different bits from different marks, it'll be cleaner and save time to do the marks separately (and the historic/stochastic)
 
-extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv', 'hs_delivered_to_ordered_ratio_monthly.csv', 'allocations_yearly.nc']
+all_extrafiles = ['h2o_table.nc', 'total_licvol.csv', 'allocation_reliability.csv', 'allocation_resilience.csv', 'hs_delivered_to_ordered_ratio_reliability.csv', 'hs_delivered_to_ordered_ratio_resilience.csv', 'hs_delivered_to_ordered_ratio_monthly.csv', 'allocations_yearly.nc', 'days_burrendong_lt_dead_storage.csv']
 
+extrafiles = ['days_burrendong_lt_dead_storage.csv']
 # Test 
 # cut_marks(basefrom, baseto, hews = no_mgmt, mark = 'MACQ_CC_EFR', clims = ['r0_8_e1_0'], extrafiles = extrafiles, cutncs = False)
 # DON'T JUST DO EVERYTHING; there are WAY more scenarios than we want.
