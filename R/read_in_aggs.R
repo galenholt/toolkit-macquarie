@@ -257,18 +257,42 @@ clean_factors <- function(oneagg) {
     oneagg <- oneagg |>
       dplyr::mutate(
         Mark = dplyr::case_when(
+          Mk == "MACQ_CC_EFR_mkva" ~ "Delivery strategy 4",
+          Mk == "MACQ_CC_EFR_mkv" ~ "Delivery strategy 3" ,
+          Mk == "MACQ_CC_EFR_mkiv" ~ "Delivery strategy 1",
+          Mk == "MACQ_CC_EFR" ~ "Delivery strategy 2",
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ 'Delivery strategy 5',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_5' ~ 'Delivery strategy 6',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_7' ~ 'Delivery strategy 7',
+          Mk == NA ~ NA,
+          .default = Mk
+        )
+      )
+
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        Old_Mark = dplyr::case_when(
           Mk == "MACQ_CC_EFR_mkva" ~ "Mk5a",
           Mk == "MACQ_CC_EFR_mkv" ~ "Mk5" ,
           Mk == "MACQ_CC_EFR_mkiv" ~ "Mk4a",
           Mk == "MACQ_CC_EFR" ~ "Mk4",
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_3' ~ 'Mk4a_0.3',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_5' ~ 'Mk4a_0.5',
+          Mk == 'MACQ_CC_EFR_mkv_exp11_eventcoef0_7' ~ 'Mk4a_0.7',
           Mk == NA ~ NA,
           .default = Mk
         )
       )
 
     oneagg$Mark <-
-      factor(oneagg$Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5"))
-  }
+      factor(oneagg$Mark, levels = c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3",
+                                     "Delivery strategy 4", "Delivery strategy 5", "Delivery strategy 6",
+                                     "Delivery strategy 7"))
+
+    oneagg$Old_Mark <-
+      factor(oneagg$Old_Mark, levels = c("Mk4", "Mk4a", "Mk5a", "Mk5", "Mk4a_0.3", "Mk4a_0.5", "Mk4a_0.7"))
+
+      }
 
   if ("Data" %in% colnames(oneagg)) {
     oneagg <- oneagg |>
@@ -284,11 +308,13 @@ clean_factors <- function(oneagg) {
   if ("licvolfactor" %in% colnames(oneagg)) {
     if (class(oneagg$licvolfactor) == "character") {
       oneagg <- oneagg |>
-
         tidyr::separate(licvolfactor, sep = "factor_", remove = TRUE, into = c(NA, "licvolfactor")) |>
         dplyr::mutate(licvolfactor = as.numeric(gsub(x = licvolfactor, pattern = "_", replacement = ".")))
-          }
     }
+
+      oneagg <- oneagg |>
+        dplyr::mutate(licvol_factor = as.factor(paste0(licvolfactor, " times current")))
+  }
 
   if ("climate" %in% colnames(oneagg)) {
     if (!"Evapotranspiration" %in% colnames(oneagg)) {
@@ -336,7 +362,22 @@ clean_factors <- function(oneagg) {
         )
       )
 
+    #Ordered so facets reflect rainfall and evapo
     oneagg$names_CSIRO_climate_scenario <-
+      factor(
+        oneagg$names_CSIRO_climate_scenario,
+        levels = c(
+          "Just Wet",
+          "Historical climate",
+          "Just Dry",
+          "Hot and Wet",
+          "Just Hot",
+          "Hot and Dry"
+        )
+      )
+
+    #Ordered by quantity of water
+    oneagg$names_CSIRO_climate_scenario2 <-
       factor(
         oneagg$names_CSIRO_climate_scenario,
         levels = c(
@@ -446,8 +487,39 @@ clean_factors <- function(oneagg) {
       dplyr::mutate(
         target  = dplyr::case_when(
           target == "Waterbird" ~ "Waterbirds",
+          target == "Other species" ~ "Flow-dependent frogs",
+          target == "Priority ecosystem function" ~ "Priority ecosystem functions",
           target == NA ~ NA,
-          .default = target
+          .default = target),
+        target = factor(target, levels = c("Native fish", "Native vegetation", "Flow-dependent frogs", "Priority ecosystem functions", "Waterbirds"))
+      )
+  }
+
+  if ("measure" %in% colnames(oneagg)) {
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        to_scale  = dplyr::case_when(
+          measure == "GS_reliability" ~ "FALSE",
+          measure == "GS_resilience" ~ "Group1",
+          measure == "HS_reliability" ~ "FALSE",
+          measure == "HS_resilience" ~ "Group1",
+          measure == "days_burrendong_lt_dead_storage" ~ "Group2",
+          .default = "FALSE"
+        )
+      )
+
+    oneagg$measure_original <- oneagg$measure
+
+    oneagg <- oneagg |>
+      dplyr::mutate(
+        measure  = dplyr::case_when(
+          measure == "GS_reliability" ~ "General security reliability",
+          measure == "GS_resilience" ~ "General security resilience",
+          measure == "HS_reliability" ~ "High security reliability",
+          measure == "HS_resilience" ~ "High security resilience",
+          measure == "days_burrendong_lt_dead_storage" ~ "Delivery ability",
+          measure == "economic_benefit" ~ "Agricultural benefit",
+          .default = "FALSE"
         )
       )
   }

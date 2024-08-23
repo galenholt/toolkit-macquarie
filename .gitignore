@@ -15,11 +15,13 @@ template_data/netcdfs/module_output/*
 toolkit_project/module_output/EWR/*
 template_data/module_output/*
 
+*_cache
 *_files
 *.html
 *.rds
 *.err
 *.out
+*.docx
 
 poetry.lock
 
