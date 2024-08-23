@@ -28,9 +28,12 @@ Move petrichor-processed files from Bowen to local with lines in HPC/robocopy sc
 This can't happen from Petrichor, needs to happen from teh citrix login.
 
 ```         
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3 /E
 ```
 
-robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\module\_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module\_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3 /E
 
-robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\aggregated" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\aggregated" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3 /E
+
+# WHY ISN"T IT WEORKING?
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\aggregated\historical\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated\historical\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0" /s /XO /R:3 /E

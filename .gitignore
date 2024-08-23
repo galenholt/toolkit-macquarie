@@ -31,3 +31,5 @@ HPC/2_aggregate_HPC.R
 /.quarto/
 
 *.docx
+HPC/2_baseline_to_historic.R
+HPC/2_stochastic_stats.R
