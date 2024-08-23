@@ -592,7 +592,9 @@ sdl_env_and_eco |>
 #ditch EF adn OS
 
 ```
+
 #Radar plot with lines:
+
 ```{r}
 #attempting to make lines.
 sdl_env_and_eco <- sdl_env_and_eco |>
@@ -669,7 +671,9 @@ plt
 
 ggsave(plot = plt, filename = file.path(comp_results, paste0("radarline_env_eco_hydro", Sys.Date(), ".pdf")), device = "pdf", width = 15, height = 15)
 ```
+
 ## Radar plot with bars:
+
 ```{r}
 #Put together
 sdl_economic$Achievement <- sdl_economic$Economic_outcomes
@@ -838,7 +842,9 @@ plt <- plt_1 + plt_2 + plt_3 + plt_4 + plot_layout(ncol = 2, guides = "collect")
 
 ggsave(plot = plt, filename = file.path(comp_results, paste0("radarbar4_env_eco_hydro", Sys.Date(), ".pdf")), device = "pdf", width = 10, height = 10)
 ```
-## Dodgy figure for illustration only 
+
+## Dodgy figure for illustration only
+
 ```{r}
 #FUDGEing data!!!
 sdl_hydro <- sdl_hydro |>
@@ -906,7 +912,6 @@ plt_2
 ggsave(plot = plt_2, filename = file.path(comp_results, paste0("radarbar4_env_eco_hydro_EXAMPLEONLY", Sys.Date(), ".pdf")), device = "pdf", width = 5, height = 5)
 
 ```
-
 
 \## fig-causal-example
 
@@ -1535,6 +1540,7 @@ ggsave(plot = Plot_EWRs_per_EnvGroup, filename = file.path(comp_results,
 ```
 
 # Box plots
+
 ```{r}
 ewr_code_per_gauge_wide_nochange |>
   filter()
@@ -1606,7 +1612,6 @@ ggsave(plot = Boxplot_EWRs_compare_EWRs, filename = file.path(comp_results,
        width = 20, height = 5)
 
 ```
-
 
 ## Problem with dry climate - seems like no EWRs pass
 
@@ -2389,8 +2394,11 @@ contour_point_heatmap
 ```
 
 ## what are we likely to lose first?
-# 1.	Fig of relative vulnerability of types of environmental outcomes (Mark IV model?)
+
+# 1. Fig of relative vulnerability of types of environmental outcomes (Mark IV model?)
+
 need to make relative to historic?
+
 ```{r}
 
 #names(ewr_code_per_gauge)
@@ -2444,41 +2452,13 @@ ggsave(plot = Scatterplot_EndSysFlows_target, filename = file.path(comp_results,
 
 ```
 
-
-2.	Fig of relative vulnerability of types of economic outcomes  (Mark IV model?)
-Impact of degree of climate change and climate variability on those vulnerabilities
-Do these relative vulnerabilities change with degree of change or degree of variability?
-3.	Fig of consistency of environmental outcomes (Mark IV model?)
-4.	Fig of consistency of types of economic outcomes  (Mark IV model?)
-Allocation reliability and resilience – supporting economic outcomes, where is the loss in water found across the water balance (Supporting information).
-Effects of plausible adaptation
-	Can changing the delivery model for environmental water, or the total amount of water recovered to support the environment alter those vulnerabilities?
-5.	Relative change in flow duration curves for HEW vs Model Mark IV and V
-6.	Resultant impacts on environmental outcomes
-7.	Resultant impacts on economic outcomes 
-Tailoring environmental flow delivery can reduce vulnerability 
-	Small changes targeting individual environmental water requirements can support environmental function without requiring large new volumes of water
-8.	Tailored flow to target something specific
-9.	Resultant impact on environmental outcomes
-No change in economic impacts (supplement).
-Consistency of patterns basin-wide – I still feel like we need this to hook NCC
-10.	Relative vulnerability of environmental outcomes basin-wide  to focus on consistency of Mac results in the absence of detailed hydrologic modelling
-11.	Can we do the same for the economic tool, or is that bridge too far?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+2.  Fig of relative vulnerability of types of economic outcomes (Mark IV model?) Impact of degree of climate change and climate variability on those vulnerabilities Do these relative vulnerabilities change with degree of change or degree of variability?
+3.  Fig of consistency of environmental outcomes (Mark IV model?)
+4.  Fig of consistency of types of economic outcomes (Mark IV model?) Allocation reliability and resilience – supporting economic outcomes, where is the loss in water found across the water balance (Supporting information). Effects of plausible adaptation Can changing the delivery model for environmental water, or the total amount of water recovered to support the environment alter those vulnerabilities?
+5.  Relative change in flow duration curves for HEW vs Model Mark IV and V
+6.  Resultant impacts on environmental outcomes
+7.  Resultant impacts on economic outcomes Tailoring environmental flow delivery can reduce vulnerability Small changes targeting individual environmental water requirements can support environmental function without requiring large new volumes of water
+8.  Tailored flow to target something specific
+9.  Resultant impact on environmental outcomes No change in economic impacts (supplement). Consistency of patterns basin-wide – I still feel like we need this to hook NCC
+10. Relative vulnerability of environmental outcomes basin-wide to focus on consistency of Mac results in the absence of detailed hydrologic modelling
+11. Can we do the same for the economic tool, or is that bridge too far?

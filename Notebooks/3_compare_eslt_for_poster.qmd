@@ -10,7 +10,8 @@ execute:
 #| include: false
 
 
-library(werptoolkitr)
+#library(werptoolkitr)
+devtools::load_all(path = file.path("~/Georgia/WERP_toolkit"))
 library(dplyr)
 library(sf)
 library(ggplot2)

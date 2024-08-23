@@ -437,14 +437,14 @@ ggsave_multi(plot = overview_map, filename = file.path(comp_results, paste0("Map
 ```
 
 #EWR TABLE
-```{r}
-ewr_table_421019 <- ewr_table |> 
-  filter(Gauge %in% 421019)
 
-#write.csv(ewr_table_421019, file.path(comp_results, paste0("ewr_table_421019_", Sys.Date(), ".csv")))
+```{r}
+ewr_table_421012 <- ewr_table |> 
+  filter(Gauge %in% 421012)
+
+#write.csv(ewr_table_421012, file.path(comp_results, paste0("ewr_table_421019_", Sys.Date(), ".csv")))
 
 ```
-
 
 ## 1) Vulnerability plot
 
@@ -1633,5 +1633,3 @@ temp <- days_burrendong_lt_dead_storage |>
 
 
 ```
-
-

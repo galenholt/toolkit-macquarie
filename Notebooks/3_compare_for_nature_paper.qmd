@@ -1237,7 +1237,6 @@ VulnerabilityPlot_two_Stochastic
 
 ```
 
-
 ## Figure 1 - Vulnerability - Historic data
 
 ```{r}
@@ -1303,6 +1302,7 @@ ggsave_multi(plot = VulnerabilityPlot_two_Historic, filename = file.path(comp_re
 VulnerabilityPlot_EWR_Historic
 
 ```
+
 ```{r}
 #| label: Fig 1. Vulnerabiliy in ecological targets - Historic
 #| echo: false
@@ -1314,7 +1314,6 @@ VulnerabilityPlot_target_Historic
 
 ```
 
-
 ```{r}
 #| label: Fig 1. Vulnerabiliy in Economic benfits and water allocation relilience and reliabitity - Historic
 #| echo: false
@@ -1325,7 +1324,6 @@ VulnerabilityPlot_target_Historic
 VulnerabilityPlot_two_Historic
 
 ```
-
 
 ## 2) Temporal variability - DONT RUN
 
@@ -2802,6 +2800,7 @@ scatterplot_sdl_target_climates_mks_exp <- sdl_target_baseline |>
 #ggsave_multi(plot = scatterplot_sdl_target_climates_mks_exp, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
 
 ```
+
 ## 8) RELATIVE Targeted EWR management
 
 ```{r}
@@ -2891,6 +2890,7 @@ scatterplot_sdl_target_climates_mks_exp2
 ```
 
 ## Galens plots:
+
 ```{r}
 #| label: fig-experiment
 #| fig-cap: Does targeting flows towards EWRs work? Purple is the original Mk4a runs (with distribution), other coloured points are the 'experiments'. So if the red, green, or blue points are off the purple point, they differ from the original and targeting is doing something.
@@ -3069,4 +3069,3 @@ ggsave_multi(plot = licvol_target_variance,
 
 licvol_target_variance
 ```
-
