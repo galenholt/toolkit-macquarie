@@ -384,6 +384,11 @@ gauges_to_plot <- SWSDLName_info$Gauge
 SWSDLName_subset <-  "Macquarie–Castlereagh" # fixing the dash
 #maybe make palette based on end of sys flow???
 
+pal_economic <- stats::setNames(
+  c("#420F75FF","#7640A9FF", '#AD72D6FF'),
+  c("Summer broadacre crops", "Winter broadacre crops", "High value crops"))
+class(pal_economic) <- 'colors'
+
 
 ```
 
@@ -1612,7 +1617,7 @@ ggsave_multi(plot = licvol_target_variance,
 licvol_target_variance
 ```
 
-## OTHER
+## OTHER - % high-security water
 
 ```{r}
 
@@ -1631,5 +1636,84 @@ temp <- days_burrendong_lt_dead_storage |>
   reframe(mean_percent_days = 100-mean(percent_days))
 
 
+```
+## OTHER - economic plots - Fig. S8
+
+```{r}
+
+economic_data_path <- file.path(project_dir, 'module_output', 'Economic', "CropAreaValueRatio.xlsx")
+
+economic_data_1 <- readxl::read_excel(economic_data, sheet = 2)
+colnames(economic_data_1) <- c("names_CSIRO_climate_scenario", economic_data_1[1,-1])
+economic_data_1 <- economic_data_1[-1,c(1,8,9,10)]
+economic_data_1 <- economic_data_1 |>
+  pivot_longer(cols = "Summer broadacre crops":"High value crops", names_to = "measure",  values_to = "Agricultural value (proportion)")|>
+  mutate(measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
+         `Agricultural value (proportion)` = as.numeric(`Agricultural value (proportion)`),
+         names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
+         names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
+          "Just Wet",
+          "Historical climate",
+          "Just Dry",
+          "Hot and Wet",
+          "Just Hot",
+          "Hot and Dry"
+        )))
+
+economic_data_2 <- readxl::read_excel(economic_data, sheet = 3)
+colnames(economic_data_2) <- c("names_CSIRO_climate_scenario", economic_data_2[1,-1])
+economic_data_2 <- economic_data_2[-1,c(1,8,9,10)]
+economic_data_2 <- economic_data_2 |>
+  pivot_longer(cols = "Summer broadacre crops":"High value crops", names_to = "measure",  values_to = "Cropping area (proportion)")|>
+  mutate(measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
+         `Cropping area (proportion)` = as.numeric(`Cropping area (proportion)`),
+         names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
+         names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
+          "Just Wet",
+          "Historical climate",
+          "Just Dry",
+          "Hot and Wet",
+          "Just Hot",
+          "Hot and Dry"
+        )))
+
+
+economic_figS_1 <- economic_data_1 |>
+  ggplot()+
+  geom_col(aes(y = `Agricultural value (proportion)`, x = measure, fill = measure), size = 3, position = position_dodge(width = 0.75)) +
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust=1), axis.title.x = element_blank())+
+  scale_fill_manual(values = pal_economic)+
+  facet_wrap(~ names_CSIRO_climate_scenario)+
+  guides(shape = "none", colour = "none", fill = "none")#+
+  #labs(y = "Outcome achievement")
+
+economic_figS_2 <- economic_data_2 |>
+  ggplot()+
+  geom_col(aes(y = `Cropping area (proportion)`, x = measure, fill = measure), size = 3, position = position_dodge(width = 0.75)) +
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
+  scale_fill_manual(values = pal_economic)+
+  facet_wrap(~ names_CSIRO_climate_scenario)+
+  guides(shape = "none", colour = "none", fill = "none")#+
+  #labs(y = "Outcome achievement")
+
+economic_figS_1
+economic_figS_2
+
+
+ggsave_multi(plot = economic_figS_1, 
+             filename = file.path(comp_results, "Economic_supplement1"),
+             device = c("png", "svg"),
+       width = 12, height = 10, units = 'cm')
+
+
+ggsave_multi(plot = economic_figS_2, 
+             filename = file.path(comp_results, "Economic_supplement2"),
+             device = c("png", "svg"),
+       width = 12, height = 10, units = 'cm')
 
 ```
+
+
+
