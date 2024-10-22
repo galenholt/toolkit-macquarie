@@ -33,3 +33,7 @@ hydro_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "H
 Economic_results <- file.path(qaelpath, "Toolkit", "macquarie", "module_output", "Economic")
 
 comp_results <- file.path(qaelpath, "Toolkit", "macquarie", "comparer_output")
+
+Called_Targets_path <- file.path(qaelpath, "Toolkit", "macquarie", "Targets.csv")
+Called_Orders_path <- file.path(qaelpath, "Toolkit", "macquarie", "Orders.csv")
+Called_Orders2_path <- file.path(qaelpath, "Toolkit", "macquarie", "Orders2.csv")

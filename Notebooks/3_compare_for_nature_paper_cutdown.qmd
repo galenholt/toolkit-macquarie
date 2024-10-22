@@ -25,7 +25,7 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file(),
 #| warning: false
 #| message: false
 
-library(Hydrobot)
+library(HydroBOT)
 library(dplyr)
 library(sf)
 library(ggplot2)
@@ -87,12 +87,12 @@ sdl_Economic_spells <- clean_factors(read.csv(file.path(Economic_results, "Econo
 #Normalise:
   ungroup()|>
   #Scale 0 to 1
-  # dplyr::mutate(measure_achieved = (economic_benefit-werptoolkitr::LimitingFactor(economic_benefit))/(werptoolkitr::CompensatingFactor(economic_benefit)-werptoolkitr::LimitingFactor(economic_benefit)))
+  # dplyr::mutate(measure_achieved = (economic_benefit-HydroBOT::LimitingFactor(economic_benefit))/(HydroBOT::CompensatingFactor(economic_benefit)-HydroBOT::LimitingFactor(economic_benefit)))
   #Scale to 1
-  dplyr::mutate(measure_achieved = economic_benefit / werptoolkitr::CompensatingFactor(economic_benefit))
+  dplyr::mutate(measure_achieved = economic_benefit / HydroBOT::CompensatingFactor(economic_benefit))
 #Relativise:
 dimgroups <- c('measure', 'SWSDLName')
-sdl_Economic_baseline <- werptoolkitr::baseline_compare(val_df = sdl_Economic_spells,
+sdl_Economic_baseline <- HydroBOT::baseline_compare(val_df = sdl_Economic_spells,
                             compare_col = 'scenario',
                             base_lev = "1_1_1_Mk4a_Historic_0",
                             group_cols = dimgroups,
@@ -104,8 +104,8 @@ sdl_Economic_baseline <- werptoolkitr::baseline_compare(val_df = sdl_Economic_sp
 sdl_economic_vulnerability <- sdl_Economic_baseline |>
   dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure)|>
   dplyr::summarise(
-    variance_measure_achieved = werptoolkitr::Variance(measure_achieved),
-    measure_achieved = werptoolkitr::ArithmeticMean(measure_achieved))
+    variance_measure_achieved = HydroBOT::Variance(measure_achieved),
+    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved))
 
 #Water allocation - hydro
 # RUN 0_Ash_data_sorting_reliability_resilience.qmd if data gets updated (26/07/24)
@@ -122,9 +122,9 @@ sdl_hydro_spells <- clean_factors(read.csv(file.path(hydro_results, "hydrology_s
   dplyr::ungroup()|>
   dplyr::group_by(to_scale)|>
   #Scale 0 to 1
-  # dplyr::mutate(measure_achieved = ifelse(to_scale != "FALSE", (reliability_resilience_achieved-werptoolkitr::LimitingFactor(reliability_resilience_achieved))/(werptoolkitr::CompensatingFactor(reliability_resilience_achieved)-werptoolkitr::LimitingFactor(reliability_resilience_achieved)), reliability_resilience_achieved))|>
+  # dplyr::mutate(measure_achieved = ifelse(to_scale != "FALSE", (reliability_resilience_achieved-HydroBOT::LimitingFactor(reliability_resilience_achieved))/(HydroBOT::CompensatingFactor(reliability_resilience_achieved)-HydroBOT::LimitingFactor(reliability_resilience_achieved)), reliability_resilience_achieved))|>
   #Scale to 1
-  dplyr::mutate(measure_achieved = reliability_resilience_achieved / werptoolkitr::CompensatingFactor(reliability_resilience_achieved))|>
+  dplyr::mutate(measure_achieved = reliability_resilience_achieved / HydroBOT::CompensatingFactor(reliability_resilience_achieved))|>
   
   #Inverse resilience: #length of time that allocations aren't met (the resilience measure)
   dplyr::mutate(measure_achieved = ifelse(to_scale != "FALSE", 1-measure_achieved, measure_achieved))
@@ -133,7 +133,7 @@ sdl_hydro_spells <- clean_factors(read.csv(file.path(hydro_results, "hydrology_s
 
 #Relativise:
 dimgroups <- c('measure', 'SWSDLName')
-sdl_hydro_baseline <- werptoolkitr::baseline_compare(val_df = sdl_hydro_spells,
+sdl_hydro_baseline <- HydroBOT::baseline_compare(val_df = sdl_hydro_spells,
                             compare_col = 'scenario',
                             base_lev = "1_1_1_Mk4a_Historic_0",
                             group_cols = dimgroups,
@@ -145,8 +145,8 @@ sdl_hydro_baseline <- werptoolkitr::baseline_compare(val_df = sdl_hydro_spells,
 sdl_hydro_vulnerability <- sdl_hydro_baseline |>
   dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure)|>
   dplyr::summarise(
-    variance_measure_achieved = werptoolkitr::Variance(measure_achieved),
-    measure_achieved = werptoolkitr::ArithmeticMean(measure_achieved))
+    variance_measure_achieved = HydroBOT::Variance(measure_achieved),
+    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved))
 
 rm(sdl_Economic_spells)
 #rm(sdl_hydro_spells)
@@ -154,6 +154,12 @@ rm(sdl_Economic_spells)
 #TWO
 sdl_two_baseline <- bind_rows(sdl_hydro_baseline, sdl_Economic_baseline)
 sdl_two_vulnerability <- bind_rows(sdl_hydro_vulnerability, sdl_economic_vulnerability)
+
+
+#DElivery strategy - appendix figs
+Called_Targets <- read.csv(Called_Targets_path, check.names = FALSE)
+Called_Orders <- read.csv(Called_Orders_path, check.names = FALSE)
+Called_Orders2 <- read.csv(Called_Orders2_path, check.names = FALSE)
 
 ```
 
@@ -228,7 +234,7 @@ pal_env = list(EB = 'grDevices::Grays',
 # use the first level of each of those to make a named pal. I wish there were an easier way
 pal_envgroup <- purrr::imap_chr(pal_env,
                                 \(x,y) make_pal(levels = y, palette = x)) |> 
-  werptoolkitr:::as_colors()
+  HydroBOT:::as_colors()
 
 pal_Target <-  stats::setNames(c("#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
                                  "#4873B8", "#B7A447", "#FDC010"), 
@@ -331,9 +337,13 @@ pal_mark <- stats::setNames(
 class(pal_mark) <- 'colors'
 
 pal_mark2 <- stats::setNames(
-  c("black","#92C5DEFF", '#2166ACFF', "#172869FF", "#FCAADEFF","#EF5FAFFF","#C31E6EFF"),
-  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7'))
+  c("black","#92C5DEFF", '#2166ACFF', "#172869FF", "#FCAADEFF","#EF5FAFFF","#C31E6EFF", '#2166ACFF'),
+  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7', "Delivery strategy 3 & 4"))
 class(pal_mark2) <- 'colors'
+
+linepal_mark2 <- stats::setNames(
+  c("solid","longdash", 'dashed', "dotted", "solid","solid","solid", 'solid'),
+  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7', "Delivery strategy 3 & 4"))
 
 pal_CSIRO_climate_scenario <- stats::setNames(
   c('#2166ACFF', '#92C5DEFF', '#F7F7F7FF',  '#F4A582FF', '#D6604DFF', '#B2182BFF', '#1A1A1AFF'),
@@ -1714,5 +1724,60 @@ ggsave_multi(plot = economic_figS_2,
 
 ```
 
+## OTHER - delivery strategies fig  for appendix
+```{r}
+colnames(Called_Targets)<- c("Available water (GL)", colnames(Called_Targets)[-1])
+colnames(Called_Orders)<- c("Date", colnames(Called_Orders)[-1])
+colnames(Called_Orders2)<- c("Date", colnames(Called_Orders2)[-1])
+  
+df_Panel1 <- Called_Targets |> 
+  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Target volume (GL)")|>
+  filter(!is.na(`Target volume (GL)`)) |>
+  mutate(`Delivery strategy` = ifelse(`Delivery strategy` == "Delivery strategy 3 & 4", "Delivery strategy 3", `Delivery strategy`))
 
+Delivery_strategy_4 <- df_Panel1 |>
+  filter(`Delivery strategy` == "Delivery strategy 3")|>
+  mutate(`Delivery strategy` = "Delivery strategy 4")
+
+df_Panel1 <- bind_rows(df_Panel1, Delivery_strategy_4)
+  
+df_Panel2 <- Called_Orders |>
+  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 4`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
+  mutate(Date = lubridate::ymd(Date))
+  
+df_Panel3 <- Called_Orders2 |>
+  select(!`Delivery strategy 1`:`Delivery strategy 4`) |>
+  pivot_longer(col = `Delivery strategy 5`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
+  mutate(Date = lubridate::ymd(Date))
+  
+
+Panel1 <- ggplot(data = df_Panel1, aes(x = `Available water (GL)`, y = `Target volume (GL)`, colour = `Delivery strategy`, linetype = `Delivery strategy`)) +
+  geom_line()+
+  coord_cartesian(xlim = c(0,500), ylim = c(0, 300))+
+  theme_werp_toolkit()+
+  scale_colour_manual(values = pal_mark2)+
+  scale_linetype_manual(values = linepal_mark2)
+  
+Panel2 <- ggplot(data = df_Panel2, aes(x = Date, y = `Ordered (GL)`, colour = `Delivery strategy`, linetype = `Delivery strategy`)) +
+  geom_line()+
+  coord_cartesian(ylim = c(0, 2500))+
+  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none")+
+  scale_colour_manual(values = pal_mark2)+
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y")+
+  scale_linetype_manual(values = linepal_mark2)
+
+Panel3 <- ggplot(data = df_Panel3, aes(x = Date, y = `Ordered (GL)`, colour = `Delivery strategy`)) +
+  geom_line()+
+  coord_cartesian(ylim = c(0, 2500))+
+  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none")+
+  scale_colour_manual(values = pal_mark2)+
+  scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y")
+
+Fig_S8_DeliveryStrategies <- Panel1 + Panel2 + Panel3 + plot_layout(nrow = 3, guides = "collect") + plot_annotation(tag_levels = list(c("a)", "b)", "c)")))
+
+ggsave_multi(plot = Fig_S8_DeliveryStrategies, 
+             filename = file.path(comp_results, "Fig_S8_DeliveryStrategies"),
+             device = c("png", "pdf"),
+       width = 15, height = 18, units = 'cm')
+```
 
