@@ -5,6 +5,7 @@ editor: visual
 echo: FALSE
 execute: 
   cache: FALSE
+---ren
 ---
 
 ```{r setup}
@@ -384,7 +385,7 @@ class(pal_theme) <- 'colors'
 
 SWSDLName_subset <-  "Macquarie-Castlereagh"
 
-ewr_table <- get_ewr_table()
+ewr_table <- HydroBOT::get_ewr_table()
 SWSDLName_info <- ewr_table |>
   filter(LTWPShortName == SWSDLName_subset)|>
   distinct(LTWPShortName, PlanningUnitID, PlanningUnitName, Gauge)
@@ -445,9 +446,26 @@ overview_map
 #        width = 8, height = 5)
 
 # example that will save as png and svg if we want.
-ggsave_multi(plot = overview_map, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "svg"),
+ggsave_multi(plot = overview_map, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "pdf"),
        width = 16, height = 12, units = 'cm')
 
+```
+
+## map for poster
+
+```{r}
+map_4_poster <- ggplot(ozmaps::ozmap_country) +
+  geom_sf(fill = 'grey20') +              
+  geom_sf(data = basin, fill = "#6A7E9B") +
+  theme_werp_toolkit(axis.ticks = element_blank(), 
+                         axis.text=element_blank())+
+  coord_sf(xlim = c(110, 155), ylim = c(-45,-8), expand = FALSE) +
+  geom_sf(data = filter(sdl_units, SWSDLName == SWSDLName_subset),  aes(geometry = geometry), fill = "#fcaa20", colour = "#fcaa20")+
+  theme(panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA))
+
+ggsave_multi(plot = map_4_poster, filename = file.path(comp_results, paste0("Map_Macquarie_poster", Sys.Date())), device = c("png", "pdf"),
+       width = 16, height = 12, units = 'cm')
 ```
 
 #EWR TABLE
@@ -925,6 +943,8 @@ ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(co
 
 ```
 
+
+
 ```{r}
 #| label: Fig 1. Vulnerabiliy in EWRs - Stochastic
 #| echo: false
@@ -1155,6 +1175,60 @@ ggsave_multi(plot = scatterplot_sdl_EWR_climates, filename = file.path(comp_resu
 
 ggsave_multi(plot = scatterplot_sdl_targetTWO_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 10)
 
+```
+
+#Figure for poster
+```{r}
+#TARGET
+scatterplot_sdl_target_climates <- sdl_target_baseline |>
+  filter(Data == "Stochastic" & 
+           Mark == "Delivery strategy 1" & 
+           licvolfactor == 1.0)|>
+  ggplot() + 
+  #geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data), height = 0) + 
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_target_baseline, 
+                           Mark == "Delivery strategy 1" & 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0), 
+             aes(y = ewr_achieved, x = target, shape = Data), colour = "black", fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
+  scale_colour_manual(values = pal_Target)+
+  scale_fill_manual(values = pal_licvolfactor)+   
+  scale_shape_manual(values = shapes_data)+
+  coord_cartesian(ylim = c(0,1))+
+  facet_wrap(~ names_CSIRO_climate_scenario)+
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+  labs(y = "Outcome achievement")
+
+#Economic
+scatterplot_sdl_two_climates <- ggplot(data = filter(sdl_two_baseline, 
+                                                              Data == "Stochastic" & 
+                                                                licvolfactor == 1.0 & 
+                                                                Mark == "Delivery strategy 1")) + 
+  #geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data), height = 0) + 
+  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
+  geom_point(data = filter(sdl_two_baseline, 
+                           Data == "Historic" & 
+                             licvolfactor == 1.0 & 
+                             Mark == "Delivery strategy 1"), 
+             aes(y = measure_achieved, x = measure, shape = Data), colour = "black", fill = "black", size = 3) + 
+  theme_werp_toolkit()+
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
+  scale_colour_manual(values = pal_hydro)+
+  scale_fill_manual(values = pal_licvolfactor)+   scale_shape_manual(values = shapes_data)+
+  facet_wrap(~ names_CSIRO_climate_scenario)+
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+  labs(y = "Outcome achievement")
+
+scatterplot_sdl_targetTWO_climates <- scatterplot_sdl_target_climates + 
+scatterplot_sdl_two_climates + plot_layout(nrow = 2, axes = "collect") &
+    theme(#panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA),
+    axis.title.y = element_blank())
+
+ggsave_multi(plot = scatterplot_sdl_targetTWO_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climate_POSTER",Sys.Date())), device = c('png', 'pdf'),  width = 8, height = 10)
 ```
 
 ## 6) ewater adaptation (licvol)
@@ -1646,6 +1720,7 @@ temp <- days_burrendong_lt_dead_storage |>
 
 
 ```
+
 ## OTHER - economic plots - Fig. S8
 
 ```{r}
@@ -1724,7 +1799,8 @@ ggsave_multi(plot = economic_figS_2,
 
 ```
 
-## OTHER - delivery strategies fig  for appendix
+## OTHER - delivery strategies fig for appendix
+
 ```{r}
 colnames(Called_Targets)<- c("Available water (GL)", colnames(Called_Targets)[-1])
 colnames(Called_Orders)<- c("Date", colnames(Called_Orders)[-1])
@@ -1780,4 +1856,3 @@ ggsave_multi(plot = Fig_S8_DeliveryStrategies,
              device = c("png", "pdf"),
        width = 15, height = 18, units = 'cm')
 ```
-

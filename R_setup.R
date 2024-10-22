@@ -63,3 +63,8 @@ renv::restore()
 # # Some extras
 # # renv without {remotes} will only install from main. So if we want to use a branch, we need to go with remotes directly
 # renv::install(c('scico', 'ggthemes', 'furrr', 'git2r', 'rmarkdown'))
+
+# if python envitronment doenst get created automatically
+ #Error in py_module_import(module, convert = convert) :
+ #  ModuleNotFoundError: No module named 'py_ewr'
+#reticulate::virtualenv_create()
