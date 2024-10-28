@@ -7,7 +7,7 @@ editor: visual
 We want to baseline the two 'spells' aggregations (sdl_ewr_spells and sdl_target_spells) to the historical licvol1, r1e1 climate, *within each mark*.
 
 ```{r}
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(future.batchtools)
 library(furrr)

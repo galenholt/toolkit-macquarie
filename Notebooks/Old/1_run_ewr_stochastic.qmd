@@ -5,7 +5,7 @@ editor: visual
 ---
 
 ```{r}
-library(werptoolkitr)
+library(HydroBOT)
 library(dplyr)
 library(sf) # Needed? I think not here, but just in case
 library(future)

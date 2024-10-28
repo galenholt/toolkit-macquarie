@@ -5,7 +5,7 @@ editor: visual
 ---
 
 ```{r}
-library(werptoolkitr)
+library(HydroBOT)
 library(dplyr)
 library(ggplot2)
 library(sf)

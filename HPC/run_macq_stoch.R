@@ -2,7 +2,7 @@
 
 # any_R.R needs to ask for > 2 hours. It will run in 10 minutes, but sits in teh queue a long time because of the cpus I request. 2 hours just *barely* finished, so for safety say 6 or something- any_r doesn't use many resources, so that shoudl be fine.
 
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(dplyr)
 library(ggplot2)

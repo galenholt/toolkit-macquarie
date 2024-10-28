@@ -4,7 +4,7 @@ format: html
 editor: visual
 ---
 
-1.  Pull netcdfs to Galen's bowen.
+1.  Pull netcdfs to bowen.
     -   use ncdf_pull_script.py to cut the netcdfs to what we need and pull them and the extra files over
     -   ncdf_pull_EWRtarget.py for the new ones, inlcuding fixing names
 2.  Run the EWR tool over that
@@ -25,15 +25,16 @@ editor: visual
 
 Move petrichor-processed files from Bowen to local with lines in HPC/robocopy scripts, primarily the one that only copies changed files:
 
-This can't happen from Petrichor, needs to happen from teh citrix login.
+This can't happen from Petrichor, needs to happen from the citrix login.
+
+Some template scripts:
 
 ```         
 robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3 /E
 ```
 
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module\_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\module\_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3 /E
 
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\aggregated" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\\aggregated" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3 /E
 
-# WHY ISN"T IT WEORKING?
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\aggregated\historical\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated\historical\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\aggregated\historical\MACQ\_CC_EFR\licvolfactor\_1_0\r0\_8_e1_0" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated\historical\MACQ\_CC_EFR\licvolfactor\_1_0\r0\_8_e1_0" /s /XO /R:3 /E

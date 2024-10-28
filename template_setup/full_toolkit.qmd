@@ -15,7 +15,7 @@ Each step saves metadata about its parameters, which can be used for parameter-b
 
 ```{r}
 #| message: false
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(dplyr)
 ```

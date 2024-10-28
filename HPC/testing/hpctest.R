@@ -4,7 +4,7 @@
 # .libPaths(new = c(renvpaths,'/ceph-g/opt/R/4.3/lib/R/library' ))
 # Sys.setenv('R_LIBS' = '/ceph-g/opt/R/4.3/lib/R/library')
 
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(dplyr)
 library(ggplot2)

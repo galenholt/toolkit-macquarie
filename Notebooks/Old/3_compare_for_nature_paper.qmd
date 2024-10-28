@@ -25,7 +25,7 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file(),
 #| warning: false
 #| message: false
 
-library(werptoolkitr)
+library(HydroBOT)
 library(dplyr)
 library(sf)
 library(ggplot2)

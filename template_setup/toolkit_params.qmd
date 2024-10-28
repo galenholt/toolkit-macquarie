@@ -14,7 +14,7 @@ Load the package
 
 ```{r}
 #| message: false
-library(werptoolkitr)
+library(HydroBOT)
 ```
 
 ## Structure of params files and arguments

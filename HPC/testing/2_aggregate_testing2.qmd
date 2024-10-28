@@ -4,7 +4,7 @@ format: html
 ---
 
 ```{r}
-# library(werptoolkitr)
+# library(HydroBOT)
 library(sf)
 # for testing, use the dev
 devtools::load_all('../WERP_toolkit')

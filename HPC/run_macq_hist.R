@@ -1,6 +1,6 @@
 # Script to run EWR tool for stochastic data on petrichor
 
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(dplyr)
 library(ggplot2)

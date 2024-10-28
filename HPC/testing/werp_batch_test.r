@@ -1,4 +1,4 @@
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(dplyr)
 library(ggplot2)

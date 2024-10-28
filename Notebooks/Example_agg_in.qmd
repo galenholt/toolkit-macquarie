@@ -5,7 +5,7 @@ editor: visual
 ---
 
 ```{r}
-library(werptoolkitr)
+library(HydroBOT)
 library(sf)
 library(future.batchtools)
 library(furrr)
