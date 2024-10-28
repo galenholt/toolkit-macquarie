@@ -4,12 +4,14 @@ format: html
 editor: visual
 ---
 
+The workflow on CSIRO's petrichor system is as follows. The HPC process (in particular some particular installation tweaks in `hpc_setup.sh` and `any_R.sh` , as well as the resource requests in `batchtools.slurm.tmpl`) would likely need to be altered for other HPC environments.
+
 1.  Pull netcdfs to bowen.
     -   use ncdf_pull_script.py to cut the netcdfs to what we need and pull them and the extra files over
     -   ncdf_pull_EWRtarget.py for the new ones, inlcuding fixing names
 2.  Run the EWR tool over that
     -   Use run_macq_stoch.r and run_macq_hist.
-    -   run_macq_EWRtarget for the new ones (just uses a limited set of directories)
+    -   run_macq_EWRtarget for the newly created scenarios ones (just uses a limited set of directories)
     -   sbatch HPC/any_R.sh 'HPC/run-macq_stoch.r'
 3.  Aggregate to timeseries and spells
     -   Use 2_aggregate_HPC.qmd (now no need to purl R first, it happens automatically)
@@ -22,6 +24,34 @@ editor: visual
     -   use 2_baseline_to_historic.qmd
     -   Also quick
     -   sbatch --time="00:05:00" HPC/any_R.sh 'HPC/2_baseline_to_historic.qmd'
+
+## HPC notes
+
+The current flow is to have a method that works both locally or on an HPC. By controlling the HPC parallelisation through foreach and future, and so use foreach loops with %dofuture% and modify the `plan`.
+
+That requires a central control process to spawn subsidiary runs.
+
+In practice, that means we use `any_R.sh` as the control process. It should point to the file to run. But because we use notebooks, we need to `knitr::purl` them to R scripts. So any_R.sh calls `purl_qmd.R`, which purls a notebook or passes through a script, and then runs it. Then, that script should start a bunch of jobs.
+
+HPCs often have to have some set of packages already installed that need compiled C libraries (especially sf). To access those, we sometimes need to add to libPaths, but here we managed to avoid it. If we do change .libPaths, it won't propagate through {future}s if it's done in a script. So, in the .Rprofile, add
+
+```         
+if (grepl('^HPCNAME', Sys.info()["nodename"])) {   renvpaths <- .libPaths()   .libPaths(new = c(renvpaths,'/path/to/hpc/R/library' )) }
+```
+
+where you get the path to the HPC R library by opening R outside the renv and typing `.libPaths()`.
+
+### Typical run
+
+Once everything's set up, use something like
+
+```         
+sbatch any_R.sh "HPC/notebook_with_processing.qmd"
+```
+
+To start a master process in that then fires off sub-slurms (presumably) in notebook_with_processing.qmd.
+
+## Helpful code for moving data around
 
 Move petrichor-processed files from Bowen to local with lines in HPC/robocopy scripts, primarily the one that only copies changed files:
 

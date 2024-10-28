@@ -1,0 +1,22 @@
+
+message: 'To cite this repo use:'
+type: software
+license: MIT
+title: 'Macquarie climate adaptation case study'
+version: 0.1.0
+abstract: Analyses for Macquarie climate adaptation case study
+authors:
+- family-names: Holt
+  given-names: Galen
+  email: g.holt@deakin.edu.au
+  orcid: https://orcid.org/0000-0002-7455-9275
+- family-names: Dwyer
+  given-names: Georgia
+  email: g.dwyer@deakin.edu.au
+  orcid:
+contact:
+- family-names: Holt
+  given-names: Galen
+  email: g.holt@deakin.edu.au
+  orcid: https://orcid.org/0000-0002-7455-9275
+
