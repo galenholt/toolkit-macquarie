@@ -13,7 +13,7 @@ authors:
 - family-names: Dwyer
   given-names: Georgia
   email: g.dwyer@deakin.edu.au
-  orcid:
+  orcid: https://orcid.org/0000-0002-3579-3819
 contact:
 - family-names: Holt
   given-names: Galen
