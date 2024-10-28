@@ -188,7 +188,6 @@ make_causal_plot(nodes = nodesET_ds,
                  savename = "lowermac_no_obj")
 ```
 
-
 ```{r}
 make_causal_plot(nodes = nodesEET_ds,
                  edges = edgesEET_ds,
