@@ -8,10 +8,10 @@ if (Sys.info()['user'] == 'galen') {
   qaelpath <- 'C:/Users/georgiad/Deakin University/QAEL - WERP - WERP'
 } else if (Sys.info()['user'] == 'Admin') {
   qaelpath <- 'C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP'
-} else if (Sys.info()['user'] == 'hol436') {
+} else if (Sys.info()['user'] == 'hol436') { # PETRICHOR
   qaelpath <- ''
 } else {
-  rlang::abort("YOU'RE NOT GALEN. PUT IN YOUR PATH TO QAEL-WERP")
+  rlang::abort("YOU'RE NOT A RECOGNISED USER. PUT IN YOUR PATH TO QAEL-WERP")
 }
 
 # python can't use the tildes, so have to expand

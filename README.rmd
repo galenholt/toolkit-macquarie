@@ -1,8 +1,22 @@
 # Macquarie climate and adaptation case study
 
-This repository contains the code for analyses for the Macquarie climate and adaptation case study, especially the parts that use the HydroBOT toolkit (Holt et al.).
+This repository contains the code for analyses for the Macquarie climate and adaptation case study.
 
-If you want to use scripts available here, clone this repository, and run the `project_setup.bat` file (or use `poetry install` at a terminal to install python dependencies and `renv::restore()` to obtain R dependencies.
+It uses the HydroBOT toolkit @Holt_HydroBOT_Toolkit_For (version `r packageVersion('HydroBOT')` to analyse hydrograph and economic data for *Synergies in water availability, the environment, and agricultural output under climate change and adaptation* (in review)*.*
+
+To conduct the analyses and produce the figures in the paper, clone this repository, and run the `project_setup.bat` file, which will install the versions of both HydroBOT and its python dependencies (the [EWR tool](https://pypi.org/project/py-ewr/)) used for the manuscript (py-ewr version 2.1.6). Alternatively, use `poetry add py-ewr@2.1.6` at a terminal to install python dependencies and `renv::restore()`.
+
+To install with the *current* versions of the packages, which may be much further ahead than those used for the manuscript, use
+
+``` shell
+poetry add py-ewr@latest  
+```
+
+and
+
+``` R
+renv::install('galenholt/HydroBOT')
+```
 
 ## Workflow structure
 
@@ -12,12 +26,11 @@ The analyses here rely on having access to climate-informed hydrographs, generat
 
 Access to water allocation outcomes (generated here by Ash Shokri) and economic outcomes data (generated here by Shokhrukh Jalilov) is also expected. Scripts to tidy and aggregate this data are included in `0_Ash_data_dorting_reliability_resilience.qmd`, `0_Ash_data_sorting.qmd`, and `0_Shok_data_sorting.qmd` located in `/Notebooks/`.
 
-Subsequent analysis steps happen in `/Notebooks/3_compare_for_paper.qmd`. This includes construction of all figures. 
+Subsequent analysis steps happen in `/Notebooks/3_compare_for_paper.qmd`. This includes construction of all figures.
 
 ## Data
 
-The input data is expected to be in a directory outside the repo, and hydrographs from selected scenarios are moved to `project_dir/macq_cut`. This then contains both historical and stochastic scenarios across all climate and management options. Output data (e.g. EWR outputs, aggregated results) is exported to `project_dir` and various subdirectories matching the input scenarios. Data for water allocation and economic outcomes are expected to be in `project_dir/module_output/Hydrology` and `project_dir/module_output/Economic`, respectively. 
-
+The input data is expected to be in a directory outside the repo, and hydrographs from selected scenarios are moved to `project_dir/macq_cut`. This then contains both historical and stochastic scenarios across all climate and management options. Output data (e.g. EWR outputs, aggregated results) is exported to `project_dir` and various subdirectories matching the input scenarios. Data for water allocation and economic outcomes are expected to be in `project_dir/module_output/Hydrology` and `project_dir/module_output/Economic`, respectively.
 
 ## Contact
 
