@@ -1,10 +1,26 @@
 # Macquarie climate and adaptation case study
 
-This repository contains the code for analyses for the Macquarie climate and adaptation case study.
+This repository contains the code for analyses for the Macquarie climate and adaptation case study. It uses the HydroBOT toolkit @Holt_HydroBOT_Toolkit_For to analyse hydrograph and economic data for *Synergies in water availability, the environment, and agricultural output under climate change and adaptation* (in review)*.*
 
-It uses the HydroBOT toolkit @Holt_HydroBOT_Toolkit_For (version `r packageVersion('HydroBOT')` to analyse hydrograph and economic data for *Synergies in water availability, the environment, and agricultural output under climate change and adaptation* (in review)*.*
+## Installation
 
-To conduct the analyses and produce the figures in the paper, clone this repository, and run the `project_setup.bat` file, which will install the versions of both HydroBOT and its python dependencies (the [EWR tool](https://pypi.org/project/py-ewr/)) used for the manuscript (py-ewr version 2.1.6). Alternatively, use `poetry add py-ewr@2.1.6` at a terminal to install python dependencies and `renv::restore()`.
+Clone this repository. Then set up environments in one of two ways- as pinned for the manuscript analysis, or with new versions.
+
+### Pinned manuscript environments
+
+To rebuild the environments as in the paper, we need to set up python and R.
+
+1.  Install [pyenv](https://github.com/pyenv/pyenv) to manage python versions. *Use the [windows fork](https://github.com/pyenv-win/pyenv-win) on Windows!*. These analyses were done with 3.11.
+
+2.  Install [poetry](https://python-poetry.org/docs/) to build python environments. After install, set `poetry config virtualenvs.in-project true` to get the `.venv` in the right place.
+
+3.  Build environment with pinned versions of HydroBOT (`r packageVersion('HydroBOT`) and py-ewr (`r HydroBOT::get_ewr_version()`).
+
+    -   Run the `project_setup.bat` file, which will install the versions of both HydroBOT and its python dependencies (the [EWR tool](https://pypi.org/project/py-ewr/)) used for the manuscript (py-ewr version 2.1.6).
+
+    -   Alternatively, use `poetry add py-ewr@2.1.6` at a terminal to install python dependencies and `renv::restore()`
+
+### Current package versions
 
 To install with the *current* versions of the packages, which may be much further ahead than those used for the manuscript, use
 
@@ -14,11 +30,11 @@ poetry add py-ewr@latest
 
 and
 
-``` R
+``` r
 renv::install('galenholt/HydroBOT')
 ```
 
-## Workflow structure
+# Workflow structure
 
 The basic structure of the workflow is to assess response to the hydrologic scenarios with the [EWR tool](https://pypi.org/project/py-ewr/) for environmental outcomes using [HydroBOT](https://github.com/MDBAuth/HydroBOT). Water allocation and agricultural/economic outcomes are also read in. These outcomes are then aggregated and synthesized using [HydroBOT](https://github.com/MDBAuth/HydroBOT). All processing is designed to occur either locally or on an HPC running a SLURM job scheduler, with the latter used for computationally expensive steps.
 
