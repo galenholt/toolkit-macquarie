@@ -13,7 +13,8 @@ library(furrr)
 # climpattern = ['r0_8_e1_0', 'r0_8_e1_07', 'r1_0_e1_0', 'r1_0_e1_07', 'r1_2_e1_0', 'r1_2_e1_07']
 
 # Outer directory for project data
-project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
+source('R/paths.R')
+
 # Hydrographs (expected to exist already)
 # To set up node-loops, we want a list of hydro_dirs that each have a reasonable number of sims in them.
 # It's annoying, but I'll set up different scripts for stochastic and historical. That'll be the easiest way to load-balance and keep output directories the same.s
@@ -45,7 +46,7 @@ if (!file.exists('HPC/hist_dirs.rds')) {
 # stoch_subdirs <- gsub('^/', '', stoch_subdirs)
 
 ## Historical
-# In an ideal world, I would choose the ones that *end* with a licvol specification. IE not their parents, and not the stochastic iterations. That'd yeild 18 per. 
+# In an ideal world, I would choose the ones that *end* with a licvol specification. IE not their parents, and not the stochastic iterations. That'd yeild 18 per.
 # But that would make the output structure differ without significant monkeying around. So I think perhaps the easiest thing to do is just do the same thing as the stochastic, but only ask for 1-2 cpus. That'll be the easiest to match up.
 hist_climdirs <- grepl('r[0-9]_[0-9]_e1_[0-9]{1,2}$', hist_dirs)
 hist_parents <- hist_dirs[hist_climdirs]
@@ -73,7 +74,7 @@ plan(list(tweak(batchtools_slurm,
 
 # The internal parallel uses furrr. Here, we want to parallel over two lists by index (hist_parents and hist_subdirs). Will that be easier with a foreach?
 # furrr::future_map2 should work
-ewr_out <- furrr::future_map2(hist_parents, hist_subdirs, \(x, y) 
+ewr_out <- furrr::future_map2(hist_parents, hist_subdirs, \(x, y)
     prep_run_save_ewrs(hydro_dir = x,
                               output_parent_dir = project_dir,
                               output_subdir = y,

@@ -11,7 +11,7 @@ if (Sys.info()['user'] == 'galen') {
 } else if (Sys.info()['user'] == 'hol436') { # PETRICHOR
   qaelpath <- ''
 } else {
-  rlang::abort("YOU'RE NOT A RECOGNISED USER. PUT IN YOUR PATH TO QAEL-WERP")
+  rlang::abort("YOU'RE NOT A RECOGNISED USER. PUT IN YOUR PATH TO PROJECT")
 }
 
 # python can't use the tildes, so have to expand

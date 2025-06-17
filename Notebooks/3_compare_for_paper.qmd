@@ -5,7 +5,6 @@ editor: visual
 echo: FALSE
 execute: 
   cache: FALSE
----ren
 ---
 
 ```{r setup}
@@ -47,7 +46,7 @@ source('R/agg_variables.R')
 ```
 
 ```{r}
-#| label: Function stolen from my scatch site
+#| label: from my scatch site
 #| include: false
 ggsave_multi <- function(filename, plot = last_plot(), device, ...) {
 

@@ -15,7 +15,8 @@ library(furrr)
 # climpattern = ['r0_8_e1_0', 'r0_8_e1_07', 'r1_0_e1_0', 'r1_0_e1_07', 'r1_2_e1_0', 'r1_2_e1_07']
 
 # Outer directory for project data
-project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
+source('R/paths.R')
+
 # Hydrographs (expected to exist already)
 # To set up node-loops, we want a list of hydro_dirs that each have a reasonable number of sims in them.
 # It's annoying, but I'll set up different scripts for stochastic and historical. That'll be the easiest way to load-balance and keep output directories the same.s
@@ -76,7 +77,7 @@ plan(list(tweak(batchtools_slurm,
 
 # The internal parallel uses furrr. Here, we want to parallel over two lists by index (stoch_parents and stoch_subdirs). Will that be easier with a foreach?
 # furrr::future_map2 should work
-ewr_out <- furrr::future_map2(stoch_parents, stoch_subdirs, \(x, y) 
+ewr_out <- furrr::future_map2(stoch_parents, stoch_subdirs, \(x, y)
     prep_run_save_ewrs(hydro_dir = x,
                               output_parent_dir = project_dir,
                               output_subdir = y,
