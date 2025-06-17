@@ -1,5 +1,7 @@
 # Sets paths
 
+
+
 if (Sys.info()['user'] == 'galen') {
   qaelpath <- '~/../Deakin University/QAEL - WERP in house - WERP'
 } else if (Sys.info()['user'] == 'Georgiad') {
@@ -22,6 +24,13 @@ if (Sys.info()['user'] == 'hol436') {
   project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
 } else {
   project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
+}
+
+# handle subdirs for some demo cases
+if ('params' %in% ls()) {
+  if (!is.null(params$subdir)) {
+    project_dir <- file.path(project_dir, params$subdir)
+  }
 }
 
 data_path <- file.path(project_dir, "hydrographs")

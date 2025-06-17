@@ -3,6 +3,10 @@ title: "Comparer"
 format: docx
 editor: visual
 echo: FALSE
+
+# use a subdir for demo or standalone input data
+# params:
+#   subdir: 'supp/paper_input'
 execute: 
   cache: FALSE
 ---
@@ -1556,7 +1560,7 @@ temp <- days_burrendong_lt_dead_storage |>
 
 economic_data_path <- file.path(project_dir, 'module_output', 'Economic', "CropAreaValueRatio.xlsx")
 
-economic_data_1 <- readxl::read_excel(economic_data, sheet = 2)
+economic_data_1 <- readxl::read_excel(economic_data_path, sheet = 2)
 colnames(economic_data_1) <- c("names_CSIRO_climate_scenario", economic_data_1[1,-1])
 economic_data_1 <- economic_data_1[-1,c(1,8,9,10)]
 economic_data_1 <- economic_data_1 |>
@@ -1573,7 +1577,7 @@ economic_data_1 <- economic_data_1 |>
           "Hot and Dry"
         )))
 
-economic_data_2 <- readxl::read_excel(economic_data, sheet = 3)
+economic_data_2 <- readxl::read_excel(economic_data_path, sheet = 3)
 colnames(economic_data_2) <- c("names_CSIRO_climate_scenario", economic_data_2[1,-1])
 economic_data_2 <- economic_data_2[-1,c(1,8,9,10)]
 economic_data_2 <- economic_data_2 |>
