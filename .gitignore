@@ -23,15 +23,11 @@ template_data/module_output/*
 *.out
 *.docx
 
-poetry.lock
-
-renv.lock
-
-# some files created with purl
-HPC/2_aggregate_HPC.R
 
 /.quarto/
 
 *.docx
+# some files created with purl on HPC
+HPC/2_aggregate_HPC.R
 HPC/2_baseline_to_historic.R
 HPC/2_stochastic_stats.R
