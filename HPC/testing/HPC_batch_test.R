@@ -188,4 +188,4 @@ nestedoneline <- furrr::future_map(nl, \(x) furrr::future_map(x, make_tib, .opti
 
 # basically, O should be able to get hydro_paths as a list of something after I cut down list.dirs('/datasets/work/ev-ca-macq/work/hol436/ash_cut', recursive = TRUE) 
 # To just the climate level. and for historical. Then loop over that.
-# and for everything, list.dirs('/datasets/work/ev-ca-macq/work/hol436/macq_cut', recursive = TRUE). The regex will suck, but should be doable.
+# and for everything, list.dirs('/datasets/work/ev-ca-macq/work/hol436/hydrographs', recursive = TRUE). The regex will suck, but should be doable.

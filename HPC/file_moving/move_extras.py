@@ -9,7 +9,7 @@ exec(open('HPC/cut_pull_funs.py').read())
 # If we're calling from petrichor, we can use 
 # '/datasets/work/ev-ca-macq/' as the prefix
 basefrom = '/datasets/work/ev-ca-macq/work/sho108/werp/results/result_jul2024'
-baseto = '/datasets/work/ev-ca-macq/work/hol436/macq_cut'
+baseto = '/datasets/work/ev-ca-macq/work/hol436/hydrographs'
 
 # Set some common regex patterns
 no_mgmt = ['licvolfactor_1_0']

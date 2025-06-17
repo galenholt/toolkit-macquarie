@@ -41,7 +41,7 @@ if (Sys.info()['user'] == 'hol436') {
   project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
 }
 
-ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
+ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'hydrographs')
 ```
 
 Prevent issues with PU overlaps

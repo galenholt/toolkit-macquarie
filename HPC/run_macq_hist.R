@@ -30,7 +30,7 @@ source('R/paths.R')
 
 # Historical
 if (!file.exists('HPC/hist_dirs.rds')) {
-    hist_dirs <- list.dirs(file.path(project_dir, 'macq_cut/historical'), recursive = TRUE)
+    hist_dirs <- list.dirs(file.path(project_dir, 'hydrographs/historical'), recursive = TRUE)
     saveRDS(object = hist_dirs, file = 'HPC/hist_dirs.rds')
 } else {
     hist_dirs = readRDS('HPC/hist_dirs.rds')
@@ -85,7 +85,7 @@ ewr_out <- furrr::future_map2(hist_parents, hist_subdirs, \(x, y)
                               rparallel = TRUE)
 )
 
-final_files <- list.files(file.path(project_dir, 'module_output', 'EWR', 'macq_cut', 'historical'), pattern = 'summary.csv', recursive = TRUE)
+final_files <- list.files(file.path(project_dir, 'module_output', 'EWR', 'hydrographs', 'historical'), pattern = 'summary.csv', recursive = TRUE)
 
 cat('\n## Job finished\n')
 cat('\n Expected to run \n')

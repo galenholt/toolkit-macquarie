@@ -24,7 +24,7 @@ source('R/paths.R')
 # The directory crawling is SLOW, so cache it.
 ## Stochastic
 if (!file.exists('HPC/stoch_dirs.rds')) {
-    stoch_dirs <- list.dirs(file.path(project_dir, 'macq_cut/stochastic'), recursive = TRUE)
+    stoch_dirs <- list.dirs(file.path(project_dir, 'hydrographs/stochastic'), recursive = TRUE)
     saveRDS(object = stoch_dirs, file = 'HPC/stoch_dirs.rds')
 } else {
     stoch_dirs = readRDS('HPC/stoch_dirs.rds')
@@ -89,7 +89,7 @@ ewr_out <- furrr::future_map2(stoch_parents, stoch_subdirs, \(x, y)
                               rparallel = TRUE)
 )
 
-final_files <- list.files(file.path(project_dir, 'module_output',  'EWR', 'macq_cut', 'stochastic'), pattern = 'summary.csv', recursive = TRUE)
+final_files <- list.files(file.path(project_dir, 'module_output',  'EWR', 'hydrographs', 'stochastic'), pattern = 'summary.csv', recursive = TRUE)
 
 cat('\n## Job finished\n')
 cat('\n Expected to run \n')

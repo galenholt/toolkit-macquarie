@@ -252,7 +252,7 @@ What do I get if I just read_and_agg? 104 seconds. so 1.4 seconds per scenario. 
 full_mac_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
 
 # Let's just drill all the way in to one of them and see what I get
-test_ewr_results <- file.path(full_mac_dir, 'module_output', 'EWR', 'macq_cut/stochastic/MACQ_CC_EFR/licvolfactor_1_0/r1_0_e1_0')
+test_ewr_results <- file.path(full_mac_dir, 'module_output', 'EWR', 'hydrographs/stochastic/MACQ_CC_EFR/licvolfactor_1_0/r1_0_e1_0')
 
   system.time(spatagg_s_th_t <- read_and_agg(
     datpath = test_ewr_results,
@@ -293,7 +293,7 @@ It's basically the run_macq_stoch.r approach in /HPC
 
 ```{r}
 
-ewr_dir <- file.path(full_mac_dir, 'module_output', 'EWR', 'macq_cut')
+ewr_dir <- file.path(full_mac_dir, 'module_output', 'EWR', 'hydrographs')
 
 inner_dirs <- list.dirs(
   ewr_dir, recursive = TRUE

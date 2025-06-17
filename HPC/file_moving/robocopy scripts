@@ -13,12 +13,12 @@ cutflows.nc `
 # /s includes subdirs
 # This HAS to be done from the main citrix login, NOT from a remote (e.g. petrichor, a VM)
 # The hydrographs
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\hydrographs" /s /R:3
 robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\module_output" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module_output" /s /R:3
 
 
 # a version that only copies changed files
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\hydrographs" /s /XO /R:3
 
 @REM Test in one directory
-@REM robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut\stochastic\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0\0" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut\stochastic\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0\0" /s /XO /R:3
+@REM robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut\stochastic\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0\0" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\hydrographs\stochastic\MACQ_CC_EFR\licvolfactor_1_0\r0_8_e1_0\0" /s /XO /R:3

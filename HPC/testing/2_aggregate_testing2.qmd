@@ -37,7 +37,7 @@ qaelpath <- path.expand(qaelpath)
 
 ```{r}
 project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
-ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'macq_cut')
+ewr_results <- file.path(project_dir, 'module_output', 'EWR', 'hydrographs')
 ```
 
 I keep doing things very similar to this to deal with the nested dirs. Should make it a function, but it's not quite stable yet.

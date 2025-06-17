@@ -3074,7 +3074,7 @@ I need to get the EWRs for methods, feel free to move elsewhere
 
 ```{r}
 incoming_ewrs <- get_ewr_output(file.path(project_dir, 'module_output',
-                                          'EWR', 'macq_cut', 'historical', 
+                                          'EWR', 'hydrographs', 'historical', 
                                           'MACQ_CC_EFR', 'licvolfactor_1_0',
                                           'r1_0_e1_0', '0_cutflows'),
                                 add_max = FALSE)

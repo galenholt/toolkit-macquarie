@@ -50,7 +50,7 @@ The basic structure of the workflow is to assess response to the hydrologic scen
 
 ## Data
 
-The input data is expected to be in a directory outside the repo, and hydrographs from selected scenarios are moved to `project_dir/macq_cut`. This then contains both historical and stochastic scenarios across all climate and management options. Output data (e.g. EWR outputs, aggregated results) is exported to `project_dir` and various subdirectories matching the input scenarios. Data for water allocation and economic outcomes are expected to be in `project_dir/module_output/Hydrology` and `project_dir/module_output/Economic`, respectively.
+The input data is expected to be in a directory outside the repo, and hydrographs from selected scenarios are moved to `project_dir/hydrographs`. This then contains both historical and stochastic scenarios across all climate and management options. Output data (e.g. EWR outputs, aggregated results) is exported to `project_dir` and various subdirectories matching the input scenarios. Data for water allocation and economic outcomes are expected to be in `project_dir/module_output/Hydrology` and `project_dir/module_output/Economic`, respectively.
 
 ## Processing and analysis
 

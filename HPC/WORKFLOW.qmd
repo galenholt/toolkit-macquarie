@@ -60,11 +60,11 @@ This can't happen from Petrichor, needs to happen from the citrix login.
 Some template scripts:
 
 ```         
-robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\macq_cut" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au\{ev-ca-macq}\work\hol436\macq_cut" "\\Client\C$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\hydrographs" /s /XO /R:3 /E
 ```
 
-robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\module\_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\\module_output" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\module\_output" /s /XO /R:3 /E
 
 robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\\aggregated" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated" /s /XO /R:3 /E
 
-robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\aggregated\historical\MACQ\_CC_EFR\licvolfactor\_1_0\r0\_8_e1_0" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated\historical\MACQ\_CC_EFR\licvolfactor\_1_0\r0\_8_e1_0" /s /XO /R:3 /E
+robocopy "\\fs1-cbr.nexus.csiro.au{ev-ca-macq}\work\hol436\\aggregated\\historical\\MACQ_CC_EFR\licvolfactor\_1_0\r0_8_e1_0" "\\Client\C\$\Users\galen\Deakin University\QAEL - WERP in house - WERP\Toolkit\macquarie\aggregated\historical\MACQ\_CC_EFR\licvolfactor\_1_0\r0_8_e1_0" /s /XO /R:3 /E

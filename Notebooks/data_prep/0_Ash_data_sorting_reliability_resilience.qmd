@@ -69,7 +69,7 @@ Merged_balance_init <- dplyr::bind_rows(Merged_balance_init, Merged_balance_temp
   
 }
 
-#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/macq_cut/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
+#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/hydrographs/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
 
 # # get the right scenario name 
 Merged_balance <- Merged_balance_init |>
@@ -220,7 +220,7 @@ Merged_balance_init <- dplyr::bind_rows(Merged_balance_init, Merged_balance_temp
   
 }
 
-#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/macq_cut/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
+#"C:/Users/Admin/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/hydrographs/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/0/allocation_reliability.csv"
 
 # # get the right scenario name 
 Merged_balance <- Merged_balance_init |>
