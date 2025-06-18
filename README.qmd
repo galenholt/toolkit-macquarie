@@ -11,7 +11,7 @@ bibliography: references.bib
 
 # Overview
 
-This repository contains the code for analyses for the Macquarie climate and adaptation case study. It uses the HydroBOT toolkit [@Holt_HydroBOT_Toolkit_For; @holt2025] to analyse hydrograph and economic data for *Synergies in water availability, the environment, and agricultural output under climate change and adaptation* (in review)*.*
+This repository contains the code for analyses for the Macquarie climate and adaptation case study. It uses the [HydroBOT toolkit](https://github.com/galenholt/HydroBOT) [@Holt_HydroBOT_Toolkit_For; @holt2025] to analyse hydrograph and economic data for *Synergies in water availability, the environment, and agricultural output under climate change and adaptation*, in review, with preprint at [@lester2025].
 
 At the time of submission, this code runs on Windows 11, Ubuntu 20-22, and SUSE Linux Enterprise Server 15 SP5. Analyses were conducted with `r R.Version()$version.string`, Python 3.11, and Quarto 1.7. R packages pinned in /renv.lock, Python packages as in /poetry.lock.
 
@@ -72,15 +72,29 @@ As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>),
 1.  `input_data`: input data used for all processing
     -   Process as in *Processing and analysis,* below
 2.  `demo`: a small subset of the input data used to check processing works
-    -   See [processing_demonstration - Notebooks/processing_demonstration.qmd](Notebooks/processing_demonstration.qmd).
+    -   See *Demonstrations and checks,* below
 3.  `paper_input` the output of the computationally-intensive EWR and aggregation processing, ready to make figures
-    -   Use the [main analysis notebook - Notebooks/3_compare_for_paper.qmd](Notebooks/3_compare_for_paper.qmd)
+    -   See *Demonstrations and checks,* below
 
-        -   If newly processed data *also* exists, do this in a new directory or use the `params` in header to avoid overwriting output.
+        
 
-## Processing and analysis
+## Demonstrations and checks
 
-To produce the analyses for the manuscript, we follow these steps. We assume steps 1 and 2 are run on an HPC for speed and step 3 is local, though all will work in either. All scripts are available at <https://github.com/galenholt/toolkit-macquarie> and <https://doi.org/10.6084/m9.figshare.29345789>.
+1.  To check that installation has worked and the EWR and data aggregation steps run,
+    -   use the `demo` supplemental data
+
+    -   run the [processing_demonstration notebook](Notebooks/processing_demonstration.qmd)
+
+2.  To produce figures from processed data at the time of submission (reproducing figures) 
+    -   use the `paper_input` supplemental data
+    
+    - run the [main analysis notebook](Notebooks/3_compare_for_paper.qmd)
+    
+      - If newly processed data *also* exists, do this in a new directory or use the `params` in header to avoid overwriting output.
+
+## Full processing and analysis on all data
+
+To fully reproduce all processing and analyses for the manuscript, use the `input_data` supplemental data, and follow these steps. We assume steps 1 and 2 are run on an HPC for speed and step 3 is local, though all will run in both places. All scripts are available at <https://github.com/galenholt/toolkit-macquarie> and <https://doi.org/10.6084/m9.figshare.29345789>.
 
 1.  Run the EWR tool (via HydroBOT) over the various hydrographs. These are broken up to stabilise processing in parallel on an HPC. See [HPC workflow](HPC/WORKFLOW.qmd) for more detail.
     1.  /HPC/run_macq_stoch.R

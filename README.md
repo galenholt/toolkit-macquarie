@@ -7,7 +7,9 @@
   - [Current package versions](#current-package-versions)
 - [Workflow](#workflow)
   - [Data](#data)
-  - [Processing and analysis](#processing-and-analysis)
+  - [Demonstrations and checks](#demonstrations-and-checks)
+  - [Full processing and analysis on all
+    data](#full-processing-and-analysis-on-all-data)
 - [Contact](#contact)
 - [References](#references)
 - [Project-specific setup](#project-specific-setup)
@@ -15,10 +17,12 @@
 # Overview
 
 This repository contains the code for analyses for the Macquarie climate
-and adaptation case study. It uses the HydroBOT toolkit (Holt and Dwyer
-2025; Holt et al. 2025) to analyse hydrograph and economic data for
-*Synergies in water availability, the environment, and agricultural
-output under climate change and adaptation* (in review)*.*
+and adaptation case study. It uses the [HydroBOT
+toolkit](https://github.com/galenholt/HydroBOT) (Holt and Dwyer 2025;
+Holt et al. 2025) to analyse hydrograph and economic data for *Synergies
+in water availability, the environment, and agricultural output under
+climate change and adaptation*, in review, with preprint at
+(**lester2025?**).
 
 At the time of submission, this code runs on Windows 11, Ubuntu 20-22,
 and SUSE Linux Enterprise Server 15 SP5. Analyses were conducted with
@@ -122,22 +126,36 @@ datasets-
     - Process as in *Processing and analysis,* below
 2.  `demo`: a small subset of the input data used to check processing
     works
-    - See [processing_demonstration -
-      Notebooks/processing_demonstration.qmd](Notebooks/processing_demonstration.qmd).
+    - See *Demonstrations and checks,* below
 3.  `paper_input` the output of the computationally-intensive EWR and
     aggregation processing, ready to make figures
-    - Use the [main analysis notebook -
-      Notebooks/3_compare_for_paper.qmd](Notebooks/3_compare_for_paper.qmd)
+    - See *Demonstrations and checks,* below
+
+## Demonstrations and checks
+
+1.  To check that installation has worked and the EWR and data
+    aggregation steps run,
+    - use the `demo` supplemental data
+
+    - run the [processing_demonstration
+      notebook](Notebooks/processing_demonstration.qmd)
+2.  To produce figures from processed data at the time of submission
+    (reproducing figures)
+    - use the `paper_input` supplemental data
+
+    - run the [main analysis
+      notebook](Notebooks/3_compare_for_paper.qmd)
 
       - If newly processed data *also* exists, do this in a new
         directory or use the `params` in header to avoid overwriting
         output.
 
-## Processing and analysis
+## Full processing and analysis on all data
 
-To produce the analyses for the manuscript, we follow these steps. We
-assume steps 1 and 2 are run on an HPC for speed and step 3 is local,
-though all will work in either. All scripts are available at
+To fully reproduce all processing and analyses for the manuscript, use
+the `input_data` supplemental data, and follow these steps. We assume
+steps 1 and 2 are run on an HPC for speed and step 3 is local, though
+all will run in both places. All scripts are available at
 <https://github.com/galenholt/toolkit-macquarie> and
 <https://doi.org/10.6084/m9.figshare.29345789>.
 
