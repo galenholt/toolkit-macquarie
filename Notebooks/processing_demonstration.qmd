@@ -1,0 +1,55 @@
+---
+title: "Processing demonstration"
+editor: visual
+format:
+  html:
+    embed-resources: true
+params:
+  subdir: 'supp/demo'
+---
+
+The main processing workflow consists of using HydroBOT [@holt2025] to run the EWR tool over all scenarios, aggregating those outputs in a variety of ways, and then producing figures. The full workflow is given in the [readme](README.md). However, it requires significant processing time and is best done on an HPC (thank you to CSIRO for use of the petrichor system for our processing). Here, we provide a greatly-simplified runnable example that ensures the processes are working for the EWR tool and aggregation using the `demo` dataset that only has historical data for four scenarios, provided in supplemental information. These are not intended to replicate a full analysis, but to ensure everything works to enable that full analysis.
+
+::: callout-tip
+For checking the final step of analysing and producing figures from the aggregated data, run the [analysis notebook](/Notebooks/3_compare_for_paper.qmd) with
+
+``` yaml
+params:
+  subdir: 'supp/paper_input'
+```
+
+in the header, (or otherwise point to the `paper_input` dataset provided as supplemental information), containing all data after EWR processing and aggregation.
+:::
+
+## Running the EWR tool
+
+Because these scripts are expected to run on an HPC, they are scripts, not notebooks. We use the `future` and `future.batchtools` packages, which means they will just work locally (and if we set a `future::plan`, they'll run in parallel). In use with all data on an HPC, these would be triggered by a SLURM controller using the shell scripts and commands described in the [HPC workflow](/HPC/WORKFLOW.qmd).
+
+Warnings about summing two gauges are expected since these are scenarios. This takes 1,000 seconds on a laptop running Windows 11 with Intel i9 2.5GHz and 64 GB RAM (though is not RAM-limited).
+
+```{r}
+system.time(source('HPC/run_macq_hist.R'))
+```
+
+That should produce `yearly_summary.csv` output files in both subdirectories of `module_output/EWR/hydrographs/historical/MACQ_CC_EFR/licvolfactor_1_0/`
+
+## Aggregating
+
+The main aggregation script is `/HPC/2_aggregate_HPC.qmd`. It runs locally as well, but to contain this demonstration in a single notebook, we use the same approach as on the HPC. Namely, we purl it to a script and run that. This should take \<1 minute for this demonstration (though for all the data, the HPC is useful).
+
+It should produce an `/aggregated` directory with the same scenario structures as the EWR outputs and hydrographs, within which there will be four directories of aggregated values (sdl_ewr_spells, sdl_ewr_timeseries, sdl_target_spells, and sdl_target_timeseries).
+
+```{r}
+infile <- 'HPC/2_aggregate_HPC.qmd'
+
+rfile <- stringr::str_replace(infile, '.qmd', '.R')
+
+knitr::purl(input = infile, output = rfile)
+```
+
+```{r}
+system.time(source(rfile))
+```
+
+In a full run, we would then run the other `/HPC/2_**.qmd` files to generate the other aggregations and comparisons, followed by producing figures and final analyses in `/Notebooks/3_compare_for_paper.qmd`.
+

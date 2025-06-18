@@ -28,7 +28,7 @@ if (Sys.info()['user'] == 'hol436') {
 }
 ```
 
-To run this on the hpc, purl it with
+To run this on the hpc (or in the demo), purl it with
 
 ```{r}
 #| eval: false
@@ -44,7 +44,6 @@ knitr::purl(input = infile, output = rfile)
 ## Paths
 
 ```{r}
-# tired of writing the whole thing out
 source('R/paths.R')
 source('R/agg_variables.R')
 ```
@@ -292,33 +291,20 @@ onedir <- function(subdir, aggsequence, funsequence, aggCols, aggname) {
 
 dirloop <- function(aggsequence, funsequence, aggCols, aggname, inner_subdirs) {
   furrr::future_map(inner_subdirs, \(x) onedir(x, aggsequence, funsequence, 
-                                               aggCols, aggname))
+                                               aggCols, aggname),
+    .options = furrr_options(seed = TRUE))
   
 }
 
 ```
 
 ```{r}
-system.time(aggloop <- furrr::future_pmap(futurelist, dirloop))
+system.time(aggloop <- furrr::future_pmap(futurelist, dirloop,
+    .options = furrr_options(seed = TRUE)))
 
 ```
 
 9600 seconds locally, 600 on Petrichor (with 30 cores x 4 workers)
-
-And a test
-
-```{r}
-test_sdl_ewr_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEt, 'achievement_aggregated.rds'))
-test_sdl_target_ts <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTt, 'achievement_aggregated.rds'))
-test_sdl_ewr_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sEs, 'achievement_aggregated.rds'))
-test_sdl_target_spells <- readRDS(file.path(project_dir, 'aggregated', inner_subdirs[100], name_sTs, 'achievement_aggregated.rds'))
-
-all(retained_sEt %in% names(test_sdl_ewr_ts))
-all(retained_sTt %in% names(test_sdl_target_ts))
-
-all(retained_sTs %in% names(test_sdl_target_spells))
-all(retained_sEs %in% names(test_sdl_ewr_spells))
-```
 
 Some tests that all files are there.
 
@@ -341,57 +327,4 @@ if (all_found) {
   rlang::inform(c("Expected files missing",
                   glue::glue("{expected_files[which(!expected_files %in% found_files)]}")))
 }
-```
-
-# Testing
-
-```{r}
-# readRDS('C:/Users/galen/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/aggregated/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/sdl_ewr_spells/achievement_aggregated.rds')
-```
-
-```{r}
-# readRDS('C:/Users/galen/Deakin University/QAEL - WERP in house - WERP/Toolkit/macquarie/aggregated_NOENVOBJ/historical/MACQ_CC_EFR/licvolfactor_1_0/r0_8_e1_0/sdl_ewr_spells/achievement_aggregated.rds')
-```
-
-```{r}
-# oneagg <- read_and_agg(
-#     datpath = file.path(ewr_results, inner_subdirs[1]),
-#     type = "achievement",
-#     geopath = bom_basin_gauges,
-#     causalpath = objective_steps,
-#     groupers = "scenario",
-#     aggCols = cols_sEs,
-#     aggsequence = agg_sEs, # generalise to furr over all agg paths
-#     funsequence = fun_sEs, # generalise to furr of all agg paths
-#     keepAllPolys = FALSE,
-#     auto_ewr_PU = TRUE,
-#     saveintermediate = FALSE,
-#     returnList = TRUE,
-#     savepath = NULL) # generalise
-```
-
-```{r}
-# oneaggT <- read_and_agg(
-#     datpath = file.path(ewr_results, inner_subdirs[1]),
-#     type = "achievement",
-#     geopath = bom_basin_gauges,
-#     causalpath = objective_steps,
-#     groupers = "scenario",
-#     aggCols = cols_sTs,
-#     aggsequence = agg_sTs, # generalise to furr over all agg paths
-#     funsequence = fun_sTs, # generalise to furr of all agg paths
-#     keepAllPolys = FALSE,
-#     auto_ewr_PU = TRUE,
-#     saveintermediate = FALSE,
-#     returnList = TRUE,
-#     savepath = NULL) # generalise
-```
-
-```{r}
-  # onespells <- read_in_aggs(project_dir = project_dir,
-  #                           data_path = file.path(inner_subdirs[1], 'sdl_ewr_spells'),
-  #                           lastagg = 'sdl_units',
-  #                           retain_cols = retained_sEs,
-  #                           max_handling = 'remove',
-  #                           factorise = FALSE)
 ```

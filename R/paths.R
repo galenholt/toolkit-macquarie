@@ -22,8 +22,10 @@ qaelpath <- path.expand(qaelpath)
 
 if (Sys.info()['user'] == 'hol436') {
   project_dir <- file.path('/datasets/work/ev-ca-macq/work/hol436')
+  is_slurm <- TRUE
 } else {
   project_dir <- file.path(qaelpath, 'Toolkit', 'macquarie')
+  is_slurm <- FALSE
 }
 
 # handle subdirs for some demo cases
@@ -32,6 +34,8 @@ if ('params' %in% ls()) {
     project_dir <- file.path(project_dir, params$subdir)
   }
 }
+
+rlang::inform(glue::glue("project_dir is {project_dir}"))
 
 data_path <- file.path(project_dir, "hydrographs")
 

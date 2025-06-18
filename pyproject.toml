@@ -9,7 +9,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
-py-ewr = "2.1.6"
+py-ewr = {git = "https://github.com/MDBAuth/EWR_tool.git", rev = "8cd3ebc904935ac2bf2df737e6fab28b20e6fa5c"}
+setuptools = "^80.9.0"
 
 [build-system]
 requires = ["poetry-core"]

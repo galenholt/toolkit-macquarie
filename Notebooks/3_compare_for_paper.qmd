@@ -1,9 +1,13 @@
 ---
 title: "Comparer"
-format: docx
+format:
+  html:
+    embed-resources: true
+  docx:
+    toc: false
+    prefer-html: true
 editor: visual
 echo: FALSE
-
 # use a subdir for demo or standalone input data
 # params:
 #   subdir: 'supp/paper_input'

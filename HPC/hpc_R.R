@@ -16,7 +16,7 @@
 # We can't use the automated pak method in R_setup.R because it needs sudo.
 # The issue here is this tries to upgrade sf, but we can't. I tried upgrade = 'never', and that faild too
 # I tried with 'remotes' directly, and it also failed. Maybe it would work on Gandalf
-renv::install('git@github.com:MDBAuth/WERP_toolkit.git@galen_working',
+renv::install('git@github.com:galenholt/HydroBOT.git',
               rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
 
 # the soluton on petrichor seems to be to clone it locally and edit DESCRIPTION
