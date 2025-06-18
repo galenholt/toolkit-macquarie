@@ -70,7 +70,7 @@ The input data is expected to be in a directory outside the repo, and hydrograph
 As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>), we provide three datasets-
 
 1.  `input_data`: input data used for all processing
-    -   Process as in *Processing and analysis,* below
+    -   Process as in *Full processing and analysis on all data,* below
 2.  `demo`: a small subset of the input data used to check processing works
     -   See *Demonstrations and checks,* below
 3.  `paper_input` the output of the computationally-intensive EWR and aggregation processing, ready to make figures
@@ -90,7 +90,7 @@ As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>),
     
     - run the [main analysis notebook](Notebooks/3_compare_for_paper.qmd)
     
-      - If newly processed data *also* exists, do this in a new directory or use the `params` in header to avoid overwriting output.
+      - If new, fully re-processed, data *also* exists, do this step a new directory or use the `params` in header to avoid overwriting output.
 
 ## Full processing and analysis on all data
 

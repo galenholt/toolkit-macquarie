@@ -123,7 +123,7 @@ As supplemental information (at
 datasets-
 
 1.  `input_data`: input data used for all processing
-    - Process as in *Processing and analysis,* below
+    - Process as in *Full processing and analysis on all data,* below
 2.  `demo`: a small subset of the input data used to check processing
     works
     - See *Demonstrations and checks,* below
@@ -146,8 +146,8 @@ datasets-
     - run the [main analysis
       notebook](Notebooks/3_compare_for_paper.qmd)
 
-      - If newly processed data *also* exists, do this in a new
-        directory or use the `params` in header to avoid overwriting
+      - If new, fully re-processed, data *also* exists, do this step a
+        new directory or use the `params` in header to avoid overwriting
         output.
 
 ## Full processing and analysis on all data
