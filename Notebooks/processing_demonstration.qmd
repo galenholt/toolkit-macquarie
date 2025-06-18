@@ -25,7 +25,7 @@ in the header, (or otherwise point to the `paper_input` dataset provided as supp
 
 Because these scripts are expected to run on an HPC, they are scripts, not notebooks. We use the `future` and `future.batchtools` packages, which means they will just work locally (and if we set a `future::plan`, they'll run in parallel). In use with all data on an HPC, these would be triggered by a SLURM controller using the shell scripts and commands described in the [HPC workflow](/HPC/WORKFLOW.qmd).
 
-Warnings about summing two gauges are expected since these are scenarios. This takes 1,000 seconds on a laptop running Windows 11 with Intel i9 2.5GHz and 64 GB RAM (though is not RAM-limited).
+Warnings about summing two gauges are expected since these are scenarios. With a `sequential` (or unspecified) `plan`, this takes 1,000 seconds on a laptop running Windows 11 with Intel i9 2.5GHz and 64 GB RAM (though is not RAM-limited).
 
 ```{r}
 system.time(source('HPC/run_macq_hist.R'))
@@ -47,9 +47,10 @@ rfile <- stringr::str_replace(infile, '.qmd', '.R')
 knitr::purl(input = infile, output = rfile)
 ```
 
+Warnings here reflect a missing planning unit, and while true, are the best available data.
+
 ```{r}
 system.time(source(rfile))
 ```
 
 In a full run, we would then run the other `/HPC/2_**.qmd` files to generate the other aggregations and comparisons, followed by producing figures and final analyses in `/Notebooks/3_compare_for_paper.qmd`.
-

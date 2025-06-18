@@ -12,7 +12,7 @@ echo: FALSE
 # params:
 #   subdir: 'supp/paper_input'
 execute: 
-  cache: FALSE
+  cache: false
 ---
 
 ```{r setup}
@@ -51,6 +51,13 @@ source('R/paths.R')
 source('R/read_in_aggs.R')
 source('R/agg_variables.R')
 
+```
+
+```{r}
+# create directory if not available
+if (!dir.exists(comp_results)) {
+  dir.create(comp_results)
+}
 ```
 
 ```{r}
@@ -1653,7 +1660,9 @@ Delivery_strategy_4 <- df_Panel1 |>
   mutate(`Delivery strategy` = "Delivery strategy 4")
 
 df_Panel1 <- bind_rows(df_Panel1, Delivery_strategy_4)
-  
+```
+
+```{r}
 df_Panel2 <- Called_Orders |>
   pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 4`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
   mutate(Date = lubridate::ymd(Date))
@@ -1663,9 +1672,15 @@ df_Panel3 <- Called_Orders2 |>
   pivot_longer(col = `Delivery strategy 5`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
   mutate(Date = lubridate::ymd(Date))
   
+```
 
-Panel1 <- ggplot(data = df_Panel1, aes(x = `Available water (GL)`, y = `Target volume (GL)`, colour = `Delivery strategy`, linetype = `Delivery strategy`)) +
-  geom_line()+
+```{r}
+Panel1 <- ggplot(data = df_Panel1,
+                 aes(x = `Available water (GL)`,
+                     y = `Target volume (GL)`, 
+                     colour = `Delivery strategy`,
+                     linetype = `Delivery strategy`)) +
+  geom_line() +
   coord_cartesian(xlim = c(0,500), ylim = c(0, 300))+
   theme_werp_toolkit()+
   scale_colour_manual(values = pal_mark2)+
@@ -1686,10 +1701,16 @@ Panel3 <- ggplot(data = df_Panel3, aes(x = Date, y = `Ordered (GL)`, colour = `D
   scale_colour_manual(values = pal_mark2)+
   scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y")
 
-Fig_S8_DeliveryStrategies <- Panel1 + Panel2 + Panel3 + plot_layout(nrow = 3, guides = "collect") + plot_annotation(tag_levels = list(c("a)", "b)", "c)")))
+```
 
+```{r}
+Fig_S8_DeliveryStrategies <- Panel1 + Panel2 + Panel3 + plot_layout(nrow = 3, guides = "collect") + plot_annotation(tag_levels = list(c("a)", "b)", "c)")))
+```
+
+```{r}
+# There's an internal issue with png rendering for Panel1, so just use pdf, we don't need png anyway.
 ggsave_multi(plot = Fig_S8_DeliveryStrategies, 
              filename = file.path(comp_results, "Fig_S8_DeliveryStrategies"),
-             device = c("png", "pdf"),
-       width = 15, height = 18, units = 'cm')
+             device = c("pdf", "svg"),
+             width = 15, height = 18, units = 'cm')
 ```

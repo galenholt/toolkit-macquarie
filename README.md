@@ -21,8 +21,8 @@ and adaptation case study. It uses the [HydroBOT
 toolkit](https://github.com/galenholt/HydroBOT) (Holt and Dwyer 2025;
 Holt et al. 2025) to analyse hydrograph and economic data for *Synergies
 in water availability, the environment, and agricultural output under
-climate change and adaptation*, in review, with preprint at
-(**lester2025?**).
+climate change and adaptation*, in review, with preprint at (Lester et
+al. 2025).
 
 At the time of submission, this code runs on Windows 11, Ubuntu 20-22,
 and SUSE Linux Enterprise Server 15 SP5. Analyses were conducted with
@@ -196,6 +196,16 @@ Holt, Galen, Georgia Dwyer, David Robertson, Martin Job, and Rebecca E.
 Lester. 2025. “HydroBOT: An Integrated Toolkit for Assessment of
 Hydrology-Dependent Outcomes.” *Environmental Modelling & Software*,
 June, 106579. <https://doi.org/10.1016/j.envsoft.2025.106579>.
+
+</div>
+
+<div id="ref-lester2025" class="csl-entry">
+
+Lester, Rebecca, David Robertson, Joel Bailey, Georgia Dwyer, Galen
+Holt, Shokhrukh Jalilov, Ashkan Shokri, and Arif Watto. 2025.
+“Synergistic Outcomes for Water Availability, the Environment, and
+Economic Output Under Climate Change and Adaptation.” Research Square.
+<https://doi.org/10.21203/rs.3.rs-5519219/v1>.
 
 </div>
 

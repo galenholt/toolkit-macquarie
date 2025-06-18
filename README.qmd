@@ -76,21 +76,18 @@ As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>),
 3.  `paper_input` the output of the computationally-intensive EWR and aggregation processing, ready to make figures
     -   See *Demonstrations and checks,* below
 
-        
-
 ## Demonstrations and checks
 
 1.  To check that installation has worked and the EWR and data aggregation steps run,
     -   use the `demo` supplemental data
 
     -   run the [processing_demonstration notebook](Notebooks/processing_demonstration.qmd)
-
-2.  To produce figures from processed data at the time of submission (reproducing figures) 
+2.  To produce figures from processed data at the time of submission (reproducing figures)
     -   use the `paper_input` supplemental data
-    
-    - run the [main analysis notebook](Notebooks/3_compare_for_paper.qmd)
-    
-      - If new, fully re-processed, data *also* exists, do this step a new directory or use the `params` in header to avoid overwriting output.
+
+    -   run the [main analysis notebook](Notebooks/3_compare_for_paper.qmd)
+
+        -   If new, fully re-processed, data *also* exists, do this step a new directory or use the `params` in header to avoid overwriting output.
 
 ## Full processing and analysis on all data
 
