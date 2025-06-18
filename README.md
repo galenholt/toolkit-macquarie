@@ -122,12 +122,12 @@ datasets-
     - Process as in *Processing and analysis,* below
 2.  `demo`: a small subset of the input data used to check processing
     works
-    - See
-      [processing_demonstration](.\Notebooks/processing_demonstration.qmd).
+    - See [processing_demonstration -
+      Notebooks/processing_demonstration.qmd](Notebooks/processing_demonstration.qmd).
 3.  `paper_input` the output of the computationally-intensive EWR and
     aggregation processing, ready to make figures
-    - Use the [main analysis
-      notebook](.\Notebooks/3_compare_for_paper.qmd)
+    - Use the [main analysis notebook -
+      Notebooks/3_compare_for_paper.qmd](Notebooks/3_compare_for_paper.qmd)
 
       - If newly processed data *also* exists, do this in a new
         directory or use the `params` in header to avoid overwriting
@@ -143,7 +143,7 @@ though all will work in either. All scripts are available at
 
 1.  Run the EWR tool (via HydroBOT) over the various hydrographs. These
     are broken up to stabilise processing in parallel on an HPC. See
-    [HPC workflow](.\HPC/WORKFLOW.qmd) for more detail.
+    [HPC workflow](HPC/WORKFLOW.qmd) for more detail.
     1.  /HPC/run_macq_stoch.R
     2.  /HPC/run_macq_hist.R
     3.  /HPC/run_macq_EWRtarget.R

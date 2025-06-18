@@ -72,9 +72,9 @@ As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>),
 1.  `input_data`: input data used for all processing
     -   Process as in *Processing and analysis,* below
 2.  `demo`: a small subset of the input data used to check processing works
-    -   See [processing_demonstration](/Notebooks/processing_demonstration.qmd).
+    -   See [processing_demonstration - Notebooks/processing_demonstration.qmd](Notebooks/processing_demonstration.qmd).
 3.  `paper_input` the output of the computationally-intensive EWR and aggregation processing, ready to make figures
-    -   Use the [main analysis notebook](/Notebooks/3_compare_for_paper.qmd)
+    -   Use the [main analysis notebook - Notebooks/3_compare_for_paper.qmd](Notebooks/3_compare_for_paper.qmd)
 
         -   If newly processed data *also* exists, do this in a new directory or use the `params` in header to avoid overwriting output.
 
@@ -82,7 +82,7 @@ As supplemental information (at <https://doi.org/10.6084/m9.figshare.29345789>),
 
 To produce the analyses for the manuscript, we follow these steps. We assume steps 1 and 2 are run on an HPC for speed and step 3 is local, though all will work in either. All scripts are available at <https://github.com/galenholt/toolkit-macquarie> and <https://doi.org/10.6084/m9.figshare.29345789>.
 
-1.  Run the EWR tool (via HydroBOT) over the various hydrographs. These are broken up to stabilise processing in parallel on an HPC. See [HPC workflow](/HPC/WORKFLOW.qmd) for more detail.
+1.  Run the EWR tool (via HydroBOT) over the various hydrographs. These are broken up to stabilise processing in parallel on an HPC. See [HPC workflow](HPC/WORKFLOW.qmd) for more detail.
     1.  /HPC/run_macq_stoch.R
     2.  /HPC/run_macq_hist.R
     3.  /HPC/run_macq_EWRtarget.R
