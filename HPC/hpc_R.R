@@ -23,7 +23,7 @@ renv::install('git@github.com:galenholt/HydroBOT.git',
 # to remove sf and lwgeom, at least for the moment. It's a terrible workaround,
 # but should work if we don't do anything spatial. That means we will have to
 # move to local for the aggregator
-renv::install('../WERP_toolkit')
+renv::install('../HydroBOT')
 # git2r also needs C. And some of this is just dev, which we wouldn't do on an HPC
 renv::install(c('ggthemes',
                 'knitr',

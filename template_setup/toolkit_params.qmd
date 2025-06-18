@@ -8,7 +8,7 @@ params:
 
 This document provides a template for running the toolkit from a parameters file, as we might do when batch processing. We have the ability to have a default params file, a second params file that tweaks those defaults, as well as include params in Quarto header yaml. These different options are all used here.
 
-See a more detailed version of this file at the [demo website](https://mdbauth.github.io/WERP_toolkit_demo) for more discussion about the params.
+See a more detailed version of this file at the [demo website](https://mdbauth.github.io/HydroBOT_website) for more discussion about the params.
 
 Load the package
 

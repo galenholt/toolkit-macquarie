@@ -18,7 +18,7 @@ poetry add git+ssh://git@github.com:MDBAuth/EWR_tool.git#GalenH
 This issue has been hard to replicate consistently, so if it happens, please let me know.
 
 
-See (in development) [documentation website](https://mdbauth.github.io/WERP_toolkit_demo/) for more detailed examples and discussion of capabilities.
+See (in development) [documentation website](https://mdbauth.github.io/HydroBOT_website/) for more detailed examples and discussion of capabilities.
 
 Each step saves metadata about its parameters, which can be used for parameter-based runs to replicate, as well as variables to use in plots.
 

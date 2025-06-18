@@ -51,7 +51,7 @@ If you have R and don't care about managing your own python environments, just o
 If you want to install the toolkit or update it, use
 
 ```         
-renv::install('git@github.com:MDBAuth/WERP_toolkit.git', ref = 'master', force = TRUE, upgrade = 'ask', git = 'external', rebuild = TRUE)
+renv::install('git@github.com:galenholt/HydroBOT.git', ref = 'master', force = TRUE, upgrade = 'ask', git = 'external', rebuild = TRUE)
 ```
 
 ## Run examples

@@ -7,7 +7,7 @@ echo: true
 
 There are many options for each of the steps here, this is a minimal, quick example designed to get you somethign that works quickly and can be modified.
 
-See (in development) [documentation website](https://mdbauth.github.io/WERP_toolkit_demo/) for more detailed examples and discussion of capabilities.
+See (in development) [documentation website](https://mdbauth.github.io/HydroBOT_website/) for more detailed examples and discussion of capabilities.
 
 Each step saves metadata about its parameters, which can be used for parameter-based runs to replicate, as well as variables to use in plots.
 

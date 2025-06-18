@@ -28,7 +28,7 @@ Merged_EWR <- Merged_EWR_init |>
 # library(HydroBOT)
 library(sf)
 # for testing, use the dev
-devtools::load_all('../WERP_toolkit')
+devtools::load_all('../HydroBOT')
 ```
 
 ## Paths

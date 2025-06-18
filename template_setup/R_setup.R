@@ -25,9 +25,9 @@ if (grepl("unix", .Platform$OS.type)) {
 
 # install R packages
 # renv would be much faster, but it is causing all sorts of problems getting the right commit
-renv::install('git@github.com:MDBAuth/WERP_toolkit.git', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
-#renv::install('git@github.com:MDBAuth/WERP_toolkit.git@Georgia_fast', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
-#renv::install('git@github.com:MDBAuth/WERP_toolkit.git@galen_working', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
+renv::install('git@github.com:galenholt/HydroBOT.git', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
+#renv::install('git@github.com:galenholt/HydroBOT.git@Georgia_fast', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
+#renv::install('git@github.com:galenholt/HydroBOT.git@galen_working', rebuild = TRUE, upgrade = 'always', git = 'external', prompt = FALSE)
 renv::install()
 # Some extras
 # renv without {remotes} will only install from main. So if we want to use a branch, we need to go with remotes directly
@@ -37,4 +37,4 @@ renv::install(c('scico', 'ggthemes', 'furrr', 'git2r', 'rmarkdown', 'remotes'))
 
 # renv sometimes struggles with rebuilding and non-main branhes.
 # so if you need to install something other than main, or main with the same version number, use remotes, but that installs all dependencies and is slow.
-# remotes::install_git('git@github.com:MDBAuth/WERP_toolkit.git', ref = 'galen_working', force = TRUE, upgrade = 'always', git = 'external')
+# remotes::install_git('git@github.com:galenholt/HydroBOT.git', ref = 'galen_working', force = TRUE, upgrade = 'always', git = 'external')
