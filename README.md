@@ -20,14 +20,13 @@ This repository contains the code for analyses for the Macquarie climate
 and adaptation case study. It uses the [HydroBOT
 toolkit](https://github.com/galenholt/HydroBOT) (Holt and Dwyer 2025;
 Holt et al. 2025) to analyse hydrograph and economic data for *Synergies
-in water availability, the environment, and agricultural output under
-climate change and adaptation*, in review, with preprint at (Lester et
-al. 2025).
+in environmental and agricultural water availability under climate
+change*, in review, with preprint at (Lester et al. 2025).
 
 At the time of submission, this code runs on Windows 11, Ubuntu 20-22,
-and SUSE Linux Enterprise Server 15 SP5. Analyses were conducted with
-`r R.Version()$version.string`, Python 3.11, and Quarto 1.7. R packages
-pinned in /renv.lock, Python packages as in /poetry.lock.
+and SUSE Linux Enterprise Server 15 SP5. Analyses were conducted with R
+4.4.3, Python 3.11, and Quarto 1.7. R packages pinned in /renv.lock,
+Python packages as in /poetry.lock.
 
 All analysis code (including this documentation) is available at
 <https://github.com/galenholt/toolkit-macquarie> and code and data are

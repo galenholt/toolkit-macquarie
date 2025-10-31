@@ -20,11 +20,12 @@ execute:
 #| warning: false
 #| message: false
 
-knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file(),
-                     cache.lazy = FALSE,
-                     warning = FALSE, 
-                     message = FALSE)
-
+knitr::opts_knit$set(
+  root.dir = rprojroot::find_rstudio_root_file(),
+  cache.lazy = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
 ```
 
 ```{r}
@@ -47,10 +48,9 @@ library(ggridges)
 #| include: false
 #| warning: false
 #| message: false
-source('R/paths.R')
-source('R/read_in_aggs.R')
-source('R/agg_variables.R')
-
+source("R/paths.R")
+source("R/read_in_aggs.R")
+source("R/agg_variables.R")
 ```
 
 ```{r}
@@ -64,8 +64,7 @@ if (!dir.exists(comp_results)) {
 #| label: from my scatch site
 #| include: false
 ggsave_multi <- function(filename, plot = last_plot(), device, ...) {
-
-  extnames <- lapply(device, \(x) paste0(filename, '.', x))
+  extnames <- lapply(device, \(x) paste0(filename, ".", x))
   lapply(extnames, \(x) ggsave(
     filename = x, plot = plot,
     ...
@@ -82,10 +81,10 @@ ggsave_multi <- function(filename, plot = last_plot(), device, ...) {
 #| include: false
 #| warning: false
 #| message: false
-#EWR tool
-#Only read in what is necessary
+# EWR tool
+# Only read in what is necessary
 
-#Economic
+# Economic
 # RUN 0_Shok_data_sorting.qmd if data gets updated (26/07/24)
 
 # ##Timeseries:
@@ -93,83 +92,91 @@ ggsave_multi <- function(filename, plot = last_plot(), device, ...) {
 # sdl_Economic_timeseries$measure <- "Agricultural benefit"
 
 ## Spells:
-sdl_Economic_spells <- clean_factors(read.csv(file.path(Economic_results, "Economic_summary.csv")))|>
-  dplyr::mutate(scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Old_Mark, Data, replicate, sep = "_"),
-                measure = "Agricultural benefit",
-                Theme = "Economics",
-                Mark = "Delivery strategy 1",
-                replicate = as.character(replicate))|>
-#Normalise:
-  ungroup()|>
-  #Scale to 1
+sdl_Economic_spells <- clean_factors(read.csv(file.path(Economic_results, "Economic_summary.csv"))) |>
+  dplyr::mutate(
+    scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Old_Mark, Data, replicate, sep = "_"),
+    measure = "Agricultural benefit",
+    Theme = "Economics",
+    Mark = "Delivery strategy 1",
+    replicate = as.character(replicate)
+  ) |>
+  # Normalise:
+  ungroup() |>
+  # Scale to 1
   dplyr::mutate(measure_achieved = economic_benefit / HydroBOT::CompensatingFactor(economic_benefit))
-#Relativise:
-dimgroups <- c('measure', 'SWSDLName')
-sdl_Economic_baseline <- HydroBOT::baseline_compare(val_df = sdl_Economic_spells,
-                            compare_col = 'scenario',
-                            base_lev = "1_1_1_Mk4a_Historic_0",
-                            group_cols = dimgroups,
-                            comp_fun = relative,
-                            values_col = 'measure_achieved',
-                            failmissing = FALSE)
+# Relativise:
+dimgroups <- c("measure", "SWSDLName")
+sdl_Economic_baseline <- HydroBOT::baseline_compare(
+  val_df = sdl_Economic_spells,
+  compare_col = "scenario",
+  base_lev = "1_1_1_Mk4a_Historic_0",
+  group_cols = dimgroups,
+  comp_fun = relative,
+  values_col = "measure_achieved",
+  failmissing = FALSE
+)
 
 ## Vulnerability
 sdl_economic_vulnerability <- sdl_Economic_baseline |>
-  dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure)|>
+  dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure) |>
   dplyr::summarise(
     variance_measure_achieved = HydroBOT::Variance(measure_achieved),
-    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved))
+    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved)
+  )
 
-#Water allocation - hydro
+# Water allocation - hydro
 # RUN 0_Ash_data_sorting_reliability_resilience.qmd if data gets updated (26/07/24)
 
-#Dont need timeseries
+# Dont need timeseries
 
 ## Spells:
-sdl_hydro_spells <- clean_factors(read.csv(file.path(hydro_results, "hydrology_summary.csv")))|>
-  dplyr::mutate(scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Old_Mark, Data, replicate, sep = "_"))|>
-  dplyr::mutate(reliability_resilience_achieved = measure_achieved, #keeping unnormalised data
-                Theme = "Water allocation",
-                replicate = as.character(replicate))|>
-  #Normalise:
-  dplyr::ungroup()|>
-  dplyr::group_by(to_scale)|>
-  #Scale to 1
-  dplyr::mutate(measure_achieved = reliability_resilience_achieved / HydroBOT::CompensatingFactor(reliability_resilience_achieved))|>
-  
-  #Inverse resilience: #length of time that allocations aren't met (the resilience measure)
-  dplyr::mutate(measure_achieved = ifelse(to_scale != "FALSE", 1-measure_achieved, measure_achieved))
+sdl_hydro_spells <- clean_factors(read.csv(file.path(hydro_results, "hydrology_summary.csv"))) |>
+  dplyr::mutate(scenario = paste(licvolfactor, Evapotranspiration, Rainfall, Old_Mark, Data, replicate, sep = "_")) |>
+  dplyr::mutate(
+    reliability_resilience_achieved = measure_achieved, # keeping unnormalised data
+    Theme = "Water allocation",
+    replicate = as.character(replicate)
+  ) |>
+  # Normalise:
+  dplyr::ungroup() |>
+  dplyr::group_by(to_scale) |>
+  # Scale to 1
+  dplyr::mutate(measure_achieved = reliability_resilience_achieved / HydroBOT::CompensatingFactor(reliability_resilience_achieved)) |>
+  # Inverse resilience: #length of time that allocations aren't met (the resilience measure)
+  dplyr::mutate(measure_achieved = ifelse(to_scale != "FALSE", 1 - measure_achieved, measure_achieved))
 
-#Relativise:
-dimgroups <- c('measure', 'SWSDLName')
-sdl_hydro_baseline <- HydroBOT::baseline_compare(val_df = sdl_hydro_spells,
-                            compare_col = 'scenario',
-                            base_lev = "1_1_1_Mk4a_Historic_0",
-                            group_cols = dimgroups,
-                            comp_fun = relative,
-                            values_col = 'measure_achieved',
-                            failmissing = FALSE)
+# Relativise:
+dimgroups <- c("measure", "SWSDLName")
+sdl_hydro_baseline <- HydroBOT::baseline_compare(
+  val_df = sdl_hydro_spells,
+  compare_col = "scenario",
+  base_lev = "1_1_1_Mk4a_Historic_0",
+  group_cols = dimgroups,
+  comp_fun = relative,
+  values_col = "measure_achieved",
+  failmissing = FALSE
+)
 
 ## Vulnerability
 sdl_hydro_vulnerability <- sdl_hydro_baseline |>
-  dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure)|>
+  dplyr::group_by(Data, Mk, Mark, licvol_factor, licvolfactor, Evapotranspiration, Rainfall, names_CSIRO_climate_scenario, names_CSIRO_climate_scenario2, Theme, measure) |>
   dplyr::summarise(
     variance_measure_achieved = HydroBOT::Variance(measure_achieved),
-    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved))
+    measure_achieved = HydroBOT::ArithmeticMean(measure_achieved)
+  )
 
 rm(sdl_Economic_spells)
-#rm(sdl_hydro_spells)
+# rm(sdl_hydro_spells)
 
-#TWO
+# TWO
 sdl_two_baseline <- bind_rows(sdl_hydro_baseline, sdl_Economic_baseline)
 sdl_two_vulnerability <- bind_rows(sdl_hydro_vulnerability, sdl_economic_vulnerability)
 
 
-#DElivery strategy - appendix figs
+# DElivery strategy - appendix figs
 Called_Targets <- read.csv(Called_Targets_path, check.names = FALSE)
 Called_Orders <- read.csv(Called_Orders_path, check.names = FALSE)
 Called_Orders2 <- read.csv(Called_Orders2_path, check.names = FALSE)
-
 ```
 
 ## Palettes
@@ -191,85 +198,116 @@ Colour: is always the response variable (e.g. and individual EWR or target or ec
 #| message: false
 
 
-
-sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
-                          data_type = 'historical',
-                          info_list = aggregation_info,
-                          aggname = 'sdl_ewr_baseline',
-                            mark = 'all',
-                            licvol = 'all',
-                            climate = 'all',
-                          max_handling = "remove")
+sdl_ewr_baseline <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = "historical",
+  info_list = aggregation_info,
+  aggname = "sdl_ewr_baseline",
+  mark = "all",
+  licvol = "all",
+  climate = "all",
+  max_handling = "remove"
+)
 
 scenarios <- sdl_ewr_baseline |>
   distinct(Rainfall, Evapotranspiration, licvolfactor, Mark)
 rm(sdl_ewr_baseline)
 
 scale_evap_pal <- make_pal(as.character(unique(scenarios$Evapotranspiration)),
-                      palette = 'nationalparkcolors::Redwoods')
+  palette = "nationalparkcolors::Redwoods"
+)
 
 scale_rain_pal <- make_pal(as.character(unique(scenarios$Rainfall)),
-                      palette = 'nationalparkcolors::Redwoods')
+  palette = "nationalparkcolors::Redwoods"
+)
 
 
 pal_climate_scenario <- make_pal(
-  rev(c("SR0.8_SE1.07", "SR0.8_SE1.00", "SR1.0_SE1.07",
-         "SR1.0_SE1.00", "SR1.2_SE1.07", "SR1.2_SE1.00", NA)),
-                      palette = 'scico::imola')
+  rev(c(
+    "SR0.8_SE1.07", "SR0.8_SE1.00", "SR1.0_SE1.07",
+    "SR1.0_SE1.00", "SR1.2_SE1.07", "SR1.2_SE1.00", NA
+  )),
+  palette = "scico::imola"
+)
 
 # these have to use quantitative even though they're not, or we run out of colors.
-pal_env = list(EB = 'grDevices::Grays',
-                EF = 'grDevices::Purp',
-                NF = 'grDevices::Mint',
-                NV = 'grDevices::Burg',
-                OS = 'grDevices::Blues 2',
-                WB = 'grDevices::Peach')
+pal_env <- list(
+  EB = "grDevices::Grays",
+  EF = "grDevices::Purp",
+  NF = "grDevices::Mint",
+  NV = "grDevices::Burg",
+  OS = "grDevices::Blues 2",
+  WB = "grDevices::Peach"
+)
 
 # use the first level of each of those to make a named pal. I wish there were an easier way
-pal_envgroup <- purrr::imap_chr(pal_env,
-                                \(x,y) make_pal(levels = y, palette = x)) |> 
+pal_envgroup <- purrr::imap_chr(
+  pal_env,
+  \(x, y) make_pal(levels = y, palette = x)
+) |>
   HydroBOT:::as_colors()
 
-pal_Target <-  stats::setNames(c("#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
-                                 "#4873B8", "#B7A447", "#FDC010"), 
-            c('Priority ecosystem functions', 'Native fish', 'Native vegetation', 'Flow-dependent frogs', 'Waterbirds', 
-               "End of system flows", "Water allocation", "Agricultural benefits"))
-class(pal_Target) <- 'colors'
+pal_Target <- stats::setNames(
+  c(
+    "#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF",
+    "#4873B8", "#B7A447", "#FDC010"
+  ),
+  c(
+    "Priority ecosystem functions", "Native fish", "Native vegetation", "Flow-dependent frogs", "Waterbirds",
+    "End of system flows", "Water allocation", "Agricultural benefits"
+  )
+)
+class(pal_Target) <- "colors"
 
-pal_EWR <- stats::setNames(c("#FA5F16", '#7B3014FF', "#B83923", '#DB8062', 
-                             '#C0AED9FF', '#8C37E5FF', '#AE56DEFF', "#7640A9FF", '#622E82FF', 
-                             '#4092E1FF', '#4873B8', '#211DF0FF', '#6094BFFF', '#4677A5FF', '#00298CFF'), 
-                                          c("CF", "VF", "BF1", "BF2", 
-                                            "SF1", "SF2", "SF3", "LF1", "LF2", 
-                                            "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"))
-class(pal_EWR) <- 'colors'
+pal_EWR <- stats::setNames(
+  c(
+    "#FA5F16", "#7B3014FF", "#B83923", "#DB8062",
+    "#C0AED9FF", "#8C37E5FF", "#AE56DEFF", "#7640A9FF", "#622E82FF",
+    "#4092E1FF", "#4873B8", "#211DF0FF", "#6094BFFF", "#4677A5FF", "#00298CFF"
+  ),
+  c(
+    "CF", "VF", "BF1", "BF2",
+    "SF1", "SF2", "SF3", "LF1", "LF2",
+    "OB-WL", "OB-WM", "OB-WS1", "OB-WS2", "OB-WS3", "OB-WS4"
+  )
+)
+class(pal_EWR) <- "colors"
 
-pal_hydro <- stats::setNames(c("#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
-                             c("General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
-class(pal_hydro) <- 'colors'
+pal_hydro <- stats::setNames(
+  c("#7F0038FF", "#C31E6EFF", "#FDC010", "#033800FF", "#7640A9FF"),
+  c("General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit")
+)
+class(pal_hydro) <- "colors"
 
-pal_theme <- stats::setNames(c("#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
-                                 "#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
-                             c('Priority ecosystem functions', 'Native fish','Native vegetation', 'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
-                              "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
-class(pal_theme) <- 'colors'
+pal_theme <- stats::setNames(
+  c(
+    "#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF",
+    "#7F0038FF", "#C31E6EFF", "#FDC010", "#033800FF", "#7640A9FF"
+  ),
+  c(
+    "Priority ecosystem functions", "Native fish", "Native vegetation", "Flow-dependent frogs", "Waterbirds", "End of system flows",
+    "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"
+  )
+)
+class(pal_theme) <- "colors"
 
 
 # Quantitative- sequential achievement
-pal_achieve <- 'grDevices::Blue-Yellow'
+pal_achieve <- "grDevices::Blue-Yellow"
 
 # quantitative- diverging achievement (e.g. relative to baseline)
-pal_compare <- 'scico::bam'
+pal_compare <- "scico::bam"
 
-pal_scene <- make_pal(unique(scenarios$scenario),                       
-                      palette = "viridis::mako", #'ggsci::nrc_npg', 
-                      refvals = 'base', refcols = 'black')
+pal_scene <- make_pal(unique(scenarios$scenario),
+  palette = "viridis::mako", #' ggsci::nrc_npg',
+  refvals = "base", refcols = "black"
+)
 
 # Data sets
-shapes_data <- c(21,24)
+shapes_data <- c(21, 24)
 names(shapes_data) <- c("Historic", "Stochastic")
 
-shapes_data2 <- c(24,21)
+shapes_data2 <- c(24, 21)
 names(shapes_data2) <- c("Stochastic", "Historic")
 
 linetype_data <- c("dotted", "solid")
@@ -279,110 +317,132 @@ linetype_data2 <- c("solid", "dotted")
 names(linetype_data2) <- c("Stochastic", "Historic")
 
 # SHOW FISH
-size_target <- c(3,4,3,3,3)
-names(size_target)  <- c('Priority ecosystem functions', 'Native fish', 'Native vegetation', 'Flow-dependent frogs', 'Waterbirds')
+size_target <- c(3, 4, 3, 3, 3)
+names(size_target) <- c("Priority ecosystem functions", "Native fish", "Native vegetation", "Flow-dependent frogs", "Waterbirds")
 
-shapes_theme <-  c(21, 22, 23, 24, 25,
-                        21, 
-                        21, 22, 23, 24, 25)
+shapes_theme <- c(
+  21, 22, 23, 24, 25,
+  21,
+  21, 22, 23, 24, 25
+)
 
-names(shapes_theme) <- c('Priority ecosystem functions', 'Native fish','Native vegetation', 'Flow-dependent frogs', 'Waterbirds', "End of system flows", "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit")
+names(shapes_theme) <- c("Priority ecosystem functions", "Native fish", "Native vegetation", "Flow-dependent frogs", "Waterbirds", "End of system flows", "General security reliability", "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit")
 
 
-#PALETTE OPTIONS:
+# PALETTE OPTIONS:
 pal_licvolfactor <- stats::setNames(
-  c('#03071e', '#370617', '#6a040f',  '#9d0208', '#d00000', '#dc2f02',"#e85d04"),
-  c(0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5))
-class(pal_licvolfactor) <- 'colors'
+  c("#03071e", "#370617", "#6a040f", "#9d0208", "#d00000", "#dc2f02", "#e85d04"),
+  c(0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5)
+)
+class(pal_licvolfactor) <- "colors"
 
 pal_licvolfactor <- stats::setNames(
-  c('#000000', '#2A2A2A', '#555555',  '#808080', '#AAAAAA', '#D5D5D5',"#FFFFFF"),
-  c(0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5))
-class(pal_licvolfactor) <- 'colors'
+  c("#000000", "#2A2A2A", "#555555", "#808080", "#AAAAAA", "#D5D5D5", "#FFFFFF"),
+  c(0.5, 0.7, 0.9, 1.0, 1.1, 1.3, 1.5)
+)
+class(pal_licvolfactor) <- "colors"
 
 pal_mark <- stats::setNames(
-  c("#000000","#808080","#CCCCCC","#FFFFFF"),
-  c("Mk4", "Mk4a", "Mk5a", "Mk5"))
-class(pal_mark) <- 'colors'
+  c("#000000", "#808080", "#CCCCCC", "#FFFFFF"),
+  c("Mk4", "Mk4a", "Mk5a", "Mk5")
+)
+class(pal_mark) <- "colors"
 
 pal_licvolfactor <- stats::setNames(
-  c('#B2182BFF', '#D6604DFF', '#F4A582FF',  '#FFFFFF', '#92C5DEFF', "#172869FF", "#0C2340FF"),
-  c("0.5 times current", '0.7 times current', '0.9 times current', '1 times current', '1.1 times current', '1.3 times current', '1.5 times current'))
-class(pal_licvolfactor) <- 'colors'
+  c("#B2182BFF", "#D6604DFF", "#F4A582FF", "#FFFFFF", "#92C5DEFF", "#172869FF", "#0C2340FF"),
+  c("0.5 times current", "0.7 times current", "0.9 times current", "1 times current", "1.1 times current", "1.3 times current", "1.5 times current")
+)
+class(pal_licvolfactor) <- "colors"
 
 pal_licvolfactor2 <- stats::setNames(
-  c('#B2182BFF', '#D6604DFF', '#F4A582FF',  'black', '#92C5DEFF', "#172869FF", "#0C2340FF"),
-  c("0.5 times current", '0.7 times current', '0.9 times current', '1 times current', '1.1 times current', '1.3 times current', '1.5 times current'))
-class(pal_licvolfactor2) <- 'colors'
+  c("#B2182BFF", "#D6604DFF", "#F4A582FF", "black", "#92C5DEFF", "#172869FF", "#0C2340FF"),
+  c("0.5 times current", "0.7 times current", "0.9 times current", "1 times current", "1.1 times current", "1.3 times current", "1.5 times current")
+)
+class(pal_licvolfactor2) <- "colors"
 
 pal_mark <- stats::setNames(
-  c("#FFFFFF","#92C5DEFF", '#2166ACFF', "#172869FF", "#FCAADEFF","#EF5FAFFF","#C31E6EFF"),
-  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7'))
-class(pal_mark) <- 'colors'
+  c("#FFFFFF", "#92C5DEFF", "#2166ACFF", "#172869FF", "#FCAADEFF", "#EF5FAFFF", "#C31E6EFF"),
+  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", "Delivery strategy 5", "Delivery strategy 6", "Delivery strategy 7")
+)
+class(pal_mark) <- "colors"
 
 pal_mark2 <- stats::setNames(
-  c("black","#92C5DEFF", '#2166ACFF', "#172869FF", "#FCAADEFF","#EF5FAFFF","#C31E6EFF", '#2166ACFF'),
-  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7', "Delivery strategy 3 & 4"))
-class(pal_mark2) <- 'colors'
+  c("black", "#92C5DEFF", "#2166ACFF", "#172869FF", "#FCAADEFF", "#EF5FAFFF", "#C31E6EFF", "#2166ACFF"),
+  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", "Delivery strategy 5", "Delivery strategy 6", "Delivery strategy 7", "Delivery strategy 3 & 4")
+)
+class(pal_mark2) <- "colors"
 
 linepal_mark2 <- stats::setNames(
-  c("solid","longdash", 'dashed', "dotted", "solid","solid","solid", 'solid'),
-  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", 'Delivery strategy 5', 'Delivery strategy 6', 'Delivery strategy 7', "Delivery strategy 3 & 4"))
+  c("solid", "longdash", "dashed", "dotted", "solid", "solid", "solid", "solid"),
+  c("Delivery strategy 1", "Delivery strategy 2", "Delivery strategy 3", "Delivery strategy 4", "Delivery strategy 5", "Delivery strategy 6", "Delivery strategy 7", "Delivery strategy 3 & 4")
+)
 
 pal_CSIRO_climate_scenario <- stats::setNames(
-  c('#2166ACFF', '#92C5DEFF', '#F7F7F7FF',  '#F4A582FF', '#D6604DFF', '#B2182BFF', '#1A1A1AFF'),
-  c("Just Wet", "Hot and Wet", "Historical climate",  "Just Hot", "Just Dry", "Hot and Dry", NA))
-class(pal_CSIRO_climate_scenario) <- 'colors'
+  c("#2166ACFF", "#92C5DEFF", "#F7F7F7FF", "#F4A582FF", "#D6604DFF", "#B2182BFF", "#1A1A1AFF"),
+  c("Just Wet", "Hot and Wet", "Historical climate", "Just Hot", "Just Dry", "Hot and Dry", NA)
+)
+class(pal_CSIRO_climate_scenario) <- "colors"
 
-pal_theme2 <- stats::setNames(c("#AAAAAA", '#AAAAAA', "#AAAAAA", '#AAAAAA', '#AAAAAA', '#AAAAAA',
-                                            '#AAAAAA', '#AAAAAA', '#AAAAAA', '#AAAAAA', '#AAAAAA', '#AAAAAA',
-                                            '#AAAAAA', '#AAAAAA', '#AAAAAA',
-                               "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", 
-                                 "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", '#AAAAAA', "#AAAAAA", '#AAAAAA', "#AAAAAA"),
-                             c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
-                                            "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
-                                            "OB-WS2", "OB-WS3", "OB-WS4",
-                               'Priority ecosystem functions', 'Native fish',
-                               'Native vegetation', 
-                               'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
-                              "Something", "Water allocation", "Agricultural benefits", 
-                              "General security reliability","General security resilience", "Delivery ability", "High security resilience", 
-                              "Agricultural benefit"))
-class(pal_theme2) <- 'colors'
+pal_theme2 <- stats::setNames(
+  c(
+    "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA",
+    "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA",
+    "#AAAAAA", "#AAAAAA", "#AAAAAA",
+    "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA",
+    "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA", "#AAAAAA"
+  ),
+  c(
+    "CF", "VF", "BF1", "BF2", "SF1", "SF2",
+    "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
+    "OB-WS2", "OB-WS3", "OB-WS4",
+    "Priority ecosystem functions", "Native fish",
+    "Native vegetation",
+    "Flow-dependent frogs", "Waterbirds", "End of system flows",
+    "Something", "Water allocation", "Agricultural benefits",
+    "General security reliability", "General security resilience", "Delivery ability", "High security resilience",
+    "Agricultural benefit"
+  )
+)
+class(pal_theme2) <- "colors"
 
-pal_theme <- stats::setNames(c("#555555FF", '#7B3014FF', "#9E3D22FF", '#C35322FF', '#E77129FF', '#F59843FF',
-                                            '#FCAD52FF', '#FFC07CFF', '#FFEDDAFF', '#D6E8F3FF', '#A3CCE5FF', '#7DAED1FF',
-                                            '#6094BFFF', '#4677A5FF', '#2B5C8AFF',
-                               "#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF", 
-                                 "#4873B8", "#B7A447", "#FDC010AA", "#7F0038FF", '#C31E6EFF', "#FDC010", '#033800FF', "#7640A9FF"),
-                             c("CF", "VF", "BF1", "BF2", "SF1", "SF2",
-                                            "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
-                                            "OB-WS2", "OB-WS3", "OB-WS4",
-                               'Priority ecosystem functions', 'Native fish',
-                               'Native vegetation', 
-                               'Flow-dependent frogs', 'Waterbirds', "End of system flows", 
-                              "Something", "Water allocation", "Agricultural benefits", "General security reliability", 
-               "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"))
-class(pal_theme) <- 'colors'
+pal_theme <- stats::setNames(
+  c(
+    "#555555FF", "#7B3014FF", "#9E3D22FF", "#C35322FF", "#E77129FF", "#F59843FF",
+    "#FCAD52FF", "#FFC07CFF", "#FFEDDAFF", "#D6E8F3FF", "#A3CCE5FF", "#7DAED1FF",
+    "#6094BFFF", "#4677A5FF", "#2B5C8AFF",
+    "#029676FF", "#1B1B1BFF", "#005D67FF", "#73224EFF", "#023FA5FF", "#EA4C3BFF",
+    "#4873B8", "#B7A447", "#FDC010AA", "#7F0038FF", "#C31E6EFF", "#FDC010", "#033800FF", "#7640A9FF"
+  ),
+  c(
+    "CF", "VF", "BF1", "BF2", "SF1", "SF2",
+    "SF3", "LF1", "LF2", "OB-WL", "OB-WM", "OB-WS1",
+    "OB-WS2", "OB-WS3", "OB-WS4",
+    "Priority ecosystem functions", "Native fish",
+    "Native vegetation",
+    "Flow-dependent frogs", "Waterbirds", "End of system flows",
+    "Something", "Water allocation", "Agricultural benefits", "General security reliability",
+    "General security resilience", "Delivery ability", "High security resilience", "Agricultural benefit"
+  )
+)
+class(pal_theme) <- "colors"
 
 
-SWSDLName_subset <-  "Macquarie-Castlereagh"
+SWSDLName_subset <- "Macquarie-Castlereagh"
 
 ewr_table <- HydroBOT::get_ewr_table()
 SWSDLName_info <- ewr_table |>
-  filter(LTWPShortName == SWSDLName_subset)|>
+  filter(LTWPShortName == SWSDLName_subset) |>
   distinct(LTWPShortName, PlanningUnitID, PlanningUnitName, Gauge)
 
 gauges_to_plot <- SWSDLName_info$Gauge
-SWSDLName_subset <-  "Macquarie–Castlereagh" # fixing the dash
-#maybe make palette based on end of sys flow???
+SWSDLName_subset <- "Macquarie–Castlereagh" # fixing the dash
+# maybe make palette based on end of sys flow???
 
 pal_economic <- stats::setNames(
-  c("#420F75FF","#7640A9FF", '#AD72D6FF'),
-  c("Summer broadacre crops", "Winter broadacre crops", "High value crops"))
-class(pal_economic) <- 'colors'
-
-
+  c("#420F75FF", "#7640A9FF", "#AD72D6FF"),
+  c("Summer broadacre crops", "Winter broadacre crops", "High value crops")
+)
+class(pal_economic) <- "colors"
 ```
 
 ## MAP
@@ -393,52 +453,60 @@ class(pal_economic) <- 'colors'
 #| warning: false
 #| message: false
 
-gauges_df <- get_ewr_gauges()|>
-  #st_drop_geometry() |>
-  mutate(OWNER = case_when(owner == "NSW - NSW Department of Industry – Lands and Water" ~ "NSW",
-                           owner == "VIC - Department of Environment, Land, Water and Planning"~ "VIC",
-                           owner == "SA - Department of Environment, Water and Natural Resources"~ "SA",
-                           owner == "QLD - Department of Natural Resources, Mines and Energy"~ "QLD",
-                           owner == NA ~ NA))
+gauges_df <- get_ewr_gauges() |>
+  # st_drop_geometry() |>
+  mutate(OWNER = case_when(
+    owner == "NSW - NSW Department of Industry – Lands and Water" ~ "NSW",
+    owner == "VIC - Department of Environment, Land, Water and Planning" ~ "VIC",
+    owner == "SA - Department of Environment, Water and Natural Resources" ~ "SA",
+    owner == "QLD - Department of Natural Resources, Mines and Energy" ~ "QLD",
+    owner == NA ~ NA
+  ))
 
-Map_Macquarie <- ggplot(data = sdl_units,  aes(geometry = geometry)) +
-  geom_sf(fill = "white")+
-  geom_sf(data = filter(gauges_df, gauge %in% gauges_to_plot),  aes(geometry = geometry), colour = "#fcaa20")+
-  geom_sf(data = filter(sdl_units, SWSDLName == SWSDLName_subset),  aes(geometry = geometry), fill = "#fcaa20", colour = "#fcaa20", alpha = 0.1)+ 
+Map_Macquarie <- ggplot(data = sdl_units, aes(geometry = geometry)) +
+  geom_sf(fill = "white") +
+  geom_sf(data = filter(gauges_df, gauge %in% gauges_to_plot), aes(geometry = geometry), colour = "#fcaa20") +
+  geom_sf(data = filter(sdl_units, SWSDLName == SWSDLName_subset), aes(geometry = geometry), fill = "#fcaa20", colour = "#fcaa20", alpha = 0.1) +
   geom_sf_text(data = filter(sdl_units, SWSDLName == SWSDLName_subset), label = "Macquarie", colour = "#fcaa20") +
-  theme(legend.position = "none",
-        axis.text = element_blank())+
+  theme(
+    legend.position = "none",
+    axis.text = element_blank()
+  ) +
   theme_werp_toolkit(legend.position = "none")
 
 inset_map <- ggplot(ozmaps::ozmap_country) +
-  geom_sf(fill = 'grey20') +              
+  geom_sf(fill = "grey20") +
   geom_sf(data = basin, fill = "white") +
-  theme_werp_toolkit(axis.ticks = element_blank(), 
-                         axis.text=element_blank())+
-  coord_sf(xlim = c(110, 155), ylim = c(-45,-8), expand = FALSE) 
+  theme_werp_toolkit(
+    axis.ticks = element_blank(),
+    axis.text = element_blank()
+  ) +
+  coord_sf(xlim = c(110, 155), ylim = c(-45, -8), expand = FALSE)
 inset_map
 
 # Why on earth does this print a dataframe of the corners?
 overview_map <- Map_Macquarie +
-  patchwork::inset_element(inset_map,  left = 0.0001, bottom = 0.7,
-                                      right = 0.35, top = 0.99)
+  patchwork::inset_element(inset_map,
+    left = 0.0001, bottom = 0.7,
+    right = 0.35, top = 0.99
+  )
 
 overview_map
 
 # example that will save as png and svg if we want.
-ggsave_multi(plot = overview_map, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "pdf"),
-       width = 16, height = 12, units = 'cm')
-
+ggsave_multi(
+  plot = overview_map, filename = file.path(comp_results, paste0("Map_Macquarie", Sys.Date())), device = c("png", "pdf"),
+  width = 16, height = 12, units = "cm"
+)
 ```
 
 ## EWR TABLE
 
 ```{r}
-ewr_table_421012 <- ewr_table |> 
+ewr_table_421012 <- ewr_table |>
   filter(Gauge %in% 421012)
 
-#write.csv(ewr_table_421012, file.path(comp_results, paste0("ewr_table_421019_", Sys.Date(), ".csv")))
-
+# write.csv(ewr_table_421012, file.path(comp_results, paste0("ewr_table_421019_", Sys.Date(), ".csv")))
 ```
 
 ## 1) Vulnerability plot
@@ -446,101 +514,102 @@ ewr_table_421012 <- ewr_table |>
 quadrant lines = the means for stochastic sequences under all climates.
 
 ```{r}
+sdl_EWR_vulnerability <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "licvolfactor_1_0",
+  climate = "r1_0_e1_0",
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
-
-sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = c('licvolfactor_1_0',"licvolfactor_1_0"),
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
+sdl_target_vulnerability <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = c("licvolfactor_1_0", "licvolfactor_1_0"),
+  climate = "r1_0_e1_0",
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 
 mean_EWR_Stoch_ach <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
 mean_EWR_Stoch_var <- mean(filter(sdl_EWR_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
-mean_target_Stoch_ach <-  mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
+mean_target_Stoch_ach <- mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$ewr_achieved, na.rm = TRUE)
 mean_target_Stoch_var <- mean(filter(sdl_target_vulnerability, Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_ewr_achieved, na.rm = TRUE)
-mean_hydro_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
-  mean_hydro_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
-  mean_economic_Stoch_ach <-  mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
-  mean_economic_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
-
-
+mean_hydro_Stoch_ach <- mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
+mean_hydro_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Water allocation", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
+mean_economic_Stoch_ach <- mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$measure_achieved, na.rm = TRUE)
+mean_economic_Stoch_var <- mean(filter(sdl_two_vulnerability, Theme == "Economics", Data == "Stochastic", licvolfactor == 1.0 & Mark == "Delivery strategy 1")$variance_measure_achieved, na.rm = TRUE)
 ```
 
 ### 1A) Vulnerability - no climate change
 
 ```{r}
-#| label: 1A) Vulnerability 
+#| label: 1A) Vulnerability
 #| echo: false
 #| warning: false
 #| message: false
 
-#EWR
-plot_sdl_EWR_vulnerability_S_noclimate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
+# EWR
+plot_sdl_EWR_vulnerability_S_noclimate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#e7ffff") +
   geom_point(size = 3.5, fill = "white") +
-  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")), aes(label = ewr_code), size = 3, segment.size =0.25) +
-  theme_werp_toolkit()+
-  theme(legend.position = "none")+
-  scale_colour_manual(values = pal_EWR)+
-  scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")), aes(label = ewr_code), size = 3, segment.size = 0.25) +
+  theme_werp_toolkit() +
+  theme(legend.position = "none") +
+  scale_colour_manual(values = pal_EWR) +
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("", override.aes = list(shape = 24, size = 4), byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.022)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.022, label = "ai) Historical scenario ", hjust = 0, size = 3)
 
-#TARGET
+# TARGET
 plot_sdl_target_vulnerability_S_noclimate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-    annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
+  annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill = "#e7ffff") +
   geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 5, fill = "white") +
-    geom_point(size = 3.5, fill = "white") +
-    ggrepel::geom_text_repel(data = filter(distinct(sdl_target_vulnerability, target, .keep_all = TRUE), names_CSIRO_climate_scenario %in% c("Historical climate") & Data == "Stochastic"), aes(label = target), colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  theme(legend.position = "none")+
+  geom_point(size = 3.5, fill = "white") +
+  ggrepel::geom_text_repel(data = filter(distinct(sdl_target_vulnerability, target, .keep_all = TRUE), names_CSIRO_climate_scenario %in% c("Historical climate") & Data == "Stochastic"), aes(label = target), colour = "black", size = 3, , segment.size = 0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  theme_werp_toolkit() +
+  theme(legend.position = "none") +
   # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
   #   geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
-  scale_colour_manual(values = pal_Target)+
+  scale_colour_manual(values = pal_Target) +
   scale_shape_manual(values = shapes_data2) +
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("", override.aes = list(shape = 24, size = 4), byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.0035)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.0035, label = "ai) Historical scenario ", hjust = 0, size = 3)
 
-#TWO:
-plot_sdl_two_vulnerability_S_noclimate <- ggplot(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(y = variance_measure_achieved, x = measure_achieved, colour = measure, shape = Data)) + 
-    annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#e7ffff") +
+# TWO:
+plot_sdl_two_vulnerability_S_noclimate <- ggplot(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(y = variance_measure_achieved, x = measure_achieved, colour = measure, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill = "#e7ffff") +
   geom_point(size = 3.5, fill = "white") +
-  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, , segment.size =0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  #theme(legend.position = "none")+
+  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Historical climate" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure), linetype = "dotted", colour = "black", size = 3, , segment.size = 0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  theme_werp_toolkit() +
+  # theme(legend.position = "none")+
   # geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
   # geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
   # geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
   # geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
   scale_colour_manual(values = pal_theme) +
-  scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("",override.aes=list(shape = 24, size = 4), byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("", override.aes = list(shape = 24, size = 4), byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.055)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.055, label = "bi) Historical scenario ", hjust = 0, size = 3)
 
 
@@ -552,295 +621,399 @@ plot_sdl_two_vulnerability_S_noclimate
 ### 1B) Vulnerability - no climate change - with ewater adaptation (HEW licvol)
 
 ```{r}
-#| label: 1B) Vulnerability 
+#| label: 1B) Vulnerability
 #| echo: false
 #| warning: false
 #| message: false
 
-sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = "all",#c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
+sdl_EWR_vulnerability2 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all", # c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
+  climate = "r1_0_e1_0",
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = "all",#c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
+sdl_target_vulnerability2 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all", # c('licvolfactor_1_0', 'licvolfactor_1_5', 'licvolfactor_0_5'),
+  climate = "r1_0_e1_0",
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 licvolfactor_ends <- c(0.5, 1.0, 1.5)
 
-#EWR
-plot_sdl_EWR_vulnerability_S_licvol <- ggplot(data = filter(sdl_EWR_vulnerability, licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-    annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
-  geom_line(data = filter(sdl_EWR_vulnerability))+
+# EWR
+plot_sdl_EWR_vulnerability2_S_licvol <- ggplot(data = filter(sdl_EWR_vulnerability2, licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#e7ffff") +
+  geom_line(data = filter(sdl_EWR_vulnerability2)) +
   geom_point(aes(fill = licvol_factor), size = 3.5) +
   geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & licvolfactor == 1.5), aes(label = ewr_code), size = 3, segment.size =0.25) +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
+  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability2, names_CSIRO_climate_scenario %in% c("Historical climate") & licvolfactor == 1.5), aes(label = ewr_code), size = 3, segment.size = 0.25) +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal") +
   # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
   #   geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
-  scale_fill_manual(values = pal_licvolfactor)+
-  scale_colour_manual(values = pal_EWR)+
-  scale_shape_manual(values = shapes_data2)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_colour_manual(values = pal_EWR) +
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios", override.aes = list(shape = 24, size = 4), ncol = 1, title.position = "top", title.hjust = 0.5, byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.022)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.022, label = "aiii) Relative env. water volume scenarios", hjust = 0, size = 3)
 
-#Target
-plot_sdl_target_vulnerability_S_licvol <- ggplot(data = filter(sdl_target_vulnerability, licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
-  geom_line()+
-    geom_point(data = filter(sdl_target_vulnerability, target == "Native fish", licvolfactor %in% licvolfactor_ends), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 3.5) +
+# Target
+plot_sdl_target_vulnerability2_S_licvol <- ggplot(
+  data = filter(
+    sdl_target_vulnerability2,
+    licvolfactor %in% licvolfactor_ends &
+      Data == 'Stochastic'
+  ),
+  aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)
+) +
+  annotate("rect",
+    xmin = Inf, xmax = mean_target_Stoch_ach,
+    ymin = Inf, ymax = mean_target_Stoch_var,
+    fill = "#d7dafd"
+  ) +
+  annotate("rect",
+    xmin = -Inf, xmax = mean_target_Stoch_ach,
+    ymin = -Inf, ymax = mean_target_Stoch_var,
+    fill = "#ffffff"
+  ) +
+  annotate("rect",
+    xmin = mean_target_Stoch_ach, xmax = Inf,
+    ymin = mean_target_Stoch_var, ymax = -Inf,
+    fill = "#ffe6fe"
+  ) +
+  annotate("rect",
+    xmin = mean_target_Stoch_ach, xmax = -Inf,
+    ymin = Inf, ymax = mean_target_Stoch_var,
+    fill = "#e7ffff"
+  ) +
+  geom_line() +
+  geom_point(
+    data = filter(
+      sdl_target_vulnerability2,
+      target == "Native fish",
+      licvolfactor %in% licvolfactor_ends
+    ),
+    aes(
+      y = variance_ewr_achieved, x = ewr_achieved,
+      colour = target, shape = Data
+    ), size = 3.5
+  ) +
   geom_point(aes(fill = licvol_factor), size = 3.5) +
   geom_point(size = 3.5) +
-    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate")& licvolfactor == 1.5), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal",
-        legend.spacing.y = unit(1.0, 'cm'))+
+  ggrepel::geom_text_repel(
+    data = filter(
+      sdl_target_vulnerability2,
+      names_CSIRO_climate_scenario %in% c("Historical climate") &
+        licvolfactor == 1.5
+    ),
+    aes(label = target),
+    colour = "black", size = 3, segment.size = 0.25,
+    position = ggpp::position_nudge_to(y = 0.00175, x = 0.85),
+    min.segment.length = 0,
+    arrow = arrow(length = unit(0.015, "npc")),
+    direction = "y"
+  ) +
+  theme_werp_toolkit() +
+  theme(
+    legend.box = "horizontal",
+    legend.spacing.y = unit(1.0, "cm")
+  ) +
   # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
   #   geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
-  scale_fill_manual(values = pal_licvolfactor)+
-  scale_colour_manual(values = pal_Target)+
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_colour_manual(values = pal_Target) +
   scale_shape_manual(values = shapes_data2) +
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiii) Relative env. water volume scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
-  annotate(geom = "text", x = 0, y = 0.0035, label = "aiii) Relative env. water volume scenarios", hjust = 0, size = 3)
+  guides(
+    alpha = "none", shape = "none", colour = "none",
+    fill = guide_legend("aiii) Relative env. water volume scenarios",
+      override.aes = list(shape = 24, size = 4),
+      ncol = 1, title.position = "top",
+      title.hjust = 0.5, byrow = TRUE
+    )
+  ) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.0035)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
+  annotate(
+    geom = "text", x = 0, y = 0.0035,
+    label = "aiii) Relative env. water volume scenarios",
+    hjust = 0, size = 3
+  )
 
 
-plot_sdl_EWR_vulnerability_S_licvol
-plot_sdl_target_vulnerability_S_licvol
-
-
+plot_sdl_EWR_vulnerability2_S_licvol
+plot_sdl_target_vulnerability2_S_licvol
 ```
 
 ### 1C) Vulnerability - no climate change - with ewater management (marks)
 
 ```{r}
-#| label: 1C) Vulnerability 
+#| label: 1C) Vulnerability
 #| echo: false
 #| warning: false
 #| message: false
 
-sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR', 'MACQ_CC_EFR_mkiv', 'MACQ_CC_EFR_mkv', 'MACQ_CC_EFR_mkva'),
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
+sdl_EWR_vulnerability3 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR", "MACQ_CC_EFR_mkiv", "MACQ_CC_EFR_mkv", "MACQ_CC_EFR_mkva"),
+  licvol = c("licvolfactor_1_0"),
+  climate = "r1_0_e1_0",
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR', 'MACQ_CC_EFR_mkiv', 'MACQ_CC_EFR_mkv', 'MACQ_CC_EFR_mkva'), 
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'r1_0_e1_0',
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
+sdl_target_vulnerability3 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR", "MACQ_CC_EFR_mkiv", "MACQ_CC_EFR_mkv", "MACQ_CC_EFR_mkva"),
+  licvol = c("licvolfactor_1_0"),
+  climate = "r1_0_e1_0",
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 
-#EWR
-plot_sdl_EWR_vulnerability_S_mks <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) + 
-    annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
-  geom_line()+
+# EWR
+plot_sdl_EWR_vulnerability3_S_mks <- ggplot(data = filter(sdl_EWR_vulnerability3), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#e7ffff") +
+  geom_line() +
   geom_point(aes(fill = Mark), size = 3.5) +
   geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = ewr_code), size = 3, segment.size =0.25) +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
+  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability3, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = ewr_code), size = 3, segment.size = 0.25) +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal") +
   # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
   #   geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
-  scale_fill_manual(values = pal_mark)+
-  scale_colour_manual(values = pal_EWR)+
-  scale_shape_manual(values = shapes_data2)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  scale_fill_manual(values = pal_mark) +
+  scale_colour_manual(values = pal_EWR) +
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios", override.aes = list(shape = 24, size = 4), ncol = 1, title.position = "top", title.hjust = 0.5, byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.022)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.022, label = "aiv) Delivery strategy scenarios", hjust = 0, size = 3)
 
-#TARGET
-plot_sdl_target_vulnerability_S_mks <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
-  geom_line()+
-    geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data), size = 5) +
-  geom_point(aes(fill = Mark), size = 3.5) +
+# TARGET
+plot_sdl_target_vulnerability3_S_mks <- ggplot(
+  data = filter(sdl_target_vulnerability3, Data == 'Stochastic'),
+  aes(
+    y = variance_ewr_achieved, x = ewr_achieved,
+    colour = target, shape = Data
+  )
+) +
+  annotate("rect",
+    xmin = Inf, xmax = mean_target_Stoch_ach,
+    ymin = Inf, ymax = mean_target_Stoch_var, fill = "#d7dafd"
+  ) +
+  annotate("rect",
+    xmin = -Inf, xmax = mean_target_Stoch_ach,
+    ymin = -Inf, ymax = mean_target_Stoch_var, fill = "#ffffff"
+  ) +
+  annotate("rect",
+    xmin = mean_target_Stoch_ach, xmax = Inf,
+    ymin = mean_target_Stoch_var, ymax = -Inf, fill = "#ffe6fe"
+  ) +
+  annotate("rect",
+    xmin = mean_target_Stoch_ach, xmax = -Inf,
+    ymin = Inf, ymax = mean_target_Stoch_var, fill = "#e7ffff"
+  ) +
+  geom_line() +
+    geom_point(aes(fill = Mark), size = 3.5) +
   geom_point(size = 3.5) +
-    ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Historical climate") & Mark == "Delivery strategy 1"), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.00175, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
+  ggrepel::geom_text_repel(
+    data = filter(
+      sdl_target_vulnerability3,
+      names_CSIRO_climate_scenario %in% c("Historical climate") &
+        Mark == "Delivery strategy 1"
+    ),
+    aes(label = target),
+    colour = "black", size = 3,
+    segment.size = 0.25,
+    position = ggpp::position_nudge_to(y = 0.00175, x = 0.85),
+    min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")),
+    direction = "y"
+  ) +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal") +
   # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
   # geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
-  scale_fill_manual(values = pal_mark)+
-  scale_colour_manual(values = pal_Target)+
+  scale_fill_manual(values = pal_mark) +
+  scale_colour_manual(values = pal_Target) +
   scale_shape_manual(values = shapes_data2) +
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aiv) Delivery strategy scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
-  annotate(geom = "text", x = 0, y = 0.0035, label = "aiv) Delivery strategy scenarios", hjust = 0, size = 3)
+  guides(
+    alpha = "none", shape = "none", colour = "none",
+    fill = guide_legend("aiv) Delivery strategy scenarios",
+      override.aes = list(shape = 24, size = 4),
+      ncol = 1, title.position = "top",
+      title.hjust = 0.5, byrow = TRUE
+    )
+  ) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.0035)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
+  annotate(
+    geom = "text", x = 0, y = 0.0035,
+    label = "aiv) Delivery strategy scenarios",
+    hjust = 0, size = 3
+  )
 
-plot_sdl_EWR_vulnerability_S_mks
-plot_sdl_target_vulnerability_S_mks
-
-
+plot_sdl_EWR_vulnerability3_S_mks
+plot_sdl_target_vulnerability3_S_mks
 ```
 
 ### 1D) Vulnerability - With climate change (no adaptation or management)
 
 ```{r}
-#| label: 1D) Vulnerability 
+#| label: 1D) Vulnerability
 #| echo: false
 #| warning: false
 #| message: false
 
-sdl_EWR_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR_mkiv'), 
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = "all",#c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
+sdl_EWR_vulnerability4 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR_mkiv"),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all", # c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-sdl_target_vulnerability <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR_mkiv'), 
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = "all",#c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
+sdl_target_vulnerability4 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR_mkiv"),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all", # c('r0_8_e1_07', 'r1_0_e1_0', 'r1_2_e1_0'),
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 
-#EWR
-plot_sdl_EWR_vulnerability_S_climate <- ggplot(data = filter(sdl_EWR_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +   
-  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill= "#e7ffff") +
+# EWR
+plot_sdl_EWR_vulnerability4_S_climate <- ggplot(data = filter(sdl_EWR_vulnerability4), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = ewr_code, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_EWR_Stoch_ach, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_EWR_Stoch_ach, ymin = -Inf, ymax = mean_EWR_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = Inf, ymin = mean_EWR_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_EWR_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_EWR_Stoch_var, fill = "#e7ffff") +
   # geom_vline(size = 0.25, xintercept = mean_EWR_Stoch_ach) +
   # geom_hline(size = 0.25, yintercept = mean_EWR_Stoch_var) +
-  geom_line()+
+  geom_line() +
   geom_point(aes(fill = names_CSIRO_climate_scenario2), size = 3.5) +
   geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = ewr_code), size = 3, segment.size =0.25) +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  scale_colour_manual(values = pal_EWR)+
-  scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.022)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  ggrepel::geom_text_repel(data = filter(sdl_EWR_vulnerability4, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = ewr_code), size = 3, segment.size = 0.25) +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal") +
+  scale_fill_manual(values = pal_CSIRO_climate_scenario) +
+  scale_colour_manual(values = pal_EWR) +
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii) Climate scenarios", override.aes = list(shape = 24, size = 4), ncol = 1, title.position = "top", title.hjust = 0.5, byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.022)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.022, label = "aii) Climate scenarios", hjust = 0, size = 3)
 
-#TARGET
-plot_sdl_target_vulnerability_S_climate <- ggplot(data = filter(sdl_target_vulnerability), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
-      annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill= "#e7ffff") +
+# TARGET
+plot_sdl_target_vulnerability4_S_climate <- ggplot(data = filter(sdl_target_vulnerability4), aes(y = variance_ewr_achieved, x = ewr_achieved, colour = target, shape = Data)) +
+  annotate("rect", xmin = Inf, xmax = mean_target_Stoch_ach, ymin = Inf, ymax = mean_target_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_target_Stoch_ach, ymin = -Inf, ymax = mean_target_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_target_Stoch_ach, xmax = Inf, ymin = mean_target_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_target_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_target_Stoch_var, fill = "#e7ffff") +
   # geom_vline(size = 0.25, xintercept = mean_target_Stoch_ach) +
   # geom_hline(size = 0.25, yintercept = mean_target_Stoch_var) +
-  geom_line(aes( colour = target))+
-  geom_point(data = filter(sdl_target_vulnerability, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, shape = Data), size = 5, fill = "white") +
-  geom_point(data = filter(sdl_target_vulnerability), aes(fill = names_CSIRO_climate_scenario2), size = 3.5)+ 
-  ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = target), colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.0029, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal")+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
-  scale_colour_manual(values = pal_Target)+
+  geom_line(aes(colour = target)) +
+  geom_point(data = filter(sdl_target_vulnerability4, target == "Native fish"), aes(y = variance_ewr_achieved, x = ewr_achieved, shape = Data), size = 5, fill = "white") +
+  geom_point(data = filter(sdl_target_vulnerability4), aes(fill = names_CSIRO_climate_scenario2), size = 3.5) +
+  ggrepel::geom_text_repel(data = filter(sdl_target_vulnerability4, names_CSIRO_climate_scenario %in% c("Just Wet")), aes(label = target), colour = "black", size = 3, segment.size = 0.25, position = ggpp::position_nudge_to(y = 0.0029, x = 0.85), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal") +
+  scale_fill_manual(values = pal_CSIRO_climate_scenario) +
+  scale_colour_manual(values = pal_Target) +
   scale_shape_manual(values = shapes_data2) +
-  scale_size_manual(values = size_target)+
-  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.0035)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  scale_size_manual(values = size_target) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios", override.aes = list(shape = 24, size = 4), ncol = 1, title.position = "top", title.hjust = 0.5, byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.0035)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.0035, label = "aii) Climate scenarios", hjust = 0, size = 3)
 
-#TWO:
+# TWO:
 plot_sdl_two_vulnerability_S_climate <- ggplot(data = filter(sdl_two_vulnerability, licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(y = variance_measure_achieved, x = measure_achieved, colour = measure, shape = Data)) +
-      annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#d7dafd")  + 
-    annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var , fill= "#ffffff") +    
-    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill= "#ffe6fe") +    
-    annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill= "#e7ffff") +
+  annotate("rect", xmin = Inf, xmax = mean_hydro_Stoch_ach, ymin = Inf, ymax = mean_hydro_Stoch_var, fill = "#d7dafd") +
+  annotate("rect", xmin = -Inf, xmax = mean_hydro_Stoch_ach, ymin = -Inf, ymax = mean_hydro_Stoch_var, fill = "#ffffff") +
+  annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = Inf, ymin = mean_hydro_Stoch_var, ymax = -Inf, fill = "#ffe6fe") +
+  annotate("rect", xmin = mean_hydro_Stoch_ach, xmax = -Inf, ymin = Inf, ymax = mean_hydro_Stoch_var, fill = "#e7ffff") +
   # geom_vline(size = 0.25, xintercept = mean_hydro_Stoch_ach) +
   # geom_hline(size = 0.25, yintercept = mean_hydro_Stoch_var) +
   # geom_vline(size = 0.25, xintercept = mean_economic_Stoch_ach, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
   # geom_hline(size = 0.25, yintercept = mean_economic_Stoch_var, linetype = "dashed", colour = pal_theme[names(pal_theme)=="Agricultural benefit"]) +
-  geom_line()+
+  geom_line() +
   geom_point(aes(fill = names_CSIRO_climate_scenario2), size = 3.5) +
   geom_point(size = 3.5) +
-  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Hot and Dry" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure),linetype = "dotted", colour = "black", size = 3, segment.size =0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
-  theme_werp_toolkit()+
-  theme(legend.box = "horizontal", legend.position = 'bottom')+
-  scale_fill_manual(values = pal_CSIRO_climate_scenario)+
+  ggrepel::geom_text_repel(data = filter(sdl_two_vulnerability, names_CSIRO_climate_scenario == "Hot and Dry" & licvolfactor == 1.0 & Mark == "Delivery strategy 1"), aes(label = measure, y = variance_measure_achieved, x = measure_achieved, colour = measure), linetype = "dotted", colour = "black", size = 3, segment.size = 0.25, position = ggpp::position_nudge_to(y = 0.02, x = 0.3), min.segment.length = 0, arrow = arrow(length = unit(0.015, "npc")), direction = "y") +
+  theme_werp_toolkit() +
+  theme(legend.box = "horizontal", legend.position = "bottom") +
+  scale_fill_manual(values = pal_CSIRO_climate_scenario) +
   scale_colour_manual(values = pal_theme) +
-  scale_shape_manual(values = shapes_data2)+
-    guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios",override.aes=list(shape = 24, size = 4), ncol = 1, title.position="top", title.hjust = 0.5, byrow = TRUE))+
-  coord_cartesian(xlim = c(0,1),ylim = c(0, 0.055)) +
-  labs(x = "Outcome achievement", y = "Variance in achievement")+
+  scale_shape_manual(values = shapes_data2) +
+  guides(alpha = "none", shape = "none", colour = "none", fill = guide_legend("aii & bii) Climate scenarios", override.aes = list(shape = 24, size = 4), ncol = 1, title.position = "top", title.hjust = 0.5, byrow = TRUE)) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 0.055)) +
+  labs(x = "Outcome achievement", y = "Variance in achievement") +
   annotate(geom = "text", x = 0, y = 0.055, label = "bii) Climate scenarios", hjust = 0, size = 3)
 
 
-plot_sdl_EWR_vulnerability_S_climate
-plot_sdl_target_vulnerability_S_climate
+plot_sdl_EWR_vulnerability4_S_climate
+plot_sdl_target_vulnerability4_S_climate
 plot_sdl_two_vulnerability_S_climate
 ```
 
 ## Figure 1 - Vulnerability - Stochastic data
 
 ```{r}
-#| label: Figure 1 - Stochastic Vulnerability 
+#| label: Figure 1 - Stochastic Vulnerability
 #| echo: false
 #| warning: false
 #| message: false
 
-#EWR
+# EWR
 VulnerabilityPlot_EWR_Stochastic <- plot_sdl_EWR_vulnerability_S_noclimate +
-  plot_sdl_EWR_vulnerability_S_climate +
-  plot_sdl_EWR_vulnerability_S_licvol + 
-  plot_sdl_EWR_vulnerability_S_mks +
-  plot_layout(nrow = 2, axes = "collect", guides = "collect") & theme(legend.position = 'bottom') 
+  plot_sdl_EWR_vulnerability4_S_climate +
+  plot_sdl_EWR_vulnerability2_S_licvol +
+  plot_sdl_EWR_vulnerability3_S_mks +
+  plot_layout(nrow = 2, axes = "collect", guides = "collect") & theme(legend.position = "bottom")
 
-#TARGET + TWO
+# TARGET + TWO
 VulnerabilityPlot_target_Stochastic <- plot_sdl_target_vulnerability_S_noclimate +
-  plot_sdl_target_vulnerability_S_climate +
-  plot_sdl_target_vulnerability_S_licvol + 
-  plot_sdl_target_vulnerability_S_mks +  
-  plot_sdl_two_vulnerability_S_noclimate+
+  plot_sdl_target_vulnerability4_S_climate +
+  plot_sdl_target_vulnerability2_S_licvol +
+  plot_sdl_target_vulnerability3_S_mks +
+  plot_sdl_two_vulnerability_S_noclimate +
   plot_sdl_two_vulnerability_S_climate +
-  plot_layout(ncol = 2, axes = "collect", guides = "collect") & theme(legend.position = 'bottom') &
-  theme(legend.spacing.y = unit(0, 'cm'))
+  plot_layout(ncol = 2, axes = "collect", guides = "collect") & theme(legend.position = "bottom") &
+  theme(legend.spacing.y = unit(0, "cm"))
 
 VulnerabilityPlot_EWR_Stochastic
 VulnerabilityPlot_target_Stochastic
 
 
-ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic",Sys.Date())), device = c('png', 'pdf'), width = 8, height = 8)
+ggsave_multi(plot = VulnerabilityPlot_EWR_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_EWR_Stochastic", Sys.Date())), device = c("png", "pdf"), width = 8, height = 8)
 
-ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_targetTWO_Stochastic",Sys.Date())), device = c('png', 'pdf'), width = 8, height = 12)
-
-
+ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(comp_results, paste0("VulnerabilityPlot_targetTWO_Stochastic", Sys.Date())), device = c("png", "pdf"), width = 8, height = 12)
 ```
 
 ```{r}
@@ -851,7 +1024,6 @@ ggsave_multi(plot = VulnerabilityPlot_target_Stochastic, filename = file.path(co
 #| fig-cap: Fig 1. Vulnerabiliy in EWRs - Stochastic
 
 VulnerabilityPlot_EWR_Stochastic
-
 ```
 
 ```{r}
@@ -862,7 +1034,6 @@ VulnerabilityPlot_EWR_Stochastic
 #| fig-cap: Fig 1. Vulnerabiliy in ecological targets - Stochastic
 
 VulnerabilityPlot_target_Stochastic
-
 ```
 
 ```{r}
@@ -872,8 +1043,7 @@ VulnerabilityPlot_target_Stochastic
 #| message: false
 #| fig-cap: Fig 1. Vulnerabiliy in economic benefits and water allocation relilience and reliabitity - Stochastic
 
-#VulnerabilityPlot_two_Stochastic
-
+# VulnerabilityPlot_two_Stochastic
 ```
 
 ## Figs 4 - 7
@@ -891,277 +1061,317 @@ have left triangle points on for only climate variability
 historic CFs are now in the cloud of stochastic points; but small fresh 2 is at the very top.
 
 ```{r}
-#| label: Figure 4 - Climate variability 
+#| label: Figure 4 - Climate variability
 #| echo: false
 #| warning: false
 #| message: false
 
 
-sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'all',
-                                    climate = 'all',
-                                    aggname = 'sdl_ewr_baseline',
-                                    max_handling = "remove")
+sdl_ewr_baseline2 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all",
+  climate = "all",
+  aggname = "sdl_ewr_baseline",
+  max_handling = "remove"
+)
 
-sdl_target_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv', 
-                                    licvol = 'all',
-                                    climate = 'all',
-                                    aggname = 'sdl_target_baseline',
-                                    max_handling = "remove")
+sdl_target_baseline <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all",
+  climate = "all",
+  aggname = "sdl_target_baseline",
+  max_handling = "remove"
+)
 
-scatterplot_sdl_EWR_climate_variability <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0 & 
-           names_CSIRO_climate_scenario == "Historical climate")|>
-  ggplot() + 
+scatterplot_sdl_EWR_climate_variability <- sdl_ewr_baseline2 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0 &
+    names_CSIRO_climate_scenario == "Historical climate") |>
+  ggplot() +
   geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data),
-              height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic" & 
-                             Mark == "Delivery strategy 1" & 
-                             licvolfactor == 1.0 & 
-                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = ewr_code, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_EWR)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+    height = 0
+  ) +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + # ask galen about this
+  geom_point(data = filter(
+    sdl_ewr_baseline2,
+    Data == "Historic" &
+      Mark == "Delivery strategy 1" &
+      licvolfactor == 1.0 &
+      names_CSIRO_climate_scenario == "Historical climate"
+  ), aes(y = ewr_achieved, x = ewr_code, shape = Data), colour = "black", fill = "white", size = 3) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_EWR) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
-#TARGET
+# TARGET
 scatterplot_sdl_target_climate_variability <- sdl_target_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0 & 
-           names_CSIRO_climate_scenario == "Historical climate")|>
-  ggplot() + 
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0 &
+    names_CSIRO_climate_scenario == "Historical climate") |>
+  ggplot() +
   geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data),
-              height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_baseline, 
-                           Mark == "Delivery strategy 1" & 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0 & 
-                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = ewr_achieved, x = target, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_Target)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+    height = 0
+  ) +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + # ask galen about this
+  geom_point(data = filter(
+    sdl_target_baseline,
+    Mark == "Delivery strategy 1" &
+      Data == "Historic" &
+      licvolfactor == 1.0 &
+      names_CSIRO_climate_scenario == "Historical climate"
+  ), aes(y = ewr_achieved, x = target, shape = Data), colour = "black", fill = "white", size = 3) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_Target) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
-scatterplot_sdl_two_climate_variability <- ggplot(data = filter(sdl_two_baseline, 
-                                                     Data == "Stochastic" & 
-                                                       names_CSIRO_climate_scenario == "Historical climate" & 
-                                                       licvolfactor == 1.0 & 
-                                                       Mark == "Delivery strategy 1")) + 
+scatterplot_sdl_two_climate_variability <- ggplot(data = filter(
+  sdl_two_baseline,
+  Data == "Stochastic" &
+    names_CSIRO_climate_scenario == "Historical climate" &
+    licvolfactor == 1.0 &
+    Mark == "Delivery strategy 1"
+)) +
   geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data),
-              height = 0) + 
-  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_two_baseline, 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0 & 
-                             Mark == "Delivery strategy 1" & 
-                             names_CSIRO_climate_scenario == "Historical climate"), aes(y = measure_achieved, x = measure, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+    height = 0
+  ) +
+  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + # ask galen about this
+  geom_point(data = filter(
+    sdl_two_baseline,
+    Data == "Historic" &
+      licvolfactor == 1.0 &
+      Mark == "Delivery strategy 1" &
+      names_CSIRO_climate_scenario == "Historical climate"
+  ), aes(y = measure_achieved, x = measure, shape = Data), colour = "black", fill = "white", size = 3) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
 scatterplot_sdl_EWRtargetTWO_climate_variability <- scatterplot_sdl_EWR_climate_variability +
-scatterplot_sdl_target_climate_variability +
-scatterplot_sdl_two_climate_variability + plot_layout(nrow = 3, axes = "collect") 
+  scatterplot_sdl_target_climate_variability +
+  scatterplot_sdl_two_climate_variability + plot_layout(nrow = 3, axes = "collect")
 
-ggsave_multi(plot = scatterplot_sdl_EWRtargetTWO_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_EWRtargetTWO_climate_variability",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 12)
-
+ggsave_multi(plot = scatterplot_sdl_EWRtargetTWO_climate_variability, filename = file.path(comp_results, paste0("scatterplot_sdl_EWRtargetTWO_climate_variability", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 12)
 ```
 
 ## 5) Climate change
 
 ```{r}
-#| label: Figure 5 - Climate change 
+#| label: Figure 5 - Climate change
 #| echo: false
 #| warning: false
 #| message: false
 
-scatterplot_sdl_EWR_climates <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  #geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data), height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + 
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic" & 
-                             Mark == "Delivery strategy 1" & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = ewr_code, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_EWR)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+scatterplot_sdl_EWR_climates <- sdl_ewr_baseline2 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  # geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data), height = 0) +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") +
+  geom_point(
+    data = filter(
+      sdl_ewr_baseline2,
+      Data == "Historic" &
+        Mark == "Delivery strategy 1" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = ewr_code, shape = Data), colour = "black", fill = "white", size = 3
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_EWR) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
-#TARGET
+# TARGET
 scatterplot_sdl_target_climates <- sdl_target_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  #geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data), height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_baseline, 
-                           Mark == "Delivery strategy 1" & 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = target, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_Target)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  # geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data), height = 0) +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_target_baseline,
+      Mark == "Delivery strategy 1" &
+        Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = target, shape = Data), colour = "black", fill = "white", size = 3
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_Target) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
-#Economic
-scatterplot_sdl_two_climates <- ggplot(data = filter(sdl_two_baseline, 
-                                                              Data == "Stochastic" & 
-                                                                licvolfactor == 1.0 & 
-                                                                Mark == "Delivery strategy 1")) + 
-  #geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data), height = 0) + 
-  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_two_baseline, 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0 & 
-                             Mark == "Delivery strategy 1"), 
-             aes(y = measure_achieved, x = measure, shape = Data), colour = "black", fill = "white", size = 3) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_hydro)+
-  scale_fill_manual(values = pal_licvolfactor)+   scale_shape_manual(values = shapes_data)+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend(override.aes=list(shape = 21)))+
+# Economic
+scatterplot_sdl_two_climates <- ggplot(data = filter(
+  sdl_two_baseline,
+  Data == "Stochastic" &
+    licvolfactor == 1.0 &
+    Mark == "Delivery strategy 1"
+)) +
+  # geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data), height = 0) +
+  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_two_baseline,
+      Data == "Historic" &
+        licvolfactor == 1.0 &
+        Mark == "Delivery strategy 1"
+    ),
+    aes(y = measure_achieved, x = measure, shape = Data), colour = "black", fill = "white", size = 3
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_hydro) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend(override.aes = list(shape = 21))) +
   labs(y = "Outcome achievement")
 
 scatterplot_sdl_EWR_climates
-scatterplot_sdl_targetTWO_climates <- scatterplot_sdl_target_climates + 
-scatterplot_sdl_two_climates + plot_layout(nrow = 2, axes = "collect")
+scatterplot_sdl_targetTWO_climates <- scatterplot_sdl_target_climates +
+  scatterplot_sdl_two_climates + plot_layout(nrow = 2, axes = "collect")
 
-ggsave_multi(plot = scatterplot_sdl_EWR_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 4)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climate", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 4)
 
-ggsave_multi(plot = scatterplot_sdl_targetTWO_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climate",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 10)
-
+ggsave_multi(plot = scatterplot_sdl_targetTWO_climates, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climate", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 10)
 ```
 
 ## 6) ewater adaptation (licvol)
 
 ```{r}
-#| label: Figure 6 - ewater adaptation 
+#| label: Figure 6 - ewater adaptation
 #| echo: false
 #| warning: false
 #| message: false
 
-scatterplot_sdl_EWR_climates_licvol <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  #geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data), height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic" & 
-                             Mark == "Delivery strategy 1" & 
-                             licvolfactor %in% licvolfactor_ends), 
-             aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)) + 
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_licvolfactor)+
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  theme(legend.box = "horizontal")+
-  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+scatterplot_sdl_EWR_climates_licvol <- sdl_ewr_baseline2 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  # geom_jitter(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code, shape = Data), height = 0) +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_ewr_baseline2,
+      Data == "Historic" &
+        Mark == "Delivery strategy 1" &
+        licvolfactor %in% licvolfactor_ends
+    ),
+    aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme(legend.box = "horizontal") +
+  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#TARGET
+# TARGET
 scatterplot_sdl_target_climates_licvol <- sdl_target_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  #geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data), height = 0) + 
-  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_baseline, 
-                           Mark == "Delivery strategy 1" & 
-                           Data == "Historic" & 
-                             licvolfactor %in% licvolfactor_ends), 
-             aes(y = ewr_achieved, x = target, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  # geom_jitter(aes(y = ewr_achieved, x = target, colour = target, shape = Data), height = 0) +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_target_baseline,
+      Mark == "Delivery strategy 1" &
+        Data == "Historic" &
+        licvolfactor %in% licvolfactor_ends
+    ),
+    aes(y = ewr_achieved, x = target, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#two
-scatterplot_sdl_two_climates_licvol <- ggplot(data = filter(sdl_two_baseline, 
-                                                              Data == "Stochastic" & 
-                                                                licvolfactor == 1.0 & 
-                                                                Mark == "Delivery strategy 1")) + 
-  #geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data), height = 0) + 
-  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_two_baseline, 
-                           Data == "Historic" & 
-                             Mark == "Delivery strategy 1" & 
-                             licvolfactor %in% licvolfactor_ends), 
-             aes(y = measure_achieved, x = measure, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_licvolfactor)+   
-  scale_shape_manual(values = shapes_data)+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+# two
+scatterplot_sdl_two_climates_licvol <- ggplot(data = filter(
+  sdl_two_baseline,
+  Data == "Stochastic" &
+    licvolfactor == 1.0 &
+    Mark == "Delivery strategy 1"
+)) +
+  # geom_jitter(aes(y = measure_achieved, x = measure, colour = measure, shape = Data), height = 0) +
+  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_two_baseline,
+      Data == "Historic" &
+        Mark == "Delivery strategy 1" &
+        licvolfactor %in% licvolfactor_ends
+    ),
+    aes(y = measure_achieved, x = measure, shape = Data, fill = licvol_factor), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_shape_manual(values = shapes_data) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
 scatterplot_sdl_EWR_climates_licvol
 
-scatterplot_sdl_targetTWO_climates_licvol <- 
-scatterplot_sdl_target_climates_licvol +
-scatterplot_sdl_two_climates_licvol + plot_layout(nrow = 2, axes = "collect", guides = "collect") 
+scatterplot_sdl_targetTWO_climates_licvol <-
+  scatterplot_sdl_target_climates_licvol +
+  scatterplot_sdl_two_climates_licvol + plot_layout(nrow = 2, axes = "collect", guides = "collect")
 
 
-ggsave_multi(plot = scatterplot_sdl_EWR_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 4)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_licvol", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 4)
 
-ggsave_multi(plot = scatterplot_sdl_targetTWO_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climates_licvol",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 10)
-
-
+ggsave_multi(plot = scatterplot_sdl_targetTWO_climates_licvol, filename = file.path(comp_results, paste0("scatterplot_sdl_targetTWO_climates_licvol", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 10)
 ```
 
 ## 7) eWater management (Mks)
@@ -1172,85 +1382,103 @@ ggsave_multi(plot = scatterplot_sdl_targetTWO_climates_licvol, filename = file.p
 #| warning: false
 #| message: false
 
-sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR', 'MACQ_CC_EFR_mkiv', 'MACQ_CC_EFR_mkv', 'MACQ_CC_EFR_mkva'),
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'all',
-                                    aggname = 'sdl_ewr_baseline',
-                                    max_handling = "remove")
+sdl_ewr_baseline3 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR", "MACQ_CC_EFR_mkiv", "MACQ_CC_EFR_mkv", "MACQ_CC_EFR_mkva"),
+  licvol = "licvolfactor_1_0",
+  climate = "all",
+  aggname = "sdl_ewr_baseline",
+  max_handling = "remove"
+)
 
-sdl_target_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR', 'MACQ_CC_EFR_mkiv', 'MACQ_CC_EFR_mkv', 'MACQ_CC_EFR_mkva'),
-                                    licvol = 'licvolfactor_1_0',
-                                    climate = 'all',
-                                    aggname = 'sdl_target_baseline',
-                                    max_handling = "remove")
+sdl_target_baseline2 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c("MACQ_CC_EFR", "MACQ_CC_EFR_mkiv", "MACQ_CC_EFR_mkv", "MACQ_CC_EFR_mkva"),
+  licvol = "licvolfactor_1_0",
+  climate = "all",
+  aggname = "sdl_target_baseline",
+  max_handling = "remove"
+)
 
-scatterplot_sdl_EWR_climates_mks <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + 
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic"  & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  theme(legend.box = "horizontal")+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+scatterplot_sdl_EWR_climates_mks <- sdl_ewr_baseline3 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") +
+  geom_point(
+    data = filter(
+      sdl_ewr_baseline3,
+      Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme(legend.box = "horizontal") +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#TARGET
-scatterplot_sdl_target_climates_mks <- sdl_target_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + 
-  geom_point(data = filter(sdl_target_baseline, 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = target, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+      
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+# TARGET
+scatterplot_sdl_target_climates_mks <- sdl_target_baseline2 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") +
+  geom_point(
+    data = filter(
+      sdl_target_baseline2,
+      Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = target, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#hydro
+# hydro
 scatterplot_sdl_hydro_climates_mks <- sdl_two_baseline |>
-  filter(Data == "Stochastic" & 
-           licvolfactor == 1.0 & 
-           Mark == "Delivery strategy 1",
-         Theme == "Water allocation")|> 
-  ggplot()+
-  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_hydro_baseline, 
-                           Data == "Historic" &  
-                             licvolfactor == 1.0 ), 
-             aes(y = measure_achieved, x = measure, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+   
-  scale_shape_manual(values = shapes_data)+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  filter(
+    Data == "Stochastic" &
+      licvolfactor == 1.0 &
+      Mark == "Delivery strategy 1",
+    Theme == "Water allocation"
+  ) |>
+  ggplot() +
+  geom_violin(aes(y = measure_achieved, x = measure, colour = measure), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_hydro_baseline,
+      Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = measure_achieved, x = measure, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
 scatterplot_sdl_EWR_climates_mks
@@ -1258,13 +1486,11 @@ scatterplot_sdl_target_climates_mks
 scatterplot_sdl_hydro_climates_mks
 
 
-ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 4)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 4)
 
-ggsave_multi(plot = scatterplot_sdl_target_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
+ggsave_multi(plot = scatterplot_sdl_target_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 5)
 
-ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
-
-
+ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks, filename = file.path(comp_results, paste0("scatterplot_sdl_WaterAllocation_climates_mks", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 5)
 ```
 
 ## 8) Targeted EWR management
@@ -1272,118 +1498,136 @@ ggsave_multi(plot = scatterplot_sdl_hydro_climates_mks, filename = file.path(com
 I very well may be duplicating work above, but will be easier to think through if I just build this I think. The targeted approach does do something; the green, blue, and red do not fall on teh purple points @fig-experiment and @fig-experiment-targets.
 
 ```{r}
-#| label: targeted-data-in 
+#| label: targeted-data-in
 #| echo: false
 #| warning: false
 #| message: false
 
-sdl_ewr_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR_mkiv',
-                                             'MACQ_CC_EFR_mkva',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_3',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_5',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_7'),
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'all',
-                                    aggname = 'sdl_ewr_baseline',
-                                    max_handling = "remove")
+sdl_ewr_baseline4 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c(
+    "MACQ_CC_EFR_mkiv",
+    "MACQ_CC_EFR_mkva",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_3",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_5",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_7"
+  ),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all",
+  aggname = "sdl_ewr_baseline",
+  max_handling = "remove"
+)
 
-sdl_target_baseline <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR_mkiv',
-                                             'MACQ_CC_EFR_mkva',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_3',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_5',
-                                             'MACQ_CC_EFR_mkv_exp11_eventcoef0_7'),
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'all',
-                                    aggname = 'sdl_target_baseline',
-                                    max_handling = "remove")
+sdl_target_baseline3 <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c(
+    "MACQ_CC_EFR_mkiv",
+    "MACQ_CC_EFR_mkva",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_3",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_5",
+    "MACQ_CC_EFR_mkv_exp11_eventcoef0_7"
+  ),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all",
+  aggname = "sdl_target_baseline",
+  max_handling = "remove"
+)
 
 
 EWR_select <- c("VF", "BF2", "SF1", "SF2", "SF3", "LF2", "OB-WS4")
 
-#EWR
-scatterplot_sdl_EWR_climates_mks_exp <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0 &
-           ewr_code %in% EWR_select)|>
-  ggplot() + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + 
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic"  & 
-                             licvolfactor == 1.0 &
-           ewr_code %in% EWR_select), 
-             aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  theme(legend.box = "horizontal")+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+# EWR
+scatterplot_sdl_EWR_climates_mks_exp <- sdl_ewr_baseline4 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0 &
+    ewr_code %in% EWR_select) |>
+  ggplot() +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") +
+  geom_point(
+    data = filter(
+      sdl_ewr_baseline4,
+      Data == "Historic" &
+        licvolfactor == 1.0 &
+        ewr_code %in% EWR_select
+    ),
+    aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme(legend.box = "horizontal") +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#EWR ALLL
-scatterplot_sdl_EWR_climates_mks_exp2 <- sdl_ewr_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") + 
-  geom_point(data = filter(sdl_ewr_baseline, 
-                           Data == "Historic"  & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+   
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  theme(legend.box = "horizontal", legend.position = "bottom")+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+# EWR ALLL
+scatterplot_sdl_EWR_climates_mks_exp2 <- sdl_ewr_baseline4 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  geom_violin(aes(y = ewr_achieved, x = ewr_code, colour = ewr_code), fill = NA, scale = "width") +
+  geom_point(
+    data = filter(
+      sdl_ewr_baseline4,
+      Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = ewr_code, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  theme(legend.box = "horizontal", legend.position = "bottom") +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-#TARGET
-scatterplot_sdl_target_climates_mks_exp <- sdl_target_baseline |>
-  filter(Data == "Stochastic" & 
-           Mark == "Delivery strategy 1" & 
-           licvolfactor == 1.0)|>
-  ggplot() + 
-  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + #ask galen about this
-  geom_point(data = filter(sdl_target_baseline, 
-                           Data == "Historic" & 
-                             licvolfactor == 1.0), 
-             aes(y = ewr_achieved, x = target, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_colour_manual(values = pal_theme2)+
-  scale_fill_manual(values = pal_mark)+      
-  scale_shape_manual(values = shapes_data)+
-  coord_cartesian(ylim = c(0,1))+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+# TARGET
+scatterplot_sdl_target_climates_mks_exp <- sdl_target_baseline3 |>
+  filter(Data == "Stochastic" &
+    Mark == "Delivery strategy 1" &
+    licvolfactor == 1.0) |>
+  ggplot() +
+  geom_violin(aes(y = ewr_achieved, x = target, colour = target), fill = NA, scale = "width") + # ask galen about this
+  geom_point(
+    data = filter(
+      sdl_target_baseline3,
+      Data == "Historic" &
+        licvolfactor == 1.0
+    ),
+    aes(y = ewr_achieved, x = target, shape = Data, fill = factor(Mark)), colour = "black", size = 3, position = position_dodge(width = 0.75)
+  ) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_colour_manual(values = pal_theme2) +
+  scale_fill_manual(values = pal_mark) +
+  scale_shape_manual(values = shapes_data) +
+  coord_cartesian(ylim = c(0, 1)) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
 scatterplot_sdl_EWR_climates_mks_exp
 scatterplot_sdl_target_climates_mks_exp
 
 
-
-ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_exp, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks_experiment",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 4)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_exp, filename = file.path(comp_results, paste0("scatterplot_sdl_EWR_climates_mks_experiment", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 4)
 scatterplot_sdl_EWR_climates_mks_exp2
-ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_exp2, filename = file.path(comp_results, paste0("scatterplot_sdl_allEWR_climates_mks_experiment",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 7)
+ggsave_multi(plot = scatterplot_sdl_EWR_climates_mks_exp2, filename = file.path(comp_results, paste0("scatterplot_sdl_allEWR_climates_mks_experiment", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 7)
 
-ggsave_multi(plot = scatterplot_sdl_target_climates_mks_exp, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks_experiment",Sys.Date())), device = c('png', 'svg'),  width = 8, height = 5)
-
+ggsave_multi(plot = scatterplot_sdl_target_climates_mks_exp, filename = file.path(comp_results, paste0("scatterplot_sdl_target_climates_mks_experiment", Sys.Date())), device = c("png", "svg", "pdf"), width = 8, height = 5)
 ```
 
 ## another look at things
@@ -1393,73 +1637,90 @@ I was expecting this plot, but didn't see it and I'm curious about it. I made 4;
 ```{r}
 #| label: read-in-stoch-summaries
 #| include: false
-variance_climmark <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR',
-                                             'MACQ_CC_EFR_mkiv',
-                                             'MACQ_CC_EFR_mkv',
-                                             'MACQ_CC_EFR_mkva'),
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'all',
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
+variance_climmark <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c(
+    "MACQ_CC_EFR",
+    "MACQ_CC_EFR_mkiv",
+    "MACQ_CC_EFR_mkv",
+    "MACQ_CC_EFR_mkva"
+  ),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all",
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-variance_licclim <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = 'all',
-                                    climate = 'all',
-                                    aggname = 'sdl_ewr_vulnerability',
-                                    max_handling = "remove")
+variance_licclim <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all",
+  climate = "all",
+  aggname = "sdl_ewr_vulnerability",
+  max_handling = "remove"
+)
 
-variance_climmark_target <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = c('MACQ_CC_EFR',
-                                             'MACQ_CC_EFR_mkiv',
-                                             'MACQ_CC_EFR_mkv',
-                                             'MACQ_CC_EFR_mkva'),
-                                    licvol = c('licvolfactor_1_0'),
-                                    climate = 'all',
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
+variance_climmark_target <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = c(
+    "MACQ_CC_EFR",
+    "MACQ_CC_EFR_mkiv",
+    "MACQ_CC_EFR_mkv",
+    "MACQ_CC_EFR_mkva"
+  ),
+  licvol = c("licvolfactor_1_0"),
+  climate = "all",
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 
-variance_licclim_target <- read_in_aggs(project_dir = project_dir,
-                                    data_type = c('stochastic', 'historical'),
-                                    info_list = aggregation_info,
-                                    mark = 'MACQ_CC_EFR_mkiv',
-                                    licvol = 'all',
-                                    climate = 'all',
-                                    aggname = 'sdl_target_vulnerability',
-                                    max_handling = "remove")
-
+variance_licclim_target <- read_in_aggs(
+  project_dir = project_dir,
+  data_type = c("stochastic", "historical"),
+  info_list = aggregation_info,
+  mark = "MACQ_CC_EFR_mkiv",
+  licvol = "all",
+  climate = "all",
+  aggname = "sdl_target_vulnerability",
+  max_handling = "remove"
+)
 ```
 
 ```{r}
 #| label: fig-markewr-diffs-variance
 #| fig-cap: How much does mark matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for licvolfactor = 1.
 
-mark_ewr_variance <- ggplot(filter(variance_climmark, Data == 'Stochastic'), 
-       aes(x = ewr_code, y = ewr_achieved,
-           fill = Mark,colour = Mark,
-           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
-           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+mark_ewr_variance <- ggplot(
+  filter(variance_climmark, Data == "Stochastic"),
+  aes(
+    x = ewr_code, y = ewr_achieved,
+    fill = Mark, colour = Mark,
+    ymin = ewr_achieved - sqrt(variance_ewr_achieved),
+    ymax = ewr_achieved + sqrt(variance_ewr_achieved)
+  )
+) +
   geom_point(position = position_dodge(width = 1), shape = 21) +
   geom_linerange(position = position_dodge(width = 1)) +
   facet_wrap(~names_CSIRO_climate_scenario2) +
-  scale_fill_manual(values = pal_mark)+    
-  scale_colour_manual(values = pal_mark2)+   
-  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-    theme(legend.position = "bottom")+
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  scale_fill_manual(values = pal_mark) +
+  scale_colour_manual(values = pal_mark2) +
+  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  theme(legend.position = "bottom") +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-ggsave_multi(plot = mark_ewr_variance, 
-             filename = file.path(comp_results, "mark_ewr_variance"),
-             device = c("png", "svg"),
-       width = 24, height = 24, units = 'cm')
+ggsave_multi(
+  plot = mark_ewr_variance,
+  filename = file.path(comp_results, "mark_ewr_variance"),
+  device = c("png", "svg", "pdf"),
+  width = 24, height = 24, units = "cm"
+)
 
 mark_ewr_variance
 ```
@@ -1468,25 +1729,31 @@ mark_ewr_variance
 #| label: fig-licvolewr-diffs-variance
 #| fig-cap: How much does licvolfactor matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for Mark 4a.
 
-licvol_ewr_variance <- ggplot(filter(variance_licclim, Data == 'Stochastic'), 
-       aes(x = ewr_code, y = ewr_achieved,
-           color = licvol_factor, fill = licvol_factor,
-           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
-           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+licvol_ewr_variance <- ggplot(
+  filter(variance_licclim, Data == "Stochastic"),
+  aes(
+    x = ewr_code, y = ewr_achieved,
+    color = licvol_factor, fill = licvol_factor,
+    ymin = ewr_achieved - sqrt(variance_ewr_achieved),
+    ymax = ewr_achieved + sqrt(variance_ewr_achieved)
+  )
+) +
   geom_point(position = position_dodge(width = 1)) +
   geom_linerange(position = position_dodge(width = 1)) +
   facet_wrap(~names_CSIRO_climate_scenario2) +
-  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  theme(legend.position = "bottom")+
-    scale_fill_manual(values = pal_licvolfactor)+    
-  scale_colour_manual(values = pal_licvolfactor2)+   
-  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_colour_manual(values = pal_licvolfactor2) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-ggsave_multi(plot = licvol_ewr_variance, 
-             filename = file.path(comp_results, "licvol_ewr_variance"),
-             device = c("png", "svg"),
-       width = 24, height = 24, units = 'cm')
+ggsave_multi(
+  plot = licvol_ewr_variance,
+  filename = file.path(comp_results, "licvol_ewr_variance"),
+  device = c("png", "svg", "pdf"),
+  width = 24, height = 24, units = "cm"
+)
 
 licvol_ewr_variance
 ```
@@ -1494,26 +1761,34 @@ licvol_ewr_variance
 ```{r}
 #| label: fig-marktarget-diffs-variance
 #| fig-cap: How much does mark matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for licvolfactor = 1.
-mark_target_variance <- ggplot(filter(variance_climmark_target, 
-                                      Data == 'Stochastic'), 
-       aes(x = names_CSIRO_climate_scenario2, y = ewr_achieved,
-           color = Mark, fill = Mark,
-           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
-           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+mark_target_variance <- ggplot(
+  filter(
+    variance_climmark_target,
+    Data == "Stochastic"
+  ),
+  aes(
+    x = names_CSIRO_climate_scenario2, y = ewr_achieved,
+    color = Mark, fill = Mark,
+    ymin = ewr_achieved - sqrt(variance_ewr_achieved),
+    ymax = ewr_achieved + sqrt(variance_ewr_achieved)
+  )
+) +
   geom_point(position = position_dodge(width = 1)) +
   geom_linerange(position = position_dodge(width = 1)) +
   facet_wrap(~target) +
-  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-    theme(legend.position = "bottom")+
-    scale_fill_manual(values = pal_mark)+    
-  scale_colour_manual(values = pal_mark2)+ 
-  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = pal_mark) +
+  scale_colour_manual(values = pal_mark2) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Delivery strategy", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-ggsave_multi(plot = mark_target_variance, 
-             filename = file.path(comp_results, "mark_target_variance"),
-             device = c("png", "svg"),
-       width = 24, height = 24, units = 'cm')
+ggsave_multi(
+  plot = mark_target_variance,
+  filename = file.path(comp_results, "mark_target_variance"),
+  device = c("png", "svg", "pdf"),
+  width = 24, height = 24, units = "cm"
+)
 
 mark_target_variance
 ```
@@ -1521,25 +1796,31 @@ mark_target_variance
 ```{r}
 #| label: fig-licvoltarget-diffs-variance
 #| fig-cap: How much does licvolfactor matter, with points as means and error bars as 1 sd over the stochastic runs. This is only for Mark 4a.
-licvol_target_variance <- ggplot(filter(variance_licclim_target, Data == 'Stochastic'), 
-       aes(x = names_CSIRO_climate_scenario2, y = ewr_achieved,
-           color = licvol_factor, fill = licvol_factor,
-           ymin = ewr_achieved-sqrt(variance_ewr_achieved),
-           ymax = ewr_achieved + sqrt(variance_ewr_achieved))) +
+licvol_target_variance <- ggplot(
+  filter(variance_licclim_target, Data == "Stochastic"),
+  aes(
+    x = names_CSIRO_climate_scenario2, y = ewr_achieved,
+    color = licvol_factor, fill = licvol_factor,
+    ymin = ewr_achieved - sqrt(variance_ewr_achieved),
+    ymax = ewr_achieved + sqrt(variance_ewr_achieved)
+  )
+) +
   geom_point(position = position_dodge(width = 1)) +
   geom_linerange(position = position_dodge(width = 1)) +
   facet_wrap(~target) +
-  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-    theme(legend.position = "bottom")+
-      scale_fill_manual(values = pal_licvolfactor)+    
-  scale_colour_manual(values = pal_licvolfactor2)+  
-  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes=list(shape = 21), ncol = 1, title.position="top", title.hjust = 0.5))+
+  theme_werp_toolkit(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  theme(legend.position = "bottom") +
+  scale_fill_manual(values = pal_licvolfactor) +
+  scale_colour_manual(values = pal_licvolfactor2) +
+  guides(shape = "none", colour = "none", fill = guide_legend("Relative env. water volume", override.aes = list(shape = 21), ncol = 1, title.position = "top", title.hjust = 0.5)) +
   labs(y = "Outcome achievement")
 
-ggsave_multi(plot = licvol_target_variance, 
-             filename = file.path(comp_results, "licvol_target_variance"),
-             device = c("png", "svg"),
-       width = 24, height = 24, units = 'cm')
+ggsave_multi(
+  plot = licvol_target_variance,
+  filename = file.path(comp_results, "licvol_target_variance"),
+  device = c("png", "svg", "pdf"),
+  width = 24, height = 24, units = "cm"
+)
 
 licvol_target_variance
 ```
@@ -1547,116 +1828,124 @@ licvol_target_variance
 ## OTHER - % high-security water
 
 ```{r}
-
 # The majority of agricultural benefits are associated with high-value crops irrigated using high-security water licences, which are always delivered when dam levels exceed the level of the off-take. These benefits should remain viable, with high-security water being deliverable x%    of the time even under extreme climate change.
 
-days_burrendong_lt_dead_storage <- read.csv(file.path(hydro_results, "days_burrendong_lt_dead_storage_merged.csv"))|>
+days_burrendong_lt_dead_storage <- read.csv(file.path(hydro_results, "days_burrendong_lt_dead_storage_merged.csv")) |>
   dplyr::mutate(measure = "days_burrendong_lt_dead_storage")
 days_burrendong_lt_dead_storage <- clean_factors(days_burrendong_lt_dead_storage)
 
 temp <- days_burrendong_lt_dead_storage |>
-  filter(measure == "Delivery ability")|>
-  filter(names_CSIRO_climate_scenario2 == "Hot and Dry")|>
-  filter(Data == "Historic")|>
-  mutate(n_0 = ifelse(Current.volume == 0, 0, 1),
-         percent_days = (Current.volume/366)*100)|>
-  reframe(mean_percent_days = 100-mean(percent_days))
-
-
+  filter(measure == "Delivery ability") |>
+  filter(names_CSIRO_climate_scenario2 == "Hot and Dry") |>
+  filter(Data == "Historic") |>
+  mutate(
+    n_0 = ifelse(Current.volume == 0, 0, 1),
+    percent_days = (Current.volume / 366) * 100
+  ) |>
+  reframe(mean_percent_days = 100 - mean(percent_days))
 ```
 
 ## OTHER - economic plots - Fig. S8
 
 ```{r}
-
-economic_data_path <- file.path(project_dir, 'module_output', 'Economic', "CropAreaValueRatio.xlsx")
+economic_data_path <- file.path(project_dir, "module_output", "Economic", "CropAreaValueRatio.xlsx")
 
 economic_data_1 <- readxl::read_excel(economic_data_path, sheet = 2)
-colnames(economic_data_1) <- c("names_CSIRO_climate_scenario", economic_data_1[1,-1])
-economic_data_1 <- economic_data_1[-1,c(1,8,9,10)]
+colnames(economic_data_1) <- c("names_CSIRO_climate_scenario", economic_data_1[1, -1])
+economic_data_1 <- economic_data_1[-1, c(1, 8, 9, 10)]
 economic_data_1 <- economic_data_1 |>
-  pivot_longer(cols = "Summer broadacre crops":"High value crops", names_to = "measure",  values_to = "Agricultural value (relative index)")|>
-  mutate(measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
-         `Agricultural value (relative index)` = as.numeric(`Agricultural value (relative index)`),
-         names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
-         names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
-          "Just Wet",
-          "Historical climate",
-          "Just Dry",
-          "Hot and Wet",
-          "Just Hot",
-          "Hot and Dry"
-        )))
+  pivot_longer(cols = "Summer broadacre crops":"High value crops", 
+               names_to = "measure", 
+               values_to = "Agricultural value (relative index)") |>
+  mutate(
+    measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
+    `Agricultural value (relative index)` = as.numeric(`Agricultural value (relative index)`),
+    names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
+    names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
+      "Just Wet",
+      "Historical climate",
+      "Just Dry",
+      "Hot and Wet",
+      "Just Hot",
+      "Hot and Dry"
+    ))
+  )
 
 economic_data_2 <- readxl::read_excel(economic_data_path, sheet = 3)
-colnames(economic_data_2) <- c("names_CSIRO_climate_scenario", economic_data_2[1,-1])
-economic_data_2 <- economic_data_2[-1,c(1,8,9,10)]
+colnames(economic_data_2) <- c("names_CSIRO_climate_scenario", economic_data_2[1, -1])
+economic_data_2 <- economic_data_2[-1, c(1, 8, 9, 10)]
 economic_data_2 <- economic_data_2 |>
-  pivot_longer(cols = "Summer broadacre crops":"High value crops", names_to = "measure",  values_to = "Cropping area (relative index)")|>
-  mutate(measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
-         `Cropping area (relative index)` = as.numeric(`Cropping area (relative index)`),
-         names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
-         names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
-          "Just Wet",
-          "Historical climate",
-          "Just Dry",
-          "Hot and Wet",
-          "Just Hot",
-          "Hot and Dry"
-        )))
+  pivot_longer(cols = "Summer broadacre crops":"High value crops", names_to = "measure", values_to = "Cropping area (relative index)") |>
+  mutate(
+    measure = factor(measure, levels = c("High value crops", "Winter broadacre crops", "Summer broadacre crops")),
+    `Cropping area (relative index)` = as.numeric(`Cropping area (relative index)`),
+    names_CSIRO_climate_scenario = ifelse(names_CSIRO_climate_scenario == "Historical", "Historical climate", names_CSIRO_climate_scenario),
+    names_CSIRO_climate_scenario = factor(names_CSIRO_climate_scenario, levels = c(
+      "Just Wet",
+      "Historical climate",
+      "Just Dry",
+      "Hot and Wet",
+      "Just Hot",
+      "Hot and Dry"
+    ))
+  )
 
 
 economic_figS_1 <- economic_data_1 |>
-  ggplot()+
-  geom_col(aes(y = `Agricultural value (relative index)`, x = measure, fill = measure), size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_fill_manual(values = pal_economic)+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = "none")#+
-  #labs(y = "Outcome achievement")
+  ggplot() +
+  geom_col(aes(y = `Agricultural value (relative index)`, x = measure, fill = measure),
+           size = 3, position = position_dodge(width = 0.75)) +
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_fill_manual(values = pal_economic) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = "none") #+
+# labs(y = "Outcome achievement")
 
 economic_figS_2 <- economic_data_2 |>
-  ggplot()+
+  ggplot() +
   geom_col(aes(y = `Cropping area (relative index)`, x = measure, fill = measure), size = 3, position = position_dodge(width = 0.75)) +
-  theme_werp_toolkit()+
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), axis.title.x = element_blank())+
-  scale_fill_manual(values = pal_economic)+
-  facet_wrap(~ names_CSIRO_climate_scenario)+
-  guides(shape = "none", colour = "none", fill = "none")#+
-  #labs(y = "Outcome achievement")
+  theme_werp_toolkit() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1), axis.title.x = element_blank()) +
+  scale_fill_manual(values = pal_economic) +
+  facet_wrap(~names_CSIRO_climate_scenario) +
+  guides(shape = "none", colour = "none", fill = "none") #+
+# labs(y = "Outcome achievement")
 
 economic_figS_1
 economic_figS_2
 
 
-ggsave_multi(plot = economic_figS_1, 
-             filename = file.path(comp_results, "Economic_supplement1"),
-             device = c("png", "svg"),
-       width = 12, height = 10, units = 'cm')
+ggsave_multi(
+  plot = economic_figS_1,
+  filename = file.path(comp_results, "Economic_supplement1"),
+  device = c("png", "svg", "pdf"),
+  width = 12, height = 10, units = "cm"
+)
 
 
-ggsave_multi(plot = economic_figS_2, 
-             filename = file.path(comp_results, "Economic_supplement2"),
-             device = c("png", "svg"),
-       width = 12, height = 10, units = 'cm')
-
+ggsave_multi(
+  plot = economic_figS_2,
+  filename = file.path(comp_results, "Economic_supplement2"),
+  device = c("png", "svg", "pdf"),
+  width = 12, height = 10, units = "cm"
+)
 ```
 
 ## OTHER - delivery strategies fig for appendix
 
 ```{r}
-colnames(Called_Targets)<- c("Available water (GL)", colnames(Called_Targets)[-1])
-colnames(Called_Orders)<- c("Date", colnames(Called_Orders)[-1])
-colnames(Called_Orders2)<- c("Date", colnames(Called_Orders2)[-1])
-  
-df_Panel1 <- Called_Targets |> 
-  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Target volume (GL)")|>
+colnames(Called_Targets) <- c("Available water (GL)", colnames(Called_Targets)[-1])
+colnames(Called_Orders) <- c("Date", colnames(Called_Orders)[-1])
+colnames(Called_Orders2) <- c("Date", colnames(Called_Orders2)[-1])
+
+df_Panel1 <- Called_Targets |>
+  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Target volume (GL)") |>
   filter(!is.na(`Target volume (GL)`)) |>
   mutate(`Delivery strategy` = ifelse(`Delivery strategy` == "Delivery strategy 3 & 4", "Delivery strategy 3", `Delivery strategy`))
 
 Delivery_strategy_4 <- df_Panel1 |>
-  filter(`Delivery strategy` == "Delivery strategy 3")|>
+  filter(`Delivery strategy` == "Delivery strategy 3") |>
   mutate(`Delivery strategy` = "Delivery strategy 4")
 
 df_Panel1 <- bind_rows(df_Panel1, Delivery_strategy_4)
@@ -1664,43 +1953,45 @@ df_Panel1 <- bind_rows(df_Panel1, Delivery_strategy_4)
 
 ```{r}
 df_Panel2 <- Called_Orders |>
-  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 4`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
+  pivot_longer(col = `Delivery strategy 1`:`Delivery strategy 4`, names_to = "Delivery strategy", values_to = "Ordered (GL)") |>
   mutate(Date = lubridate::ymd(Date))
-  
+
 df_Panel3 <- Called_Orders2 |>
   select(!`Delivery strategy 1`:`Delivery strategy 4`) |>
-  pivot_longer(col = `Delivery strategy 5`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Ordered (GL)")|>
+  pivot_longer(col = `Delivery strategy 5`:`Delivery strategy 7`, names_to = "Delivery strategy", values_to = "Ordered (GL)") |>
   mutate(Date = lubridate::ymd(Date))
-  
 ```
 
 ```{r}
-Panel1 <- ggplot(data = df_Panel1,
-                 aes(x = `Available water (GL)`,
-                     y = `Target volume (GL)`, 
-                     colour = `Delivery strategy`,
-                     linetype = `Delivery strategy`)) +
+Panel1 <- ggplot(
+  data = df_Panel1,
+  aes(
+    x = `Available water (GL)`,
+    y = `Target volume (GL)`,
+    colour = `Delivery strategy`,
+    linetype = `Delivery strategy`
+  )
+) +
   geom_line() +
-  coord_cartesian(xlim = c(0,500), ylim = c(0, 300))+
-  theme_werp_toolkit()+
-  scale_colour_manual(values = pal_mark2)+
+  coord_cartesian(xlim = c(0, 500), ylim = c(0, 300)) +
+  theme_werp_toolkit() +
+  scale_colour_manual(values = pal_mark2) +
   scale_linetype_manual(values = linepal_mark2)
-  
+
 Panel2 <- ggplot(data = df_Panel2, aes(x = Date, y = `Ordered (GL)`, colour = `Delivery strategy`, linetype = `Delivery strategy`)) +
-  geom_line()+
-  coord_cartesian(ylim = c(0, 2500))+
-  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none")+
-  scale_colour_manual(values = pal_mark2)+
-  scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y")+
+  geom_line() +
+  coord_cartesian(ylim = c(0, 2500)) +
+  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none") +
+  scale_colour_manual(values = pal_mark2) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y") +
   scale_linetype_manual(values = linepal_mark2)
 
 Panel3 <- ggplot(data = df_Panel3, aes(x = Date, y = `Ordered (GL)`, colour = `Delivery strategy`)) +
-  geom_line()+
-  coord_cartesian(ylim = c(0, 2500))+
-  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none")+
-  scale_colour_manual(values = pal_mark2)+
-  scale_x_date(date_breaks = "1 month", date_labels =  "%b %Y")
-
+  geom_line() +
+  coord_cartesian(ylim = c(0, 2500)) +
+  theme_werp_toolkit(axis.title.x = element_blank(), legend.position = "none") +
+  scale_colour_manual(values = pal_mark2) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b %Y")
 ```
 
 ```{r}
@@ -1709,8 +2000,10 @@ Fig_S8_DeliveryStrategies <- Panel1 + Panel2 + Panel3 + plot_layout(nrow = 3, gu
 
 ```{r}
 # There's an internal issue with png rendering for Panel1, so just use pdf, we don't need png anyway.
-ggsave_multi(plot = Fig_S8_DeliveryStrategies, 
-             filename = file.path(comp_results, "Fig_S8_DeliveryStrategies"),
-             device = c("pdf", "svg"),
-             width = 15, height = 18, units = 'cm')
+ggsave_multi(
+  plot = Fig_S8_DeliveryStrategies,
+  filename = file.path(comp_results, "Fig_S8_DeliveryStrategies"),
+  device = c("pdf", "svg"),
+  width = 15, height = 18, units = "cm"
+)
 ```
